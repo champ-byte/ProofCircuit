@@ -72,6 +72,23 @@ try {
   await click('Request delivery proof from staff')
   await waitBanner('Waiting for staff evidence')
   await tab('Staff inbox')
+
+  // Staff voice note: testimony with audio provenance; it explains, it does not prove (M5).
+  // Speech-to-text is disabled in this manual E2E, so the labelled human-transcription path runs.
+  await click('Send demo voice note')
+  await page.waitForSelector('.drawer audio')
+  await page.waitForSelector('.drawer >> text=Speech-to-text unavailable')
+  await click('Type what I said (human transcription)')
+  await page.fill('.drawer .voice-actions textarea', 'मी आधी चुकीची पावती पाठवली होती. आता योग्य पावती पाठवत आहे.')
+  await page.click('.drawer .voice-actions button:has-text("Save")')
+  await page.waitForSelector('section[aria-labelledby=testimony-h] .voice-note >> text=Human transcription typed by Sanjay (Delivery)')
+  const testimony = await page.innerText('section[aria-labelledby=testimony-h] .voice-note')
+  assert(testimony.includes('Confirmed by Sanjay (Delivery)') && testimony.includes('not a delivery document'),
+    'testimony panel shows confirmation and the not-proof caveat')
+  assert(testimony.includes('answers delivery record request round 2'), 'voice note linked to the open request')
+  assert(!(await banner()).includes('ready to submit'), 'testimony alone does not make the case ready')
+  await page.screenshot({ path: `${SHOTS}m5-testimony-manual.png`, fullPage: true })
+
   await click('Upload delivery receipt correct')
   await waitBanner('Evidence complete — ready to submit')
   await click('Build evidence pack')
@@ -82,8 +99,8 @@ try {
   await click('Submit defense (simulator)')
   await waitBanner('Submission verified — dispute outcome pending')
   const steps = await page.innerText('.steps')
-  for (const s of ['Observed gap', 'Evidence requested', 'Staff response', 'Contradiction detected', 'Pack built',
-    'Submission requested', 'Receipt verified']) assert(steps.includes(s), `key step "${s}"`)
+  for (const s of ['Observed gap', 'Evidence requested', 'Staff response', 'Contradiction detected', 'Staff voice note',
+    'Testimony confirmed', 'Pack built', 'Submission requested', 'Receipt verified']) assert(steps.includes(s), `key step "${s}"`)
   const trail = await page.innerText('#pack-h ~ table')
   assert(trail.includes('action_response:unknown → reconcile') && trail.includes('verified'), 'lost response reconciled')
   await page.screenshot({ path: `${SHOTS}m4-verified.png`, fullPage: true })

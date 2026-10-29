@@ -9,16 +9,17 @@ This page is short on purpose. [BUILD_LOG.md](BUILD_LOG.md) holds the detailed h
   - Do one PRD §17 milestone at a time, then stop and report to the user.
   - Keep BUILD_LOG.md updated with the commands run, the tests passed and the open issues.
   - Never claim a feature works without a passing test or a real run.
-- **Last milestone commit:** M4 (`45277bb`).
+- **Last milestone commit:** M5 (staff voice notes, local faster-whisper).
 
 ## Status (verified 2026-10-29)
 
 - **Milestones:**
-  - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI.
-  - Not started: M5 Sarvam speech, M6 n8n follow-up, M7 Tests and evaluation, M8 Optional.
+  - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI, M5 Staff voice notes (local faster-whisper only; Sarvam not built).
+  - Not started: M6 n8n follow-up, M7 Tests and evaluation, M8 Optional.
 - **Tests:**
-  - Backend: 196 pytest passed.
-  - Frontend: 13 vitest passed, and `npm run e2e` (Playwright) passes against a running stack.
+  - Backend: 221 pytest passed.
+  - Frontend: 20 vitest passed, and `npm run e2e` (Playwright) passes against a running stack.
+  - Live faster-whisper `small`/`medium` ran but failed the synthetic Marathi smoke check (CER 0.85–1.00), so transcription is blocked by default and staff type a labelled transcription.
   - Live Gemini hero runs passed in M3 and M4 (5 calls each).
 - **PRD test groups:**
   - Done: C01, C02, C05, C06, C08.
@@ -43,7 +44,8 @@ These are user decisions; see BUILD_LOG "Decisions that deviate from PRD.md".
    - Synthetic data only. Use the Paytm-shaped simulator only, never a real Paytm host.
    - Demo HMAC signatures are not Paytm CHECKSUM.
 5. **Agent tools:** the agent has no concede or refund tool. Concession is reviewer-only and takes two steps.
-6. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
+6. **Speech (M5):** local faster-whisper only. Weights are never downloaded at runtime. Transcripts are staff testimony and never satisfy the checklist, `orderStatus` or the pack. Pin `av<17` for faster-whisper 1.2.1.
+7. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
 
 ## Run and verify
 
@@ -66,7 +68,8 @@ cd frontend && npm run dev
 ```
 
 - **Enable the live agent** with `uv run python -m app.cli smoke-reasoner` (1–4 calls; the result lasts 24 h). Runtime data does not carry across sessions, so a new session must run the smoke test again.
-- **Browser E2E:** start the backend with `AGENT_AUTORUN=false`, then run `npm run e2e`. The E2E refuses to run while the agent is live.
+- **Browser E2E:** start the backend with `AGENT_AUTORUN=false`, then run `npm run e2e`. If the Gemini smoke check is fresh, health still reads `live`; then run `E2E_ALLOW_LIVE=1 npm run e2e` (no model call happens with autorun off).
+- **Speech:** `uv sync --extra speech`, then `SPEECH_PROVIDER=faster_whisper uv run python -m app.cli speech-download` and `... smoke-speech`. The model cache (`~/.cache/huggingface`) does not carry across sessions.
 
 ## Environment gotchas (learned the hard way)
 
@@ -86,7 +89,7 @@ cd frontend && npm run dev
   - Tests use a fixed clock in 2030 and the session TTL is 12 h. After advancing the clock, call `relogin()` (see `tests/helpers.py`).
   - Use 2030 dates in fixtures.
 - **Migrations:**
-  - Alembic revisions 0001–0004. Autogenerate a revision, then add a `server_default` to new NOT NULL columns so populated databases can upgrade.
+  - Alembic revisions 0001–0005. Autogenerate a revision, then add a `server_default` to new NOT NULL columns so populated databases can upgrade.
   - `tests/test_migrations.py` covers the upgrades.
 - **Demo reset:**
   - A reset keeps `reasoner_calls` and `provider_checks` (`PRESERVED_ON_RESET` in `services/seed.py`), so the daily cap and smoke result survive.
@@ -104,6 +107,7 @@ cd frontend && npm run dev
 | Simulator | `backend/app/simulator/` (Paytm-shaped API, faults, receipts, webhooks) |
 | API | `backend/app/api/` (cases, evidence, actions/runs, demo, intake, evaluation) |
 | Seed and fixtures | `backend/app/services/seed.py`, `fixtures.py` (deterministic hero PDFs), `fixtures/` |
+| Speech / testimony | `backend/app/providers/speech.py`, `services/testimony.py`, `services/speech_smoke.py`, `api/testimony.py`, `frontend/src/components/Testimony.tsx` |
 | UI | `frontend/src/pages/` (CaseWorkspace, CasePanels, CasesPage, EvaluationPage), `frontend/src/components/` (DemoDrawer, Evidence, Reviewer, …) |
 | E2E | `frontend/e2e/hero.e2e.mjs` |
 
@@ -111,9 +115,7 @@ cd frontend && npm run dev
 
 Ask the user which of these to do before starting:
 
-- **M5 Sarvam speech:**
-  - Blocked until `SARVAM_API_KEY` is set in the environment settings and Sarvam's API host is allowed by the network policy.
-  - The alternative is local `faster-whisper` only.
+- **M5 follow-up (optional):** measure STT on a human Marathi/Hindi recording; Sarvam stays blocked until `SARVAM_API_KEY` and network access exist.
 - **M6 n8n follow-up:** a workflow JSON, a local/Docker setup, and backend task creation that triggers the n8n webhook, which then calls the reminder command. Must meet the PRD §12.1 trigger, authentication, retry and cancellation checks.
 - **M7 Tests and evaluation:**
   - Finish C03 and C04, and add C07 (one bounded POD repair round).

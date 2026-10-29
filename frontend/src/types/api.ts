@@ -258,3 +258,58 @@ export interface EvaluationResults {
   metrics: unknown
   note: string
 }
+
+export interface TranscriptSegment {
+  start: number // code points into text, end-exclusive
+  end: number
+  audio_start_ms: number
+  audio_end_ms: number
+  text: string
+  recheck_ok: boolean
+  timestamp_in_range: boolean
+}
+
+export interface TranscriptView {
+  id: string
+  version: number
+  text: string
+  text_sha256: string
+  text_recheck_ok: boolean
+  method: 'stt' | 'staff_correction' | 'human_transcription'
+  provider: string | null
+  model: string | null
+  language: string | null
+  language_probability: number | null
+  segments: TranscriptSegment[]
+  timestamps_available: boolean
+  author: string | null
+  confirmation_state: 'unconfirmed' | 'confirmed' | 'superseded'
+  confirmed_by: string | null
+  confirmed_at: string | null
+  created_at: string
+}
+
+export interface VoiceNoteView {
+  id: string
+  staff: string
+  staff_user_id: string
+  staff_task: { id: string; requirement_id: string; round: number } | null
+  original_filename: string
+  mime_type: string
+  size_bytes: number
+  sha256: string
+  locale: string
+  duration_ms: number | null
+  stt_status: 'awaiting_transcription' | 'transcribed' | 'stt_failed' | 'stt_unavailable'
+  stt_provider: string | null
+  stt_detail: string | null
+  created_at: string
+  note: string
+  current: TranscriptView | null
+  versions: TranscriptView[]
+}
+
+export interface VoiceNotesResponse {
+  speech: { available: boolean; provider: string; detail: string }
+  voice_notes: VoiceNoteView[]
+}

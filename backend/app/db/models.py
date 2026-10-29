@@ -194,6 +194,54 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
 
+class VoiceNote(Base):
+    """Original staff voice-note audio (PRD 8.3 P0+). Testimony, never a delivery document."""
+
+    __tablename__ = "voice_notes"
+    id: Mapped[str] = _id_col()
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"))
+    staff_user_id: Mapped[str] = mapped_column(ForeignKey("demo_users.id"))  # speaker and uploader
+    staff_task_id: Mapped[str | None] = mapped_column(ForeignKey("staff_tasks.id"), nullable=True)
+    original_filename: Mapped[str] = mapped_column(String(255))
+    storage_key: Mapped[str] = mapped_column(String(255))  # server-generated, never user-supplied
+    mime_type: Mapped[str] = mapped_column(String(100))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    locale: Mapped[str] = mapped_column(String(16))
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)  # only when a decoder reported it
+    # awaiting_transcription | transcribed | stt_failed | stt_unavailable
+    stt_status: Mapped[str] = mapped_column(String(32))
+    stt_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    stt_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+
+
+class Transcript(Base):
+    """One transcript version. Corrections create a new version; earlier versions are kept."""
+
+    __tablename__ = "transcripts"
+    __table_args__ = (UniqueConstraint("voice_note_id", "version"),)
+    id: Mapped[str] = _id_col()
+    voice_note_id: Mapped[str] = mapped_column(ForeignKey("voice_notes.id"), index=True)
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(Text)
+    text_sha256: Mapped[str] = mapped_column(String(64))
+    method: Mapped[str] = mapped_column(String(32))  # stt | staff_correction | human_transcription
+    provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    language: Mapped[str | None] = mapped_column(String(16), nullable=True)  # as reported by the provider
+    language_probability: Mapped[float | None] = mapped_column(nullable=True)
+    # [{start, end, audio_start_ms, audio_end_ms}]: code-point spans into `text`; empty when unknown
+    segments: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    author_user_id: Mapped[str | None] = mapped_column(ForeignKey("demo_users.id"), nullable=True)  # human text
+    confirmation_state: Mapped[str] = mapped_column(String(16))  # unconfirmed | confirmed | superseded
+    confirmed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("demo_users.id"), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+
+
 class Review(Base):
     __tablename__ = "reviews"
     id: Mapped[str] = _id_col()

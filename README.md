@@ -21,6 +21,11 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
   - A case workspace with a sticky header (amount at risk, a live deadline countdown), plain-language status banners, a key-steps timeline and the full audit log.
   - Source previews that open at the cited span, plus side-by-side mismatch views.
   - A reviewer panel with a two-step concession, a collapsible six-tab demo drawer, and an `/evaluation` page.
+- **M5 (Staff voice notes)** is done with **local faster-whisper only**; the Sarvam adapter is not built.
+  - Staff send a voice note from the drawer. The original audio and its SHA-256, the speaker, the linked request, the locale, the provider/model and timed segments (code-point spans) are stored and shown.
+  - Speech-to-text output is **unconfirmed** until the speaker confirms it or corrects it; a correction is a new version and the earlier ones are kept. With no usable speech-to-text, the speaker types a labelled human transcription.
+  - A transcript is **staff testimony**: it never satisfies a checklist item, never feeds `orderStatus` and is not part of the submitted pack. The matching delivery document is still required.
+  - Measured result on the bundled synthetic (espeak-ng) Marathi clip: `small` and `medium` both failed to transcribe it usefully, so the smoke check fails and transcription is blocked by default. See BUILD_LOG.md.
 - No real Paytm host is ever called.
 
 ### Enabling the live agent
@@ -33,6 +38,19 @@ uv run python -m app.cli smoke-reasoner
 ```
 
 Until then, and whenever the reasoner is unavailable or `REASONER_DAILY_CALL_CAP` is reached, the reasoning badge reads "Manual" and every action still works by hand.
+
+### Enabling local speech-to-text (optional)
+
+Install the optional extra, download the model once (needs `huggingface.co` and its file hosts such as `*.xethub.hf.co`), then run the smoke check. It transcribes `fixtures/hero/voice_note_mr.ogg` and records a pass only when the character error rate against the known script is at most `SPEECH_SMOKE_MAX_CER`:
+
+```bash
+cd backend
+uv sync --extra speech
+SPEECH_PROVIDER=faster_whisper uv run python -m app.cli speech-download
+SPEECH_PROVIDER=faster_whisper uv run python -m app.cli smoke-speech
+```
+
+Models are never downloaded implicitly at runtime. With `SPEECH_PROVIDER=disabled` (the default), a missing model or a failed smoke check, voice notes are still stored with full provenance and the speaker types the transcription.
 
 ## Requirements
 
@@ -49,6 +67,7 @@ Copy `.env.example` to `.env` if you want a local file. Real environment variabl
 | `GEMINI_MODEL` | Live reasoning. | Default `gemini-3.5-flash-lite`. Only Gemini 3.x models are used. |
 | `REASONER_DAILY_CALL_CAP`, `REASONER_MIN_INTERVAL_SECONDS`, `AGENT_AUTORUN` | Quota control. | Defaults: 150 calls per rolling 24 h, at least 4 s between calls, agent runs triggered by events. |
 | `OPENROUTER_API_KEY`, `FALLBACK_ENABLED=true` | Optional fallback. | Requires network access to `openrouter.ai`. |
+| `SPEECH_PROVIDER=faster_whisper`, `WHISPER_MODEL`, `WHISPER_MODEL_DIR` | Optional voice-note transcription (M5). | Local CPU `int8` by default. `SPEECH_REQUIRE_PASSING_SMOKE=true` blocks transcription until `smoke-speech` passes. `sarvam` is reported as not implemented. |
 | `SESSION_SECRET`, `DEMO_WEBHOOK_SECRET` | Stable demo sessions. | If left as placeholders in development, a random secret is generated each run. |
 
 Without any model key the app still runs, and its reasoning badge reads **Manual**. A configured key is reported as `configured_untested` until the live smoke test in M3 passes.

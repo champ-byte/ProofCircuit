@@ -37,3 +37,31 @@ class FakeReasoner:
         return Completion(
             text=text, model_returned=f"{self.model}-returned", latency_ms=1, prompt_tokens=10, output_tokens=5
         )
+
+
+class FakeSpeechProvider:
+    """Scripted speech-to-text for network-free tests. Results are never labelled live STT in the UI
+    because tests are the only callers; the stored provider name is `fake_stt`."""
+
+    name = "fake_stt"
+    model = "fake-stt-001"
+
+    def __init__(self, results: list[Any]) -> None:
+        self.results = list(results)  # SpeechTranscript | SpeechError, consumed in order
+        self.calls: list[dict[str, Any]] = []
+
+    async def transcribe(self, audio: bytes, locale: str) -> Any:
+        from app.providers.speech import SpeechError
+
+        self.calls.append({"bytes": len(audio), "locale": locale})
+        if not self.results:
+            raise SpeechError("failed", "fake speech provider has no scripted result left")
+        result = self.results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    async def synthesize(self, text: str, locale: str) -> bytes:
+        from app.providers.speech import SpeechError
+
+        raise SpeechError("not_implemented", "not implemented")

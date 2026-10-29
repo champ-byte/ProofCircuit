@@ -14,6 +14,7 @@ import type {
   EvaluationResults,
   SimulatorState,
   ProviderReport,
+  VoiceNotesResponse,
 } from '../types/api'
 
 export class ApiError extends Error {
@@ -115,4 +116,33 @@ export const api = {
     request<unknown>(`/api/cases/${caseId}/messages`, { method: 'POST', body: JSON.stringify({ body }) }, token),
   fixtureFile: async (token: string, caseId: string, name: string) =>
     (await send(`/api/demo/cases/${caseId}/fixtures/${name}`, {}, token)).blob(),
+  voiceNotes: (token: string, caseId: string) => request<VoiceNotesResponse>(`/api/cases/${caseId}/voice-notes`, {}, token),
+  uploadVoiceNote: (token: string, caseId: string, file: File | Blob, filename: string) => {
+    const form = new FormData()
+    form.append('file', file, filename)
+    return request<{ voice_note_id: string; created: boolean; stt_status: string }>(
+      `/api/cases/${caseId}/voice-notes`,
+      { method: 'POST', body: form },
+      token,
+    )
+  },
+  voiceAudio: async (token: string, noteId: string) => (await send(`/api/voice-notes/${noteId}/audio`, {}, token)).blob(),
+  voiceFixture: async (token: string, caseId: string) =>
+    (await send(`/api/demo/cases/${caseId}/voice-fixture`, {}, token)).blob(),
+  confirmTranscript: (token: string, noteId: string, version: number) =>
+    request<unknown>(`/api/voice-notes/${noteId}/confirm`, { method: 'POST', body: JSON.stringify({ version }) }, token),
+  correctTranscript: (token: string, noteId: string, baseVersion: number, text: string) =>
+    request<unknown>(
+      `/api/voice-notes/${noteId}/correct`,
+      { method: 'POST', body: JSON.stringify({ base_version: baseVersion, text }) },
+      token,
+    ),
+  transcribeManually: (token: string, noteId: string, text: string) =>
+    request<unknown>(
+      `/api/voice-notes/${noteId}/transcribe-manually`,
+      { method: 'POST', body: JSON.stringify({ text }) },
+      token,
+    ),
+  retryTranscription: (token: string, noteId: string) =>
+    request<unknown>(`/api/voice-notes/${noteId}/retry-transcription`, { method: 'POST' }, token),
 }

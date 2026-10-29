@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from sqlalchemy import select
 
 from app import handlers  # noqa: F401  (registers runner handlers)
-from app.api import actions, cases, demo, evaluation, evidence, health, intake
+from app.api import actions, cases, demo, evaluation, evidence, health, intake, testimony
 from app.config import Settings, get_settings
 from app.db.migrate import upgrade_to_head
 from app.db.models import Merchant
@@ -50,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(demo.router)
     app.include_router(cases.router)
     app.include_router(evidence.router)
+    app.include_router(testimony.router)
     app.include_router(actions.router)
     app.include_router(intake.router)
     app.include_router(evaluation.router)

@@ -93,6 +93,19 @@ class Settings(BaseSettings):
     messaging_provider: Literal["local"] = "local"
     memory_provider: Literal["sql"] = "sql"
     speech_provider: Literal["disabled", "sarvam", "faster_whisper"] = "disabled"
+    # Local faster-whisper (M5). Weights are never downloaded implicitly: either WHISPER_MODEL_DIR
+    # points at a CTranslate2 model directory, or the model is already in the Hugging Face cache.
+    whisper_model: str = "small"
+    whisper_model_dir: str = ""
+    whisper_device: str = "cpu"
+    whisper_compute_type: str = "int8"
+    whisper_beam_size: int = Field(default=5, ge=1, le=10)
+    speech_max_audio_seconds: int = Field(default=120, ge=1)
+    speech_timeout_seconds: int = Field(default=300, ge=1)
+    # Default: transcribe only after a passing smoke check. False allows transcription after a failed check
+    # (labelled as such); transcripts stay unconfirmed until the speaker checks them either way.
+    speech_require_passing_smoke: bool = True
+    speech_smoke_max_cer: float = Field(default=0.35, ge=0, le=1)  # smoke passes only at or below this CER
     ocr_provider: Literal["disabled"] = "disabled"
     paytm_mode: str = "simulator"
     paytm_live_enabled: bool = False

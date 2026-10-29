@@ -136,13 +136,7 @@ def provider_report(settings: Settings) -> dict[str, object]:
         ProviderReadiness("paytm", "integration", "ready", None, "Local Paytm-shaped simulator (no live hosts)."),
         ProviderReadiness("messaging", "integration", "ready", None, "Local in-app staff inbox; no WhatsApp."),
         ProviderReadiness("memory", "integration", "ready", None, "SQL case-scoped retrieval."),
-        ProviderReadiness(
-            "speech",
-            "integration",
-            "disabled" if settings.speech_provider == "disabled" else "not_implemented",
-            None,
-            f"SPEECH_PROVIDER={settings.speech_provider}",
-        ),
+        _speech_readiness(settings),
         ProviderReadiness("ocr", "integration", "disabled", None, "Image-only evidence returns OCR_REQUIRED."),
         ProviderReadiness(
             "n8n_reminders",
@@ -160,6 +154,17 @@ def provider_report(settings: Settings) -> dict[str, object]:
         "paytm_mode": settings.paytm_mode,
         "usage": _usage(settings),
     }
+
+
+def _speech_readiness(settings: Settings) -> ProviderReadiness:
+    from app.providers.speech import speech_availability
+
+    status, detail = speech_availability(settings)
+    model = None
+    if settings.speech_provider == "faster_whisper":
+        model = settings.whisper_model_dir or settings.whisper_model
+    notes = ["Transcripts are staff testimony, never delivery proof.", "Sarvam adapter: not implemented."]
+    return ProviderReadiness(f"speech:{settings.speech_provider}", "integration", status, model, detail, notes)
 
 
 def _usage(settings: Settings) -> dict[str, object]:

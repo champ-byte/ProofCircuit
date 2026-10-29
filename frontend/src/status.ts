@@ -104,6 +104,14 @@ export function keySteps(events: AuditEventView[]): KeyStep[] {
       case 'evidence.superseded':
         label = 'Wrong evidence superseded'
         break
+      case 'testimony.received':
+        label = 'Staff voice note'
+        break
+      case 'testimony.confirmed':
+      case 'testimony.corrected':
+      case 'testimony.human_transcribed':
+        label = 'Testimony confirmed'
+        break
       case 'review.requested':
         label = 'Review requested'
         break

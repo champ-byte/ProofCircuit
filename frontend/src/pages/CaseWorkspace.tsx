@@ -7,6 +7,7 @@ import { ChecklistPanel, EvidencePanel, FindingsPanel, type SourceRef } from '..
 import { KeySteps } from '../components/KeySteps'
 import { ReviewerPanel } from '../components/Reviewer'
 import { StatusBanner } from '../components/StatusBanner'
+import { TestimonyPanel } from '../components/Testimony'
 import { useSession } from '../session'
 import type { AuditEventView, CaseDetail, EvidenceOverview, InboxView } from '../types/api'
 import { ActionsPanel, PackPanel } from './CasePanels'
@@ -115,6 +116,7 @@ export function CaseWorkspace() {
           onOpen={openSource}
           onChanged={refresh}
         />
+        <TestimonyPanel caseId={id} token={token} version={reloadKey} />
         <KeySteps events={events} />
       </div>
       <DemoDrawer

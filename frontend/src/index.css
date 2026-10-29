@@ -871,3 +871,43 @@ fieldset select {
     overflow-x: auto;
   }
 }
+
+/* Staff testimony (voice notes) */
+.voice-note {
+  border: 1px solid var(--border, #d7dde2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+.voice-note audio {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0.5rem 0;
+}
+.testimony-note {
+  margin: 0.4rem 0;
+}
+.transcript blockquote {
+  margin: 0.4rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--accent, #0f766e);
+}
+.segments {
+  padding-left: 1.25rem;
+}
+.segments li {
+  margin: 0.25rem 0;
+}
+.voice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.voice-actions textarea {
+  width: 100%;
+  min-width: 16rem;
+}
+.staff-voice h3 {
+  margin-bottom: 0.25rem;
+}

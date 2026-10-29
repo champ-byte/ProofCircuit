@@ -15,6 +15,12 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
 ]
 
+[project.optional-dependencies]
+speech = [
+    "av>=15,<17",
+    "faster-whisper>=1.2.1",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",

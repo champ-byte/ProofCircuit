@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
+import { StaffVoiceNotes } from './Testimony'
 import { formatIst } from '../format'
 import { useSession } from '../session'
 import type { DemoSession, FixtureInfo, InboxView, ProviderReport, SimulatorState } from '../types/api'
@@ -288,6 +289,7 @@ function StaffInbox({
             </button>
           ))}
       </div>
+      <StaffVoiceNotes caseId={caseId} staff={staff} version={version} run={run} />
     </div>
   )
 }

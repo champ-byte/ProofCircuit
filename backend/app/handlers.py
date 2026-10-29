@@ -101,3 +101,35 @@ async def agent_run(app: Any, work: PendingWork) -> dict[str, Any]:
             )
         return {**base, "agent": {"status": "not_run", "reason": reason}}
     return {**base, "agent": await run_agent(app, work.case_id, trigger=trigger, mode="live")}
+
+
+@handler("transcribe_voice_note")
+async def transcribe_voice_note(app: Any, work: PendingWork) -> dict[str, Any]:
+    """Speech-to-text for one stored voice note. Idempotent: only an `awaiting_transcription` note runs."""
+    from app.db.models import VoiceNote
+    from app.providers.speech import SpeechError, build_speech_provider
+    from app.services import testimony
+    from app.services.storage import read_original
+
+    note_id = work.payload["voice_note_id"]
+    with session_scope() as session:
+        note = session.get(VoiceNote, note_id)
+        if note is None or note.stt_status != "awaiting_transcription":
+            return {"skipped": True, "stt_status": getattr(note, "stt_status", None)}
+        audio = read_original(app.state.settings, note.storage_key)
+        locale = note.locale
+    try:
+        result = await build_speech_provider(app).transcribe(audio, locale)
+    except SpeechError as exc:
+        with session_scope() as session:
+            note = session.get(VoiceNote, note_id)
+            assert note is not None
+            testimony.record_failure(session, note, exc.kind, str(exc))
+            return {"stt_status": note.stt_status, "error": exc.kind}
+    with session_scope() as session:
+        note = session.get(VoiceNote, note_id)
+        assert note is not None
+        if note.stt_status != "awaiting_transcription":
+            return {"skipped": True, "stt_status": note.stt_status}
+        transcript = testimony.record_transcription(session, note, result)
+        return {"stt_status": note.stt_status, "transcript_id": transcript.id if transcript else None}

@@ -5,7 +5,7 @@ Entries record commands actually run, test results and open issues. Nothing belo
 ## Environment (cloud session, 2026-10-29)
 
 - Python 3.13.17, uv 0.11.32, Node 22.22.0, npm 10.9.4, Playwright Chromium (preinstalled).
-- Network: PyPI, npm and `generativelanguage.googleapis.com` are reachable. **`openrouter.ai` is blocked** by this environment's network policy (proxy CONNECT 403). `ai.google.dev` docs are also blocked.
+- Network: PyPI, npm and `generativelanguage.googleapis.com` are reachable. Since M5 the user also allowed `huggingface.co` and its Xet file hosts (`cas-server.xethub.hf.co`), so model weights can download. **`openrouter.ai` is blocked** by this environment's network policy (proxy CONNECT 403). `ai.google.dev` docs are also blocked.
 - Ollama is not installed, so the local Gemma fallback cannot run in this environment.
 - `GEMINI_API_KEY` is set in the environment settings, not in the repo. A read-only `GET /v1beta/models` with the key succeeded. Gemini 3.x text models available to the key include `gemini-3.5-flash-lite`, `gemini-3.8-flash`, `gemini-3.1-flash-lite`, `gemini-3-flash-preview` and `gemini-3.1-pro-preview`. No generation call has been made yet.
 
@@ -16,6 +16,7 @@ Entries record commands actually run, test results and open issues. Nothing belo
 3. Free-tier Gemini data may be used by Google. That is acceptable only because the app sends synthetic data. The readiness notes and README say so.
 4. No `scripts/seed_demo.py`. Seed/reset live in the backend CLI (`python -m app.cli seed|reset --yes`) so they share the app's settings and migrations. The PRD layout says to adapt it to conventions.
 5. In `DEMO_MODE`, an empty database is seeded automatically at startup so a fresh start shows the hero case. A populated database is never reseeded.
+6. **M5 uses local faster-whisper only** (user decision): no Sarvam key or API access exists, so the Sarvam Saaras adapter is not built and is reported `not_implemented`. PRD §17 made Sarvam primary with faster-whisper as the fallback.
 
 ## M0 Bootstrap: done
 
@@ -503,9 +504,141 @@ npm run e2e                        # passed, against live servers in manual mode
 - Browsers differ in how they show inline PDFs. Headless Chromium does not render them, so the extracted, highlighted text is the primary source view and the original is shown alongside.
 - The E2E needs running servers (it is not a CI-hermetic test). Hindi and Marathi copy still needs native-speaker review.
 
+## M5 Staff voice notes (local faster-whisper only): done
+
+**User decisions:** local `faster-whisper` only. The Sarvam Saaras adapter is **not built**, because no Sarvam key or API access exists; readiness reports `SPEECH_PROVIDER=sarvam` as `not_implemented`. PRD §17 made Sarvam primary with faster-whisper as the fallback, so this is a deviation. Mid-milestone the user allowed `huggingface.co` and its Xet file hosts so the weights could download. When STT quality failed, they chose to finish M5 and also try `medium`.
+
+**Built**
+
+- **Storage** (migration `0005`; new tables only, so populated databases upgrade without defaults):
+  - `voice_notes`: case, merchant, speaker (staff), linked staff task, original filename, server-generated storage key, MIME, size, SHA-256, locale, duration (only when the decoder reports it), STT status/provider/detail.
+  - `transcripts`: versioned per voice note. Text and text SHA-256, method (`stt` | `staff_correction` | `human_transcription`), provider/model/language, timed segments, author, confirmation state, who confirmed and when.
+- **Provider layer** (`app/providers/speech.py`):
+  - `SpeechProvider` protocol (`transcribe`, `synthesize`; synthesis raises `not_implemented`).
+  - `FasterWhisperProvider`: CPU `int8`, the locale's language passed explicitly (`mr`/`hi`/`en`), runs in a worker thread with a timeout and enforces a duration cap (`SPEECH_MAX_AUDIO_SECONDS=120`).
+  - Weights are never downloaded at runtime (`local_files_only`). They come from `WHISPER_MODEL_DIR` or the local Hugging Face cache, filled by an explicit `cli speech-download`.
+  - `faster-whisper` is an optional extra: `uv sync --extra speech`.
+- **Readiness:**
+  - The speech integration reports `disabled`, `not_implemented` (sarvam), `unconfigured` (package or model missing, with the reason), `configured_untested`, `ready` or `failed`.
+  - `cli smoke-speech` transcribes the bundled fixture and records a `provider_checks` row. It passes only when the character error rate (CER) against the known script is at most `SPEECH_SMOKE_MAX_CER=0.35`.
+  - By default (`SPEECH_REQUIRE_PASSING_SMOKE=true`) a failed check blocks transcription. With it `false`, transcription runs and the failed check is shown with it.
+- **Flow** (`app/services/testimony.py`, `app/api/testimony.py`):
+  - **Upload:** staff only, as `POST /api/cases/{id}/voice-notes`.
+    - Content sniffing: WAV/Ogg/MP3/M4A/WebM; extension, declared type and magic bytes must agree; 5 MB cap.
+    - The original bytes are stored and hashed before anything else, and duplicate bytes are not stored twice.
+    - The note is linked to the speaker's open evidence request (provenance only).
+  - **Transcription:** an `awaiting_transcription` note queues persisted `transcribe_voice_note` work, handled by the existing runner (idempotent; recovered on restart).
+  - **Transcript v1:** the provider's segments are joined in Python, and each segment's code-point span is recorded and rechecked. Empty output is recorded as a failure, never as an empty transcript.
+  - **Speaker actions:** only the speaker can confirm (`/confirm`, version-checked) or correct (`/correct`, which creates a new confirmed version and keeps the old ones superseded). Corrected or typed text never gets audio timestamps.
+  - **No usable STT:** the speaker types a labelled **human transcription** (`/transcribe-manually`). `/retry-transcription` (speaker or operator) runs STT again once it becomes available.
+  - **Audio:** `GET /api/voice-notes/{id}/audio` serves the scoped original with `nosniff`, a sandbox CSP and `no-store`.
+  - **Testimony is not proof:**
+    - Nothing creates ExtractedFacts or touches the checklist, validators, `orderStatus` or the pack.
+    - A voice note does not resolve the staff member's document request.
+    - The agent prompt carries the latest transcripts inside the untrusted block, labelled with their confirmation state and "not a delivery document". The system prompt has the matching rule.
+  - **Provider timestamps:** shown as reported, never altered. A segment outside the audio length (250 ms tolerance) is flagged `timestamp_in_range: false` (seen live, see below).
+- **Fixture:** `fixtures/hero/voice_note_mr.ogg`, an 11.2 s, 27.7 KB Ogg/Opus clip of the Marathi line in `voice_note_mr.txt`. It was generated with `espeak-ng -v mr -s 135` (installed with apt in this container) and ffmpeg at 16 kHz mono. It is a robotic synthetic voice. `GET /api/demo/cases/{id}/voice-fixture` serves it.
+- **UI:**
+  - Workspace panel "Staff testimony (voice notes)": an audio player, the audio hash, file and duration, STT status, provider and model.
+  - The transcript shows its version, method label ("Speech-to-text (faster_whisper · small)" / "Corrected by … (not speech-to-text)" / "Human transcription typed by … (not speech-to-text)") and its confirmation in words.
+  - Segment timestamps are buttons that seek the audio; impossible times carry a warning.
+  - Version history, and the caveat that testimony cannot satisfy a checklist item.
+  - Drawer (staff inbox): send a voice note (file input, or the demo fixture), confirm, correct, or type a human transcription.
+  - Key steps: "Staff voice note" and "Testimony confirmed".
+
+**Commands run**
+
+```bash
+cd backend
+uv add --optional speech faster-whisper "av>=15,<17"
+uv sync --extra speech
+uv run alembic revision --autogenerate --rev-id 0005 -m "voice notes and transcripts"
+uv run python -c "from faster_whisper.utils import download_model; download_model('small')"   # and 'medium'
+SPEECH_PROVIDER=faster_whisper uv run python -m app.cli smoke-speech                   # small, LIVE
+SPEECH_PROVIDER=faster_whisper WHISPER_MODEL=medium uv run python -m app.cli smoke-speech  # LIVE
+uv run pytest -q                       # 221 passed
+uv run ruff check . && uv run ruff format --check .
+```
+
+```bash
+apt-get install -y espeak-ng           # fixture generation only
+espeak-ng -v mr -s 135 -w vn.wav -f fixtures/hero/voice_note_mr.txt
+ffmpeg -i vn.wav -ac 1 -ar 16000 -c:a libopus -b:a 24k fixtures/hero/voice_note_mr.ogg
+```
+
+```bash
+cd frontend
+npm test                               # 20 passed
+npm run build && npm run lint          # OK, oxlint clean
+E2E_ALLOW_LIVE=1 npm run e2e           # passed (backend AGENT_AUTORUN=false; 0 model calls, checked)
+```
+
+**Tests**
+
+- **Backend:** 221 passing, 25 new (`tests/test_m5_testimony.py`, network-free with `FakeSpeechProvider`, stored provider `fake_stt`):
+  - **Provenance:** audio SHA-256 equals the uploaded bytes; speaker, locale and linked request round are recorded. Segment spans are Python code points over Devanagari, rechecked, and provider ms timestamps are preserved.
+  - **Audio endpoint:** returns identical bytes with security headers; audit events are written.
+  - **Uploads:** duplicates are not stored twice. Five rejection variants (extension, extension/content mismatch, non-audio bytes, declared type, empty). Staff only; tenant-scoped 404s.
+  - **Speaker authority:** only the speaker confirms (owner → 403 by role, other staff → 403). Stale or not-latest versions → 409; a repeat confirm → 409.
+  - **Corrections:** a correction is a new confirmed version, v1 is superseded and kept, and corrected text has no segments. Identical text → 422; a stale base version → 409.
+  - **No usable STT:**
+    - STT disabled → `stt_unavailable`, then a labelled, confirmed human transcription; a second one → 409; retry is refused.
+    - An STT failure is recorded and a retry succeeds.
+    - Empty recognition is a failure, never an empty transcript.
+    - The handler is idempotent (a second run is skipped, so there is only one transcript).
+  - **Not proof:**
+    - Confirmed testimony claiming delivery leaves `delivery_record` **missing**, creates no `delivered_on` fact, keeps the document request open, and `build_evidence_pack` is denied.
+    - In the hero flow, testimony after the wrong receipt leaves the item conflicting; only the correct receipt unblocks it, and the pack contains no testimony.
+    - Prompt: testimony sits inside the untrusted markers, labelled; the system-prompt rule is present.
+  - **Adapter** (stand-in model): language passed, segment mapping, too long, unsupported locale, runtime error, synthesis not implemented.
+  - **Readiness:** disabled and sarvam labels; a missing model is `unconfigured` with the reason; a present model is `configured_untested`.
+    - A non-empty but wrong smoke transcript **fails** (CER > 0.35), and a failed check blocks transcription unless overridden.
+    - An exact transcript is `ready`.
+  - **Also covered:** CER, the impossible-timestamp flag, and reset removing voice notes.
+- **Frontend:** 20 passing, 7 new (`src/__tests__/testimony.test.tsx`):
+  - Method and confirmation labels; human text never labelled STT; formatted times.
+  - Controls appear only for the speaker; the human-transcription offer; no timestamps for typed text; the impossible-timestamp warning; the new key steps.
+- **Browser E2E** (`npm run e2e`): extended with a voice-note step. It sends the fixture with STT disabled, sees "Speech-to-text unavailable", types a human transcription, and checks:
+  - "Confirmed by Sanjay (Delivery)", the not-proof caveat, and the round-2 link.
+  - Not ready to submit; then the existing flow reaches "Submission verified".
+  - New key steps present; no page errors.
+  - Screenshot `docs/m5-testimony-manual.png`.
+
+**Live runs (real faster-whisper on this 4-core CPU, `int8`; synthetic audio only)**
+
+| Model | Result on `voice_note_mr.ogg` (11.2 s, `language=mr` forced) | CER | Latency |
+| --- | --- | --- | --- |
+| `small` (1st run) | "meat, Greek yogurt salt, sweet看看 the onion so he won't get lost about Roman meat" | 0.85 | 95 s |
+| `small` (re-run, corrected smoke) | "New New New New New New New New" | 0.92 | 100 s |
+| `medium` | no speech recognised (empty) | 1.00 | 218 s |
+| `small` (in the browser run) | ", ,,juna," with one segment reported as 0:00.0–0:27.1, which is past the 11.2 s clip | — | 92 s |
+
+- **Conclusion (measured, not assumed):** the runtime and adapter work end to end, but neither model transcribes this robotic espeak-ng Marathi clip usefully, and both are slow on this CPU (whose temperature-fallback retries are a likely cause; not verified). The smoke check is now recorded as **failed**, so by default transcription is blocked and staff type a labelled transcription. Human Marathi speech is untested, so no accuracy claim is made either way.
+- **Bug found by the first live run, fixed:** the resolved `av` 19.0.2 no longer accepts the `metadata_errors` argument that faster-whisper 1.2.1 passes, so every transcription raised `TypeError`. The speech extra now pins `av>=15,<17` (16.1.0).
+- **Bug in my own first smoke check, fixed:** it passed any non-empty transcript, which would have marked `small` "ready" on gibberish. It now requires CER ≤ 0.35, with a test for exactly that case.
+- **Browser hero journey with the live agent:**
+  - Setup: fresh reset; Gemini `gemini-3.5-flash-lite`; real faster-whisper `small` with `SPEECH_REQUIRE_PASSING_SMOKE=false` and the failed check shown.
+  - Steps:
+    1. The agent requested proof.
+    2. The wrong receipt led the agent to request round 2 ("Requesting the correct delivery record for order ORD-DEMO-18500 since the previous document was for the wrong order…").
+    3. Sanjay sent the demo voice note. The transcript appeared after 93 s as v1 STT, **unconfirmed**.
+    4. Sanjay corrected it to the real script: v2 "Corrected by Sanjay (Delivery) (not speech-to-text)", confirmed, v1 kept.
+    5. The case stayed "Waiting for staff evidence"; confirming testimony cost **no model call**.
+    6. The correct receipt led to `build_evidence_pack` → `submit_defense` → "**Submission verified — dispute outcome pending**".
+  - **Gemini calls:** 4 proposals plus this session's 1 smoke test = 5 in 24 h, no 429s. No page errors.
+  - Screenshots: `docs/m5-stt-unconfirmed.png`, `docs/m5-corrected.png`, `docs/m5-live-verified.png`.
+
+**Notes / limits**
+
+- The fixture is a robotic synthetic voice. A human Marathi/Hindi recording (synthetic content) is needed to judge STT quality; until then the honest working path is the labelled human transcription.
+- No in-browser recording (MediaRecorder); staff upload a file.
+- With the Gemini smoke check fresh, `/api/health` reads `live` even under `AGENT_AUTORUN=false`, so the E2E needs `E2E_ALLOW_LIVE=1`. With autorun off and no "Run agent" click, no model call is made (checked: 5 before, 5 after).
+- Smoke checks for speech are kept for a year per model (there is no quota to protect). A new model name needs its own check.
+
 ## Open issues / next
 
-- **M5 next**: Sarvam speech-to-text for one staff voice note (`SpeechProvider`), with audio/transcript provenance and staff confirmation; `faster-whisper` fallback. Needs a Sarvam key with credit (SARVAM_API_KEY) and network access to Sarvam — not yet available in this environment.
+- **Speech quality:** faster-whisper `small`/`medium` failed the synthetic Marathi smoke check (CER 0.85–1.00, 92–218 s per 11 s clip on 4 CPUs). Test with a human recording, and consider `large-v3` or a GPU if available. The Sarvam adapter is still unbuilt (no key or access).
+- **Next milestones:** M6 n8n follow-up, M7 tests and evaluation (C03/C04 completion, C07 POD repair, ten-case first pass), M8 optional.
 - Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
 - Actual Gemini free-tier quota for this key is still unmeasured (no limit was approached); the cap/pacing/429 paths are tested with fakes.
 - OpenRouter fallback is implemented and mock-tested but cannot be exercised live until `openrouter.ai` is allowed in the environment's network settings and `OPENROUTER_API_KEY` is set.

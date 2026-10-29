@@ -25,6 +25,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("providers", help="print provider readiness (no secrets)")
     smoke = sub.add_parser("smoke-reasoner", help="live smoke test of a reasoner (spends 1-4 model calls)")
     smoke.add_argument("--provider", default=None, help="gemini | openrouter (default: REASONER_PROVIDER)")
+    sub.add_parser("smoke-speech", help="transcribe the synthetic Marathi fixture with local faster-whisper")
+    sub.add_parser("speech-download", help="explicitly download WHISPER_MODEL into the Hugging Face cache")
     args = parser.parse_args(argv)
 
     try:
@@ -46,6 +48,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.cmd == "smoke-reasoner":
         return _smoke(settings, args.provider or settings.reasoner_provider)
+    if args.cmd == "smoke-speech":
+        return _smoke_speech(settings)
+    if args.cmd == "speech-download":
+        from faster_whisper.utils import download_model
+
+        print(f"Model {settings.whisper_model!r} at {download_model(settings.whisper_model)}")
+        return 0
 
     settings.data_path.mkdir(parents=True, exist_ok=True)
     upgrade_to_head(settings.resolved_database_url)
@@ -85,6 +94,19 @@ def _smoke(settings, provider: str) -> int:  # type: ignore[no-untyped-def]
     init_engine(settings)
     app = SimpleNamespace(state=SimpleNamespace(settings=settings))
     result = asyncio.run(smoke_test(app, provider))
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["ok"] else 1
+
+
+def _smoke_speech(settings) -> int:  # type: ignore[no-untyped-def]
+    import asyncio
+
+    from app.services.speech_smoke import smoke_speech
+
+    settings.data_path.mkdir(parents=True, exist_ok=True)
+    upgrade_to_head(settings.resolved_database_url)
+    init_engine(settings)
+    result = asyncio.run(smoke_speech(settings))
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["ok"] else 1
 
