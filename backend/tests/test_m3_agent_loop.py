@@ -207,3 +207,37 @@ def test_tool_calls_record_agent_actor_and_short_rationale_only(make_agent) -> N
         assert tc.rationale == "Ask for delivery proof." and run is not None and run.mode == "live"
         work = s.scalars(select(PendingWork).where(PendingWork.kind == "agent_run")).all()
         assert all(w.status == "completed" for w in work)
+
+
+def test_unexpected_error_closes_the_run_instead_of_leaving_it_running(make_agent) -> None:  # type: ignore[no-untyped-def]
+    def boom(_user: str) -> dict[str, Any]:
+        raise RuntimeError("unexpected failure inside the reasoner")
+
+    h = make_agent(FakeReasoner([boom]))
+    assert h.c.post(f"/api/cases/{h.case_id}/runs", headers=h.owner).status_code == 202
+    [run] = agent_runs(h)
+    assert run["status"] == "failed" and "RuntimeError" in run["error"]
+    events = h.c.get(f"/api/cases/{h.case_id}/events", headers=h.owner).json()["events"]
+    assert any(e["event_type"] == "agent.run_failed" for e in events)
+
+
+def test_a_denied_wait_does_not_end_the_run(make_agent) -> None:  # type: ignore[no-untyped-def]
+    """Seen live (EVAL-006): the model added an extra argument to wait_for_event; the denial must be fed back."""
+    fake = FakeReasoner(
+        [
+            action("request_evidence", "Delivery proof is missing.", requirement_id="delivery_record"),
+            action("wait_for_event", "Waiting.", waiting_for="staff_evidence", requirement_id="delivery_record"),
+            action("wait_for_event", "Waiting for staff to send it.", waiting_for="staff_evidence"),
+        ]
+    )
+    h = make_agent(fake)
+    h.c.post(f"/api/cases/{h.case_id}/runs", headers=h.owner)
+    r = h.c.post(f"/api/cases/{h.case_id}/messages", headers=h.staff, json={"body": "पाठवतो"})
+    assert r.status_code == 201
+    last = agent_runs(h)[-1]
+    assert [c["tool"] + ":" + c["status"] for c in last["tool_calls"]] == [
+        "wait_for_event:denied",
+        "wait_for_event:ok",
+    ]
+    assert last["status"] == "waiting" and len(fake.calls) == 3
+    assert "denied" in fake.calls[2]["user"]  # the model saw its denied step

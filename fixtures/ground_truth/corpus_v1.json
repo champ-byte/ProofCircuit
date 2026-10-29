@@ -1,0 +1,413 @@
+{
+  "version": "corpus_v1",
+  "labels": {
+    "EVAL-001": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-002": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-003": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-004": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-005": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-006": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-007": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-008": {
+      "category": "missing_receipt",
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "submission_expected": true
+    },
+    "EVAL-009": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-010": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-011": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-012": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-013": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-014": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-015": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-016": {
+      "category": "wrong_order_id",
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "submission_expected": true
+    },
+    "EVAL-017": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-018": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-019": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-020": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-021": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-022": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-023": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-024": {
+      "category": "conflicting_delivery_dates",
+      "expected_behavior": "do not submit; escalate or keep asking staff",
+      "acceptable_outcomes": [
+        "escalated",
+        "waiting"
+      ],
+      "expected_rules": [
+        "DELIVERY_BEFORE_ORDER"
+      ],
+      "submission_expected": false
+    },
+    "EVAL-025": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-026": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-027": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-028": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-029": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-030": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-031": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-032": {
+      "category": "expired_deadline",
+      "expected_behavior": "no submission after the deadline",
+      "acceptable_outcomes": [
+        "denied"
+      ],
+      "expected_rules": [],
+      "submission_expected": false
+    },
+    "EVAL-033": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-034": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-035": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-036": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-037": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round, then escalate",
+      "acceptable_outcomes": [
+        "escalated"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-038": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-039": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    },
+    "EVAL-040": {
+      "category": "upload_pod_rejection",
+      "expected_behavior": "one correction round, then escalate",
+      "acceptable_outcomes": [
+        "escalated"
+      ],
+      "expected_rules": [],
+      "submission_expected": true,
+      "expected_verified_submissions": 2
+    }
+  }
+}

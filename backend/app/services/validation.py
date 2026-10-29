@@ -10,7 +10,7 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -24,6 +24,7 @@ from app.db.models import (
     DemoUser,
     DocumentPage,
     EvidenceDocument,
+    EvidencePack,
     ExtractedFact,
     ValidationFinding,
 )
@@ -127,6 +128,52 @@ def _supersede_mismatched(session: Session, case: Case, views: list[DocView]) ->
                 )
 
 
+def _supersede_rejected(session: Session, case: Case, views: list[DocView]) -> None:
+    """In a POD correction round, a delivery record for this order received after the rejection supersedes
+    the delivery record(s) of the rejected pack. The originals stay in history with the reason."""
+    from app.services.repair import open_repair  # repair -> policy -> validation; keep this import local
+
+    rejected = open_repair(session, case)
+    if rejected is None or rejected.pack_id is None:
+        return
+    pack = session.get(EvidencePack, rejected.pack_id)
+    marker = rejected.provider_rejection or {}
+    rejected_at = datetime.fromisoformat(marker["at"])
+    rejected_docs = {
+        f["document_id"] for f in (pack.upload_files if pack else []) if f.get("role") == "delivery_record"
+    }
+    newer = [
+        v
+        for v in views
+        if is_active(v.doc)
+        and v.doc.doc_type == "delivery_record"
+        and v.doc.id not in rejected_docs
+        and v.doc.created_at >= rejected_at
+        and _matches_case(v, case)
+    ]
+    if not newer:
+        return
+    replacement = newer[-1].doc
+    for v in views:
+        if v.doc.id in rejected_docs and is_active(v.doc):
+            v.doc.superseded_by_id = replacement.id
+            v.doc.exclusion_reason = (
+                f"Superseded by {replacement.original_filename} after the provider rejected the proof: "
+                f"“{marker.get('comment', '')}”."
+            )
+            for f in v.facts:
+                f.stale = True
+            audit(
+                session,
+                event_type="evidence.superseded",
+                summary=f"{v.doc.original_filename} superseded by {replacement.original_filename} (POD correction).",
+                actor_type="system",
+                case_id=case.id,
+                merchant_id=case.merchant_id,
+                data={"document_id": v.doc.id, "superseded_by": replacement.id, "reason": v.doc.exclusion_reason},
+            )
+
+
 def _order_date(case: Case, invoices: list[DocView], settings: Settings) -> tuple[date | None, list[str]]:
     facts = [f for v in invoices for f in v.verified("order_date")]
     values = {f.normalized_value for f in facts}
@@ -140,6 +187,7 @@ def _order_date(case: Case, invoices: list[DocView], settings: Settings) -> tupl
 def evaluate(session: Session, settings: Settings, case: Case) -> tuple[list[FindingSpec], dict[str, dict[str, Any]]]:
     views = _load(session, case)
     _supersede_mismatched(session, case, views)
+    _supersede_rejected(session, case, views)
     active = [v for v in views if is_active(v.doc)]
     findings: list[FindingSpec] = []
 

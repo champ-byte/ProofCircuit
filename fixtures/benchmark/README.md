@@ -1,2 +1,3 @@
-Benchmark corpus (40-case target, ten-case first pass) is generated in M7 from deterministic
-templates. Nothing has been generated or run yet.
+40-case synthetic evaluation corpus (PRD 15.2): `corpus_v1.json`, generated deterministically by
+`uv run python -m app.cli corpus`. Specs only; expected behaviour lives in `../ground_truth/`.
+Run with `uv run python -m app.cli evaluate` against a running backend; exports go to `docs/evaluation/`.

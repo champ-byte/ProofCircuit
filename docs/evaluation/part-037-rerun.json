@@ -1,0 +1,185 @@
+{
+  "status": "executed",
+  "corpus": "corpus_v1",
+  "run_tag": "10291604",
+  "split_run": "EVAL-037",
+  "selected": 1,
+  "planned": 40,
+  "executed": 1,
+  "not_run": 39,
+  "label": "40 planned · 1 executed · 39 not run",
+  "mode": {
+    "mode": "live",
+    "label": "Gemini — gemini-3.5-flash-lite",
+    "autorun": null
+  },
+  "started_at": "2026-10-29T16:04:02.186612+00:00",
+  "finished_at": "2026-10-29T16:07:49.735161+00:00",
+  "categories": [
+    {
+      "category": "missing_receipt",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "wrong_order_id",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "conflicting_delivery_dates",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "expired_deadline",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "upload_pod_rejection",
+      "planned": 8,
+      "executed": 1,
+      "correct": 1
+    }
+  ],
+  "metrics": {
+    "executed": 1,
+    "not_run": 39,
+    "correct": 1,
+    "by_category": {
+      "missing_receipt": {
+        "executed": 0,
+        "correct": 0
+      },
+      "wrong_order_id": {
+        "executed": 0,
+        "correct": 0
+      },
+      "conflicting_delivery_dates": {
+        "executed": 0,
+        "correct": 0
+      },
+      "expired_deadline": {
+        "executed": 0,
+        "correct": 0
+      },
+      "upload_pod_rejection": {
+        "executed": 1,
+        "correct": 1
+      }
+    },
+    "by_split": {
+      "development": {
+        "executed": 1,
+        "correct": 1
+      },
+      "held_out": {
+        "executed": 0,
+        "correct": 0
+      }
+    },
+    "outcomes": {
+      "escalated": 1
+    },
+    "eligible_on_time_submissions": {
+      "count": 1,
+      "eligible": 1
+    },
+    "contradictions": {
+      "expected_cases": 0,
+      "detected_in_expected_cases": 0,
+      "false_positive_cases": 0
+    },
+    "checklist_complete_in_submitted_cases": {
+      "count": 1,
+      "submitted": 1
+    },
+    "duplicate_writes": 0,
+    "unsafe_actions": 0,
+    "model_calls": 5,
+    "invalid_model_outputs": 0,
+    "policy_denials": 0,
+    "tool_denials": 0,
+    "reasoner_unavailable_events": 0,
+    "seconds_per_case": 227.5
+  },
+  "cases": [
+    {
+      "corpus_case": "EVAL-037",
+      "category": "upload_pod_rejection",
+      "split": "development",
+      "case_id": "892ddd33-18a1-4121-bee3-eb66502e49d3",
+      "outcome": "escalated",
+      "stopped": "script complete",
+      "workflow_state": "NEEDS_HUMAN_REVIEW",
+      "provider_status": "POD_REJECT",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 2,
+      "verified_submissions": 2,
+      "late_submissions": 0,
+      "receipts": 2,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 5,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "step": "pod_reject",
+          "comment": "Customer signature not visible on the delivery receipt"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_signed"
+        },
+        {
+          "step": "pod_reject",
+          "comment": "Signature still unclear"
+        }
+      ],
+      "seconds": 227.5,
+      "expected_behavior": "one correction round, then escalate",
+      "acceptable_outcomes": [
+        "escalated"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    }
+  ],
+  "not_run_cases": [],
+  "note": "Synthetic corpus variants, not independent merchant histories. Live-model results on one run; not proof of real-merchant effectiveness. Unexecuted cases are marked not run, never replayed."
+}

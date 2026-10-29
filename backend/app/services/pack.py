@@ -31,6 +31,7 @@ from app.domain.intent import intent_digest
 from app.domain.money import format_inr
 from app.services.audit import audit
 from app.services.fixtures import format_doc_date, text_pdf
+from app.services.repair import open_repair
 from app.services.storage import read_original
 from app.services.validation import is_active, revalidate_case
 
@@ -93,8 +94,11 @@ def build_comments(
     invoice_no: str | None,
     invoice_pos: int | None,
     amount_paise: int,
+    correction: bool = False,
 ) -> str:
-    """Template-first remark from verified values only. Progressively drops optional detail."""
+    """Template-first remark from verified values only. Progressively drops optional detail.
+
+    After a POD rejection the remark says what changed (PRD 11.2.4)."""
     delivered = format_doc_date(date.fromisoformat(delivered_on))
     amount = f"INR {amount_paise // 100}.{amount_paise % 100:02d}"
     receipt = f" (delivery receipt {receipt_no})" if receipt_no else ""
@@ -106,6 +110,8 @@ def build_comments(
         f"Order {order_id} delivered on {delivered}{dfile}; {invoice}{ifile}.",
         f"Order {order_id} delivered on {delivered}. Evidence summary: file 1.",
     ]
+    if correction:
+        candidates = [f"Corrected delivery proof after POD rejection{dfile}. " + c for c in candidates]
     for text in candidates:
         if len(text) <= COMMENTS_MAX_CODE_POINTS:
             return text
@@ -169,6 +175,7 @@ def build_pack(session: Session, settings: Settings, case: Case) -> BuiltPack:
         invoice_no=invoice_no_fact.normalized_value if invoice_no_fact else None,
         invoice_pos=positions.get(invoice_doc.id) if invoice_doc else None,
         amount_paise=case.amount_paise,
+        correction=open_repair(session, case) is not None,
     )
 
     claims: list[dict[str, Any]] = []

@@ -144,6 +144,7 @@ def list_runs(
             "mode": r.mode,
             "status": r.status,
             "error": r.error,
+            "model_calls": r.model_calls,
             "started_at": r.started_at,
             "finished_at": r.finished_at,
             "tool_calls": [

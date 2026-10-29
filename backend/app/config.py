@@ -91,6 +91,8 @@ class Settings(BaseSettings):
     reasoner_max_output_tokens: int = Field(default=2048, ge=64)  # thinking models may use part of it
     gemini_thinking_level: str = "low"  # sent only if the smoke test shows the model accepts it; "" = omit
     reasoner_rate_limit_max_wait_seconds: float = Field(default=20.0, ge=0)
+    reasoner_transient_retries: int = Field(default=2, ge=0, le=4)  # after the first attempt; 5xx/time-outs only
+    reasoner_transient_backoff_seconds: float = Field(default=5.0, ge=0)  # grows x3 per retry
     smoke_check_ttl_hours: int = Field(default=24, ge=1)
     provider_status_reads: int = Field(default=3, ge=1, le=10)  # bounded status reads per reconciliation
     provider_retry_backoff_seconds: float = Field(default=0.5, ge=0)

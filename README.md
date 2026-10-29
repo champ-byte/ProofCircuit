@@ -30,6 +30,10 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
   - When a staff evidence request is created, the backend starts the workflow itself (an authenticated, retried, persisted trigger). n8n waits until `remind_at` and calls `POST /api/cases/{id}/reminders` with a separate service token.
   - The backend keeps all authority: one reminder per request round, idempotent callbacks, and cancellation if staff replied or uploaded, the request was superseded, the case moved on or the deadline passed. Reminders go to the local in-app inbox only.
   - Without `REMINDERS_ENABLED`, a webhook URL and both tokens, reminders are reported unavailable and the rest of the app works unchanged.
+- **M7 (Tests and evaluation)** is done:
+  - **C07 bounded POD repair:** an authoritative `POD_REJECT` with a reason opens exactly one correction round. Staff get the provider's exact reason in their language, the rejected receipt is superseded when corrected proof arrives, a new pack (with a "Corrected delivery proof after POD rejection" remark) is verified once, and a repeat rejection, expired deadline, missing reason or unchanged evidence goes to a person.
+  - C03 (staff continuation) and C04 (authority, including a model that obeys a malicious document and tenant scope on every case route) are complete; all eight PRD test groups C01–C08 pass.
+  - **Evaluation:** a deterministic 40-case synthetic corpus (`fixtures/benchmark/corpus_v1.json`, ground truth kept separately in `fixtures/ground_truth/`) and an HTTP harness (`uv run python -m app.cli evaluate`) that drives a running backend as the simulated staff and provider. Results are exported to `docs/evaluation/` and shown on `/evaluation`. See BUILD_LOG.md for the live-model results.
 - No real Paytm host is ever called.
 
 ### Enabling the live agent

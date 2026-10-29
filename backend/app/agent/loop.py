@@ -127,6 +127,25 @@ async def run_agent(app: Any, case_id: str, *, trigger: str, mode: str = "live")
             data={"run_id": run_id, "mode": mode, "trigger": trigger},
         )
 
+    try:
+        return await _steps(app, settings, case_id, run_id, replay)
+    except Exception as exc:
+        # Never leave a run "running": close it, record why, and let the runner record the failure.
+        detail = f"{type(exc).__name__}: {exc}"[:500]
+        _finish(run_id, "failed", detail)
+        with session_scope() as session:
+            audit(
+                session,
+                event_type="agent.run_failed",
+                summary=f"Agent run failed unexpectedly: {detail}",
+                actor_type="agent",
+                case_id=case_id,
+                data={"run_id": run_id},
+            )
+        raise
+
+
+async def _steps(app: Any, settings: Any, case_id: str, run_id: str, replay: Reasoner | None) -> dict[str, Any]:
     started = time.monotonic()
     history: list[dict[str, Any]] = []
     denials = 0
@@ -223,7 +242,9 @@ async def run_agent(app: Any, case_id: str, *, trigger: str, mode: str = "live")
                 return {"status": "stopped_denied", "run_id": run_id, "steps": step}
         else:
             denials = 0
-        if proposal.action == "wait_for_event":
+        if proposal.action == "wait_for_event" and outcome["status"] == "ok":
+            # A denied wait (e.g. invalid arguments) does not end the run: the model sees the denial
+            # in RUN_HISTORY and may correct it, within the proposal and denial budgets.
             _finish(run_id, "waiting")
             return {"status": "waiting", "run_id": run_id, "steps": step}
 

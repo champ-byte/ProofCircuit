@@ -36,7 +36,10 @@ def test_review_question_in_inbox(hero: Hero) -> None:
     assert review["question"] == "Is the invoice amount right?" and review["status"] == "open"
 
 
-def test_evaluation_placeholder_is_honest(hero: Hero) -> None:
+def test_evaluation_placeholder_is_honest(hero: Hero, tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from app.api import evaluation
+
+    monkeypatch.setattr(evaluation, "RESULTS_DIR", tmp_path / "no-results")  # no export yet
     res = hero.c.get("/api/evaluation/results").json()
     assert res["status"] == "not_run" and res["executed"] == 0 and res["not_run"] == 40
     assert res["label"] == "40 planned · 0 executed · 40 not run" and res["metrics"] is None

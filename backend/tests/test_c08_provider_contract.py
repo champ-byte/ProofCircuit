@@ -441,3 +441,59 @@ def test_secret_never_stored(make_hero) -> None:  # type: ignore[no-untyped-def]
     with session_scope() as s:
         rows = [*s.scalars(select(ReasonerCall)), *s.scalars(select(AuditEvent))]
         assert all(SECRET not in json.dumps({k: str(v) for k, v in vars(r).items()}) for r in rows)
+
+
+def test_transient_503s_back_off_within_bounds(make_hero, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Seen live: Gemini 503 "model is currently experiencing high demand". Bounded retries with backoff."""
+    from app.providers import router
+
+    waits: list[float] = []
+    real_sleep = router.asyncio.sleep
+
+    async def record_sleep(seconds: float) -> None:
+        waits.append(seconds)
+        await real_sleep(0)
+
+    monkeypatch.setattr(router.asyncio, "sleep", record_sleep)
+    busy = ReasonerError("transient", "Gemini 503: high demand", http_status=503)
+    fake = FakeReasoner([busy, busy, action("request_evidence", requirement_id="delivery_record")])
+    h = make_hero({"gemini": fake})
+    h.c.app.state.settings.reasoner_transient_backoff_seconds = 5.0  # type: ignore[attr-defined]
+    h.c.post(f"/api/cases/{h.case_id}/runs", headers=h.owner)
+    assert [c["tool"] for c in agent_runs(h)[-1]["tool_calls"]] == ["request_evidence"]
+    assert [w for w in waits if w] == [5.0, 15.0]  # growing backoff, not an immediate retry
+    with session_scope() as s:
+        assert [c.status for c in s.scalars(select(ReasonerCall))] == ["transient", "transient", "ok"]
+
+
+def test_persistent_503_stops_after_three_attempts(make_hero) -> None:  # type: ignore[no-untyped-def]
+    busy = ReasonerError("transient", "Gemini 503: high demand", http_status=503)
+    fake = FakeReasoner([busy, busy, busy, busy])
+    h = make_hero({"gemini": fake})
+    h.c.post(f"/api/cases/{h.case_id}/runs", headers=h.owner)
+    run = agent_runs(h)[-1]
+    assert run["status"] == "paused_reasoner_unavailable" and run["tool_calls"] == []
+    assert len(fake.calls) == 3  # first attempt + REASONER_TRANSIENT_RETRIES (2); never unbounded
+
+
+def test_a_stalled_model_call_hits_the_total_deadline(make_hero) -> None:  # type: ignore[no-untyped-def]
+    """Seen live (EVAL-037): one request stalled for 38 minutes; the per-read HTTP timeout never fired."""
+
+    async def stall(_user: str) -> dict[str, Any]:
+        await asyncio.sleep(3600)
+        return {}
+
+    class Stalling(FakeReasoner):
+        async def complete(self, *, system: str, user: str, schema: dict[str, Any]):  # type: ignore[no-untyped-def]
+            self.calls.append({"user": user})
+            if len(self.calls) == 1:
+                await stall(user)
+            return await super().complete(system=system, user=user, schema=schema)
+
+    fake = Stalling([action("request_evidence", requirement_id="delivery_record")])
+    h = make_hero({"gemini": fake})
+    h.c.app.state.settings.model_timeout_seconds = 1  # type: ignore[attr-defined]
+    h.c.post(f"/api/cases/{h.case_id}/runs", headers=h.owner)
+    assert [c["tool"] for c in agent_runs(h)[-1]["tool_calls"]] == ["request_evidence"]  # retried after the deadline
+    with session_scope() as s:
+        assert [c.status for c in s.scalars(select(ReasonerCall))] == ["timeout", "ok"]

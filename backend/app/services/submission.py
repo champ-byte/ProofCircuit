@@ -460,6 +460,11 @@ async def refresh_status(app: Any, case_id: str) -> dict[str, Any]:
                     "disputeLostReason": read.body.get("disputeLostReason"),
                 },
             )
+        if read.status == ProviderDisputeStatus.POD_REJECT:
+            from app.services.repair import handle_pod_rejection
+
+            # Idempotent per submitted pack: duplicate or stale reads never start a second round.
+            handle_pod_rejection(session, settings, case, read.body)
         if read.status == ProviderDisputeStatus.UNKNOWN:
             request_human_review(
                 session,

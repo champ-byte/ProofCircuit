@@ -34,6 +34,15 @@ TEMPLATES: dict[str, dict[str, dict[str, str]]] = {
             "hi-IN": "ऑर्डर {order}: भेजी गई रसीद किसी दूसरे ऑर्डर की है। कृपया {order} की सही डिलीवरी रसीद भेजें।",
             "mr-IN": "ऑर्डर {order}: पाठवलेली पावती दुसऱ्या ऑर्डरची आहे. कृपया {order} ची योग्य डिलिव्हरी पावती पाठवा.",
         },
+        # POD correction round (PRD 8.6): {reason} is the provider's exact comment, quoted as untrusted text.
+        "rejected": {
+            "en-IN": (
+                "Order {order}: Paytm rejected the delivery proof. Reason given: “{reason}”. "
+                "Please send corrected delivery proof."
+            ),
+            "hi-IN": "ऑर्डर {order}: Paytm ने डिलीवरी प्रमाण अस्वीकार किया। कारण: “{reason}”। कृपया सही डिलीवरी प्रमाण भेजें।",
+            "mr-IN": "ऑर्डर {order}: Paytm ने डिलिव्हरी पुरावा नाकारला. कारण: “{reason}”. कृपया दुरुस्त डिलिव्हरी पुरावा पाठवा.",
+        },
     },
     "invoice": {
         "missing": {
@@ -78,8 +87,11 @@ def request_evidence(
     locale: str | None = None,
     actor_type: str,
     actor_id: str | None,
+    provider_reason: str | None = None,
 ) -> tuple[StaffTask, bool]:
-    """Create one staff task + one local message per (case, requirement, round). Returns (task, created)."""
+    """Create one staff task + one local message per (case, requirement, round). Returns (task, created).
+
+    `provider_reason` (backend only, never a model argument) marks a POD correction round and quotes it."""
     if requirement_id not in REQUIREMENT_STAFF:
         raise MessagingError(f"unknown requirement {requirement_id}")
     staff = _staff_for(session, case, REQUIREMENT_STAFF[requirement_id])
@@ -103,9 +115,11 @@ def request_evidence(
         select(ChecklistItem).where(ChecklistItem.case_id == case.id, ChecklistItem.requirement_id == requirement_id)
     )
     situation = "wrong" if item is not None and item.status == "conflicting" else "missing"
+    if provider_reason is not None:
+        situation = "rejected"
     templates = TEMPLATES[requirement_id].get(situation) or TEMPLATES[requirement_id]["missing"]
     use_locale = locale or staff.locale
-    body = templates[use_locale].format(order=case.order_id, txn=case.transaction_id)
+    body = templates[use_locale].format(order=case.order_id, txn=case.transaction_id, reason=provider_reason or "")
 
     task = StaffTask(
         case_id=case.id,
@@ -117,6 +131,7 @@ def request_evidence(
         locale=use_locale,
         status="open",
         dedup_key=f"{case.id}:{requirement_id}:{round_no}",
+        provider_reason=provider_reason,
     )
     session.add(task)
     session.flush()

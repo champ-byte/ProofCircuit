@@ -267,16 +267,62 @@ export interface SimulatorState {
   receipts: { reference: string; action: string; orderStatus: string | null; intentDigest: string; createdAt: string }[]
 }
 
+export interface EvaluationCase {
+  corpus_case: string
+  category: string
+  split: string
+  outcome: string
+  correct: boolean
+  expected_behavior: string
+  acceptable_outcomes: string[]
+  expected_rules: string[]
+  missing_rules: string[]
+  contradictions_detected: string[]
+  unsafe: string[]
+  verified_submissions: number
+  receipts: number
+  model_calls: number
+  invalid_outputs: number
+  policy_denials: number
+  tools: string[]
+  stopped: string
+  seconds: number
+}
+
+export interface EvaluationMetrics {
+  executed: number
+  not_run: number
+  correct: number
+  by_split: Record<string, { executed: number; correct: number }>
+  outcomes: Record<string, number>
+  eligible_on_time_submissions: { count: number; eligible: number }
+  contradictions: { expected_cases: number; detected_in_expected_cases: number; false_positive_cases: number }
+  checklist_complete_in_submitted_cases: { count: number; submitted: number }
+  duplicate_writes: number
+  unsafe_actions: number
+  model_calls: number
+  invalid_model_outputs: number
+  policy_denials: number
+  seconds_per_case: number | null
+}
+
 export interface EvaluationResults {
   status: string
   planned: number
   executed: number
   not_run: number
   label: string
-  categories: { category: string; planned: number; executed: number }[]
+  categories: { category: string; planned: number; executed: number; correct?: number }[]
   split: { development: number; held_out: number; first_pass: number; first_pass_selection: string }
-  mode: string | null
-  metrics: unknown
+  /** Exported runs carry the reasoning mode object; the placeholder carries null. */
+  mode: { mode: string; label: string } | null
+  metrics: EvaluationMetrics | null
+  cases?: EvaluationCase[]
+  not_run_cases?: { corpus_case: string; category: string; reason: string }[]
+  superseded_attempts?: { corpus_case: string; run_tag: string; outcome: string; correct: boolean; reason: string }[]
+  run_tag?: string
+  split_run?: string
+  started_at?: string
   note: string
 }
 

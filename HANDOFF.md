@@ -9,23 +9,21 @@ This page is short on purpose. [BUILD_LOG.md](BUILD_LOG.md) holds the detailed h
   - Do one PRD §17 milestone at a time, then stop and report to the user.
   - Keep BUILD_LOG.md updated with the commands run, the tests passed and the open issues.
   - Never claim a feature works without a passing test or a real run.
-- **Last milestone commit:** M6 (n8n staff reminders).
+- **Last milestone commit:** M7 (tests and evaluation).
 
 ## Status (verified 2026-10-29)
 
 - **Milestones:**
-  - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI, M5 Staff voice notes (local faster-whisper only; Sarvam not built), M6 n8n follow-up (optional self-hosted n8n; live exit check passed).
-  - Not started: M7 Tests and evaluation, M8 Optional.
+  - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI, M5 Staff voice notes (local faster-whisper only; Sarvam not built), M6 n8n follow-up (optional self-hosted n8n; live exit check passed), M7 Tests and evaluation (C01–C08 all pass; live 40-case evaluation, see BUILD_LOG).
+  - Not started: M8 Optional.
 - **Tests:**
-  - Backend: 222 pytest passed (locally on Windows too, after adding `tzdata`).
-  - Frontend: 20 vitest passed, and `npm run e2e` (Playwright) passes against a running stack.
+  - Backend: 280 pytest passed (locally on Windows, Python 3.12 via uv).
+  - Frontend: 24 vitest passed, and `npm run e2e` (Playwright) passes against a running stack.
   - Speech: on one human Marathi recording (local, not committed), faster-whisper scored CER 0.21 (`small`), 0.16 (`medium`) and 0.09 (`large-v3`). All three still fail the robotic espeak smoke fixture, so transcription stays blocked by default unless `SPEECH_REQUIRE_PASSING_SMOKE=false`. See BUILD_LOG "Local setup and M5 follow-up".
   - Live Gemini hero runs passed in M3 and M4 (5 calls each).
 - **PRD test groups:**
-  - Done: C01, C02, C05, C06, C08.
-  - Partial: C03 (staff continuation) and C04 (authority).
-  - Not done: C07 (one-round POD repair), which is a P0 requirement due in M7. Until then a proof-of-delivery rejection goes to human review.
-- **Evaluation:** the `/evaluation` page honestly shows "40 planned · 0 executed". The corpus generator and the 10-case first pass are M7.
+  - Done: all eight, C01–C08 (C07 one-round POD repair added in M7). Live checks: C04 (`scripts/live_authority_check.py`), C07/C03 via the live evaluation, n8n via `n8n/live_check.py`.
+- **Evaluation:** live Gemini runs of the 40-case synthetic corpus; `/evaluation` shows the latest export from `docs/evaluation/`. Numbers and not-run cases are in BUILD_LOG "M7".
 
 ## Decisions the next session must keep
 
@@ -46,7 +44,8 @@ These are user decisions; see BUILD_LOG "Decisions that deviate from PRD.md".
 5. **Agent tools:** the agent has no concede or refund tool. Concession is reviewer-only and takes two steps.
 6. **Speech (M5):** local faster-whisper only. Weights are never downloaded at runtime. Transcripts are staff testimony and never satisfy the checklist, `orderStatus` or the pack. Pin `av<17` for faster-whisper 1.2.1. `WHISPER_MODEL` stays `small` for now, because Sarvam AI may replace local STT; `large-v3` scored best on a human clip (see BUILD_LOG).
 7. **Reminders (M6):** n8n only schedules. The backend starts the workflow, keeps cancellation, recipient and idempotency authority, and delivers reminders to the local inbox only. Two separate tokens: `N8N_WEBHOOK_TOKEN` (backend → n8n) and `N8N_SERVICE_TOKEN` (n8n → backend). n8n is pinned to `n8nio/n8n:2.45.6`, set up through `python n8n/setup.py` (CLI, no UI or account).
-8. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
+8. **Testing (M7):** the user requires **real runs** (live Gemini on a real uvicorn server, real n8n) in addition to the offline tests. Evaluation cases run under the synthetic merchant `MID-EVAL-001` and never enter the demo queue. Unexecuted cases are reported "not run", never replayed or scored. The daily cap default stays 150; it was raised to 300 only for the evaluation server, with the user's OK.
+9. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
 
 ## Local setup (your own machine)
 
@@ -175,6 +174,8 @@ Items marked *(cloud only)* applied to the claude.ai cloud container, not to a l
 | Simulator | `backend/app/simulator/` (Paytm-shaped API, faults, receipts, webhooks) |
 | API | `backend/app/api/` (cases, evidence, actions/runs, demo, intake, evaluation) |
 | Seed and fixtures | `backend/app/services/seed.py`, `fixtures.py` (deterministic hero PDFs), `fixtures/` |
+| POD repair (C07) | `backend/app/services/repair.py` (handled-rejection marker, one correction round), hooks in `submission.refresh_status`, `policy.check_defense`, `workflow.sync_workflow`, `validation._supersede_rejected`, `pack.build_comments` |
+| Evaluation | `backend/app/evaluation/` (`corpus.py` generator, `seed.py`, `harness.py` HTTP harness + scoring), `api/evaluation.py`, `fixtures/benchmark/corpus_v1.json`, `fixtures/ground_truth/corpus_v1.json`, `docs/evaluation/` (exports), `scripts/live_authority_check.py` |
 | n8n reminders | `backend/app/services/reminders.py` (trigger, callback rules, sending), `api/reminders.py`, `frontend/src/components/Reminder.tsx`, `n8n/` (workflow export, compose, `setup.py`, `live_check.py`, README) |
 | Speech / testimony | `backend/app/providers/speech.py`, `services/testimony.py`, `services/speech_smoke.py`, `api/testimony.py`, `frontend/src/components/Testimony.tsx` |
 | UI | `frontend/src/pages/` (CaseWorkspace, CasePanels, CasesPage, EvaluationPage), `frontend/src/components/` (DemoDrawer, Evidence, Reviewer, …) |
@@ -185,10 +186,6 @@ Items marked *(cloud only)* applied to the claude.ai cloud container, not to a l
 Ask the user which of these to do before starting:
 
 - **M5 follow-up (optional):** measure STT on a human Marathi/Hindi recording; Sarvam stays blocked until `SARVAM_API_KEY` and network access exist.
-- **M7 Tests and evaluation:**
-  - Finish C03 and C04, and add C07 (one bounded POD repair round).
-  - Build the 40-case corpus generator and run the 10-case first pass with real counts.
-  - Export the results to `/evaluation`.
 - **M8 Optional:** local Gemma (needs Ollama) and Cognee. Otherwise label them "not implemented".
 
 Other open items are listed under BUILD_LOG "Open issues / next", including the unconfirmed pre-event code eligibility (PRD §19.1).

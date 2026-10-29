@@ -45,6 +45,7 @@ def make_settings(tmp_path: Path, **overrides: Any) -> Settings:
         "demo_webhook_secret": "test-webhook-secret",
         "provider_retry_backoff_seconds": 0,
         "reasoner_min_interval_seconds": 0,
+        "reasoner_transient_backoff_seconds": 0,
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)

@@ -324,6 +324,9 @@ class Submission(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     reconciliation: Mapped[list[Any]] = mapped_column(JSON, default=list)  # evidence trail of reads/receipts
+    # Handled-rejection marker for this submitted pack (PRD 8.6, 10.3): set once, so a repeated or stale
+    # POD_REJECT delivery can never start a second repair. {comment, status_raw, at, handled, repair_round}
+    provider_rejection: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
     updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
 

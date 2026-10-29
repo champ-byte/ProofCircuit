@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.agent.tools import case_context
 from app.db.models import Case, DocumentPage, EvidenceDocument, EvidencePack, ExtractedFact, Message
 from app.domain.citations import snippet
+from app.services.repair import open_repair
 from app.services.testimony import testimony_for_prompt
 from app.services.validation import assess, is_active
 
@@ -84,6 +85,15 @@ def observation(session: Session, case: Case) -> tuple[dict[str, Any], dict[str,
         "staff_messages": [{"locale": m.locale, "text": m.body[:500]} for m in inbound[-5:]],
         "staff_testimony": testimony_for_prompt(session, case),
     }
+    rejected = open_repair(session, case)
+    if rejected is not None:
+        ctx["pod_correction_round"] = {
+            "round": case.pod_repair_count,
+            "note": "The provider rejected the submitted proof. Corrected delivery proof was requested from staff; "
+            "a new pack with changed evidence is required before submitting again. No further round exists.",
+        }
+        # The provider's comment is text written by others: data, never instructions.
+        untrusted["provider_rejection_comment"] = (rejected.provider_rejection or {}).get("comment")
     return ctx, untrusted
 
 

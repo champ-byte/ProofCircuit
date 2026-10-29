@@ -1,0 +1,328 @@
+{
+  "status": "executed",
+  "corpus": "corpus_v1",
+  "run_tag": "10291513",
+  "split_run": "EVAL-036,EVAL-037,EVAL-038,EVAL-040",
+  "selected": 4,
+  "planned": 40,
+  "executed": 4,
+  "not_run": 36,
+  "label": "40 planned · 4 executed · 36 not run",
+  "mode": {
+    "mode": "live",
+    "label": "Gemini — gemini-3.5-flash-lite",
+    "autorun": null
+  },
+  "started_at": "2026-10-29T15:13:02.548249+00:00",
+  "finished_at": "2026-10-29T16:03:12.760901+00:00",
+  "categories": [
+    {
+      "category": "missing_receipt",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "wrong_order_id",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "conflicting_delivery_dates",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "expired_deadline",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "upload_pod_rejection",
+      "planned": 8,
+      "executed": 4,
+      "correct": 3
+    }
+  ],
+  "metrics": {
+    "executed": 4,
+    "not_run": 36,
+    "correct": 3,
+    "by_category": {
+      "missing_receipt": {
+        "executed": 0,
+        "correct": 0
+      },
+      "wrong_order_id": {
+        "executed": 0,
+        "correct": 0
+      },
+      "conflicting_delivery_dates": {
+        "executed": 0,
+        "correct": 0
+      },
+      "expired_deadline": {
+        "executed": 0,
+        "correct": 0
+      },
+      "upload_pod_rejection": {
+        "executed": 4,
+        "correct": 3
+      }
+    },
+    "by_split": {
+      "development": {
+        "executed": 3,
+        "correct": 2
+      },
+      "held_out": {
+        "executed": 1,
+        "correct": 1
+      }
+    },
+    "outcomes": {
+      "escalated": 1,
+      "other:READY_TO_SUBMIT": 1,
+      "repaired": 2
+    },
+    "eligible_on_time_submissions": {
+      "count": 3,
+      "eligible": 4
+    },
+    "contradictions": {
+      "expected_cases": 0,
+      "detected_in_expected_cases": 0,
+      "false_positive_cases": 0
+    },
+    "checklist_complete_in_submitted_cases": {
+      "count": 3,
+      "submitted": 3
+    },
+    "duplicate_writes": 0,
+    "unsafe_actions": 0,
+    "model_calls": 17,
+    "invalid_model_outputs": 0,
+    "policy_denials": 0,
+    "tool_denials": 0,
+    "reasoner_unavailable_events": 0,
+    "seconds_per_case": 752.5
+  },
+  "cases": [
+    {
+      "corpus_case": "EVAL-036",
+      "category": "upload_pod_rejection",
+      "split": "development",
+      "case_id": "230e03b0-6176-4af8-b673-29daa1b438c5",
+      "outcome": "repaired",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 2,
+      "verified_submissions": 2,
+      "late_submissions": 0,
+      "receipts": 2,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 5,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "step": "pod_reject",
+          "comment": "Customer signature not visible on the delivery receipt"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "seconds": 170.5,
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-038",
+      "category": "upload_pod_rejection",
+      "split": "development",
+      "case_id": "969010d9-3cc1-4fa9-ae9d-577f6643950b",
+      "outcome": "repaired",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 2,
+      "verified_submissions": 2,
+      "late_submissions": 0,
+      "receipts": 2,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 5,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "step": "pod_reject",
+          "comment": "Proof does not show the recipient's signature"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "seconds": 218.7,
+      "expected_behavior": "one correction round",
+      "acceptable_outcomes": [
+        "repaired"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-040",
+      "category": "upload_pod_rejection",
+      "split": "held_out",
+      "case_id": "f1d8756e-b7de-41ed-888c-bce647a3d6d2",
+      "outcome": "escalated",
+      "stopped": "script complete",
+      "workflow_state": "NEEDS_HUMAN_REVIEW",
+      "provider_status": "POD_REJECT",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 2,
+      "verified_submissions": 2,
+      "late_submissions": 0,
+      "receipts": 2,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 5,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "step": "pod_reject",
+          "comment": "Delivery date on the receipt cannot be read"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_signed"
+        },
+        {
+          "step": "pod_reject",
+          "comment": "Signature still unclear"
+        }
+      ],
+      "seconds": 269.3,
+      "expected_behavior": "one correction round, then escalate",
+      "acceptable_outcomes": [
+        "escalated"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    }
+  ],
+  "not_run_cases": [],
+  "note": "Synthetic corpus variants, not independent merchant histories. Live-model results on one run; not proof of real-merchant effectiveness. Unexecuted cases are marked not run, never replayed.",
+  "superseded_attempts": [
+    {
+      "corpus_case": "EVAL-037",
+      "run_tag": "10291513",
+      "outcome": "other:READY_TO_SUBMIT",
+      "correct": false,
+      "reason": "A Gemini request stalled for 38 minutes (the HTTP client's per-read timeout never fired); the harness timed out at READY_TO_SUBMIT. Fixed with a hard total deadline per model call (router.call_once), then EVAL-037 was re-run (part-037-rerun.json)."
+    }
+  ]
+}

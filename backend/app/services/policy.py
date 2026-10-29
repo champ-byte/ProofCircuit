@@ -18,6 +18,7 @@ from app.db.models import Approval, Case, EvidencePack, StaffTask, Submission
 from app.domain.clock import get_clock
 from app.domain.enums import DisputeReason, ProviderDisputeStatus, WorkflowState
 from app.services.pack import COMMENTS_MAX_CODE_POINTS, MAX_UPLOAD_FILES, UPLOADABLE
+from app.services.repair import open_repair, original_document_hashes
 from app.services.validation import revalidate_case
 
 MAX_FILE_BYTES = 5_000_000
@@ -111,11 +112,21 @@ def check_defense(
 
     status = ProviderDisputeStatus(case.provider_status)
     if status == ProviderDisputeStatus.POD_REJECT:
+        # A resubmission belongs to an open correction round (one per MAX_POD_REPAIR_ROUNDS) and must
+        # carry changed evidence: resending the rejected originals is never a repair (PRD 8.6).
+        rejected = open_repair(session, case)
         need(
-            case.pod_repair_count < settings.max_pod_repair_rounds,
-            "repair_budget",
-            "POD correction budget exhausted; human review required",
+            rejected is not None and case.pod_repair_count <= settings.max_pod_repair_rounds,
+            "repair_round_open",
+            "no POD correction round is open (budget used or rejection not handled); human review required",
         )
+        if rejected is not None and pack is not None:
+            before = original_document_hashes(session.get(EvidencePack, rejected.pack_id))
+            need(
+                original_document_hashes(pack) != before,
+                "evidence_changed",
+                "the pack resends the rejected evidence unchanged; corrected proof is required",
+            )
     else:
         need(
             status == ProviderDisputeStatus.NEW,

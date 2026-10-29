@@ -67,15 +67,28 @@ async def call_once(
     run_id: str | None,
     case_id: str | None,
 ) -> Completion:
-    """One provider, bounded: cap check, pacing, at most one retry for 429 (short delay) or transient."""
+    """One provider, bounded: cap check, pacing, at most one retry for a 429 within the wait bound, and up to
+    REASONER_TRANSIENT_RETRIES retries with growing backoff for transient errors (5xx such as a provider's
+    "high demand" 503, or time-outs)."""
     settings: Settings = app.state.settings
-    for attempt in range(2):
+    attempts = 1 + settings.reasoner_transient_retries
+    for attempt in range(attempts):
         check_cap(settings, reasoner.name)
         delay = pacing_delay(settings, reasoner.name)
         if delay:
             await asyncio.sleep(delay)
         try:
-            completion = await reasoner.complete(system=system, user=user, schema=schema)
+            try:
+                # Hard total deadline per call. The HTTP client's timeout limits each read, not the whole
+                # request; a stalled response once held a live run for 38 minutes (EVAL-037).
+                completion = await asyncio.wait_for(
+                    reasoner.complete(system=system, user=user, schema=schema),
+                    timeout=settings.model_timeout_seconds,
+                )
+            except TimeoutError as exc:
+                raise ReasonerError(
+                    "timeout", f"{reasoner.name} gave no complete response within {settings.model_timeout_seconds}s"
+                ) from exc
         except ReasonerError as exc:
             record_call(
                 provider=reasoner.name,
@@ -89,17 +102,21 @@ async def call_once(
                 run_id=run_id,
                 case_id=case_id,
             )
-            retry = attempt == 0 and (
-                (
-                    exc.kind == "rate_limited"
+            if exc.kind == "rate_limited":
+                retry = (
+                    attempt == 0
                     and exc.retry_after is not None
                     and exc.retry_after <= settings.reasoner_rate_limit_max_wait_seconds
                 )
-                or exc.kind in ("transient", "timeout")
-            )
+                wait = exc.retry_after or 0
+            elif exc.kind in ("transient", "timeout"):
+                retry = attempt < attempts - 1
+                wait = settings.reasoner_transient_backoff_seconds * (3**attempt)  # 5 s, then 15 s by default
+            else:
+                retry, wait = False, 0
             if not retry:
                 raise
-            await asyncio.sleep(exc.retry_after or 0)
+            await asyncio.sleep(wait)
             continue
         record_call(
             provider=reasoner.name,

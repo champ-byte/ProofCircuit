@@ -13,6 +13,7 @@ from app.db.models import Case, StaffTask, Submission
 from app.domain.enums import OperationalFlag, ProviderDisputeStatus, WorkflowState
 from app.services.audit import audit
 from app.services.policy import deadline_open
+from app.services.repair import open_repair
 from app.services.validation import revalidate_case
 
 
@@ -70,8 +71,8 @@ def sync_workflow(session: Session, settings: Settings, case: Case) -> dict[str,
         set_state(session, case, WorkflowState.MONITORING, "submission independently verified; outcome pending")
     elif open_review is not None:
         set_state(session, case, WorkflowState.NEEDS_HUMAN_REVIEW, "human review requested")
-    elif provider == ProviderDisputeStatus.POD_REJECT:
-        # Bounded repair (one correction round) arrives with M7; until then a person decides.
+    elif provider == ProviderDisputeStatus.POD_REJECT and open_repair(session, case) is None:
+        # No open correction round (repeat rejection, no reason, expired, unhandled): a person decides.
         set_state(session, case, WorkflowState.NEEDS_HUMAN_REVIEW, "provider rejected the proof")
     elif provider == ProviderDisputeStatus.POD_UPLOAD:
         set_state(session, case, WorkflowState.NEEDS_HUMAN_REVIEW, "provider reports an upload this case cannot verify")
