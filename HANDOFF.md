@@ -44,7 +44,7 @@ These are user decisions; see BUILD_LOG "Decisions that deviate from PRD.md".
    - Synthetic data only. Use the Paytm-shaped simulator only, never a real Paytm host.
    - Demo HMAC signatures are not Paytm CHECKSUM.
 5. **Agent tools:** the agent has no concede or refund tool. Concession is reviewer-only and takes two steps.
-6. **Speech (M5):** local faster-whisper only. Weights are never downloaded at runtime. Transcripts are staff testimony and never satisfy the checklist, `orderStatus` or the pack. Pin `av<17` for faster-whisper 1.2.1.
+6. **Speech (M5):** local faster-whisper only. Weights are never downloaded at runtime. Transcripts are staff testimony and never satisfy the checklist, `orderStatus` or the pack. Pin `av<17` for faster-whisper 1.2.1. `WHISPER_MODEL` stays `small` for now, because Sarvam AI may replace local STT; `large-v3` scored best on a human clip (see BUILD_LOG).
 7. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
 
 ## Local setup (your own machine)

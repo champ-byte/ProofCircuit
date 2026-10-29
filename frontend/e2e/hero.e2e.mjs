@@ -8,10 +8,11 @@
 //   npm run e2e                      # headless; screenshots go to ../docs/
 //   PC_CHROMIUM=/path/to/chrome npm run e2e   # if the bundled browser is not found
 import { mkdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173'
-const SHOTS = new URL('../../docs/', import.meta.url).pathname
+const SHOTS = fileURLToPath(new URL('../../docs/', import.meta.url)) // .pathname breaks on Windows (/C:/...)
 mkdirSync(SHOTS, { recursive: true })
 
 const log = (...a) => console.log('•', ...a)
@@ -38,6 +39,17 @@ async function waitBanner(text, timeout = 30000) {
 const tab = (name) => page.click(`[role=tab]:has-text("${name}")`)
 const click = (label) => page.click(`button:has-text("${label}")`)
 
+// A reset reseeds the hero case under a new ID. Wait for the workspace to move to it: the old case
+// may already read "Collecting evidence", so the banner alone does not prove the reset finished.
+async function resetDemo() {
+  const before = new URL(page.url()).pathname
+  await tab('Seed / reset')
+  await page.check('text=I understand this deletes all demo data')
+  await click('Reset demo data')
+  await page.waitForURL((u) => u.pathname.startsWith('/cases/') && u.pathname !== before)
+  await waitBanner('Collecting evidence')
+}
+
 try {
   const health = await (await fetch(`${BASE}/api/health`)).json()
   assert(health.reasoning_mode.mode !== 'live' || process.env.E2E_ALLOW_LIVE === '1',
@@ -47,10 +59,7 @@ try {
   await page.goto(`${BASE}/cases`)
   await page.click('text=DSP-DEMO-001')
   await page.waitForSelector('[data-testid=status-banner]')
-  await tab('Seed / reset')
-  await page.check('text=I understand this deletes all demo data')
-  await click('Reset demo data')
-  await waitBanner('Collecting evidence')
+  await resetDemo()
   assert((await page.innerText('.badges')).includes('Synthetic data'), 'synthetic badge')
   assert((await page.innerText('.case-header')).includes('₹18,500.00'), 'amount at risk in header')
 
@@ -106,10 +115,7 @@ try {
   await page.screenshot({ path: `${SHOTS}m4-verified.png`, fullPage: true })
 
   // --- Reviewer: concession needs approval + typed confirmation ------------------------------
-  await tab('Seed / reset')
-  await page.check('text=I understand this deletes all demo data')
-  await click('Reset demo data')
-  await waitBanner('Collecting evidence')
+  await resetDemo()
   await tab('Identity')
   await click('Ravi (Reviewer)')
   await page.waitForSelector('#reviewer-h')

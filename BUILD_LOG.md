@@ -16,7 +16,7 @@ The user's own machine, from here on. Cloud-only gotchas in HANDOFF.md (proxy bl
 - **OS:** Windows 11 Home 10.0.26200. Shells: PowerShell 5.1 and Git Bash.
 - **CPU/GPU:** Intel i7-14650HX (16 cores, 24 threads), 15.7 GB RAM. NVIDIA RTX 4050 Laptop GPU, 6 GB, driver 566.24. Speech runs on the CPU (`int8`); CUDA is not set up.
 - **Python:** system 3.11.9, but `uv` 0.9.8 runs the backend on its managed CPython 3.12.12.
-- **Node:** 22.14.0, npm 10.9.2. **Too old for the locked frontend** (see the local setup entry below).
+- **Node:** 22.14.0 at first, which was too old for the locked frontend (see the local setup entry below). The user then upgraded to **Node 26.13.0**, npm 11.20.0. Playwright Chrome Headless Shell 153 is installed under `%LOCALAPPDATA%\ms-playwright`.
 - **Docker:** 28.5.1 installed (needed for M6). **Ollama:** 0.32.14 client installed, but no server was running.
 - **ffmpeg:** not on PATH. Not needed: PyAV bundles its decoders, including AAC/M4A.
 - **Secrets:** `GEMINI_API_KEY` is in the repo-root `.env` (gitignored); the settings loader confirms it is set, and it was never printed. `SESSION_SECRET`/`DEMO_WEBHOOK_SECRET` are unset, so they are ephemeral per process.
@@ -30,6 +30,7 @@ The user's own machine, from here on. Cloud-only gotchas in HANDOFF.md (proxy bl
 4. No `scripts/seed_demo.py`. Seed/reset live in the backend CLI (`python -m app.cli seed|reset --yes`) so they share the app's settings and migrations. The PRD layout says to adapt it to conventions.
 5. In `DEMO_MODE`, an empty database is seeded automatically at startup so a fresh start shows the hero case. A populated database is never reseeded.
 6. **M5 uses local faster-whisper only** (user decision): no Sarvam key or API access exists, so the Sarvam Saaras adapter is not built and is reported `not_implemented`. PRD §17 made Sarvam primary with faster-whisper as the fallback.
+7. **`WHISPER_MODEL` stays `small`** (user decision, 2026-10-29), because Sarvam AI may replace local STT later. `large-v3` measured best on a human recording (CER 0.09 vs 0.21; see "Local setup and M5 follow-up"), so the results are kept here for that decision.
 
 ## M0 Bootstrap: done
 
@@ -653,7 +654,11 @@ E2E_ALLOW_LIVE=1 npm run e2e           # passed (backend AGENT_AUTORUN=false; 0 
 **Local setup problems found**
 
 1. **Backend: 34 failed, 121 errors on first run.** Windows has no system IANA timezone database, so `ZoneInfo("Asia/Kolkata")` raised `ZoneInfoNotFoundError` in seeding. A diagnostic run with `uv run --with tzdata pytest -q` passed all 221. With the user's approval, `tzdata` (2026.6) is now a backend dependency. Linux and macOS ignore it.
-2. **Frontend: `npm test` cannot start.** jsdom 30.1.3 pulls undici 8.12.3, which requires Node ≥ 22.19 (it uses `zlib.createZstdDecompress`); this machine has Node 22.14.0. Every vitest worker fails with `TypeError: Cannot read properties of undefined (reading 'bind')`. The user will upgrade Node. **The frontend tests, build, lint and E2E have not been run locally yet.**
+2. **Frontend: `npm test` could not start.** jsdom 30.1.3 pulls undici 8.12.3, which requires Node ≥ 22.19 (it uses `zlib.createZstdDecompress`); this machine had Node 22.14.0. Every vitest worker failed with `TypeError: Cannot read properties of undefined (reading 'bind')`. **Fixed by the user upgrading to Node 26.13.0.** After that, `npm ci`, `npm test` (20 passed), `npm run build` and `npm run lint` (exit 0) all pass.
+3. **E2E: two Windows/state bugs in `e2e/hero.e2e.mjs`, fixed:**
+   - The screenshot directory came from `new URL(...).pathname`, which on Windows is `/C:/...`. That made `mkdirSync('C:\C:\...')` fail with ENOENT. It now uses `fileURLToPath`.
+   - **A reset race.** The test waited for the "Collecting evidence" banner after "Reset demo data". The old case already read "Collecting evidence" (it had only my voice note), so the wait passed at once. The test then clicked "Request delivery proof" on the old case while the reset was still deleting it, and the backend returned **500** (`FOREIGN KEY constraint failed` inserting `agent_runs`). A new `resetDemo()` helper now also waits for the URL to move to the reseeded case's new ID. Both resets use it.
+   - After the fixes, `E2E_ALLOW_LIVE=1 npm run e2e` **passed** (backend `AGENT_AUTORUN=false`, Vite on :5173), through "Submission verified" and "Dispute closed — provider reports LOST". The regenerated screenshots were not committed.
 
 **Added:** `uv run python -m app.cli transcribe-file AUDIO [--locale mr-IN|hi-IN|en-IN] [--reference FILE] [--out FILE]` (`services/speech_smoke.transcribe_file`).
 - It runs the exact product STT path (`FasterWhisperProvider`: forced language, beam 5, no VAD, duration cap) on any local recording.
@@ -699,6 +704,11 @@ uv run --with tzdata pytest -q                                     # 221 passed 
 uv add tzdata && uv sync --extra speech && uv run pytest -q        # 221 passed
 uv run python -m app.cli smoke-reasoner                            # ok, gemini-3.5-flash-lite, 1 call, 7.0 s
 cd frontend && npm ci && npm test                                  # cannot start: Node 22.14 < 22.19 (undici 8)
+# user upgraded to Node 26.13.0
+npm ci && npm test && npm run build && npm run lint                # 20 passed, build OK, lint exit 0
+npx playwright install chromium                                    # Chrome Headless Shell 153
+AGENT_AUTORUN=false uv run uvicorn ... ; npm run dev                # backend :8000, Vite :5173
+E2E_ALLOW_LIVE=1 npm run e2e                                       # failed (Windows path; reset race), fixed, passed
 WHISPER_MODEL=medium uv run python -m app.cli speech-download; WHISPER_MODEL=large-v3 ...   # downloaded
 SPEECH_PROVIDER=faster_whisper WHISPER_MODEL={small,medium,large-v3} uv run python -m app.cli transcribe-file Recording.m4a --reference ../fixtures/hero/voice_note_mr.txt --out <scratch>/<model>.json
 SPEECH_PROVIDER=faster_whisper WHISPER_MODEL={small,medium,large-v3} uv run python -m app.cli smoke-speech   # all fail
@@ -707,12 +717,9 @@ uv run pytest -q && uv run ruff check . && uv run ruff format --check .         
 
 ## Open issues / next
 
-- **Frontend on this machine:** upgrade Node to ≥ 22.19, then run `npm ci && npm test` (expect 20), `npx playwright install chromium` and the E2E.
-- **Speech decisions pending (user):**
-  - Should the default `WHISPER_MODEL` become `large-v3` (best CER, ~22 s per 9 s clip, 2.9 GB) or stay `small` (CER 0.21, ~9 s)?
-  - Should the robotic espeak smoke fixture be replaced or supplemented by a human reference clip, so the gate measures human speech? The user's recording is kept local by their decision.
-  - Should `medium` be removed from the cache? It sits between `small` and `large-v3` and is the slowest on the fixture.
-  - The Sarvam adapter is still unbuilt (no key or access).
+- **Backend 500 when an action races a demo reset:** `POST /cases/{id}/actions` can read the case just before a concurrent `/api/demo/reset` deletes it. The `agent_runs` insert then fails with an IntegrityError → 500 instead of 404/409. This only happens in demo mode, where reset deletes data; the E2E no longer triggers it. Not fixed.
+- **Speech:** `WHISPER_MODEL` stays `small` (decision 7). The robotic espeak smoke fixture still fails for every model, so live transcription needs `SPEECH_REQUIRE_PASSING_SMOKE=false` until a human reference clip or Sarvam replaces it. The Sarvam adapter is still unbuilt (no key or access).
+- **Node:** the user has Node 26 (current), while HANDOFF lists Node ≥ 22.19. Everything passed on 26.
 - **Next milestones:** M6 n8n follow-up, M7 tests and evaluation (C03/C04 completion, C07 POD repair, ten-case first pass), M8 optional.
 - Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
 - Actual Gemini free-tier quota for this key is still unmeasured (no limit was approached); the cap/pacing/429 paths are tested with fakes.
