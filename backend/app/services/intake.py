@@ -94,3 +94,63 @@ def open_case(
         data={"source": source, "canonical_hash": dispute.payload_hash, "reason": reason},
     )
     return case, True
+
+
+def record_status_callback(
+    session: Session,
+    *,
+    case: Case,
+    dispute: NormalizedDispute,
+    raw_body: dict[str, Any],
+    demo_event_id: str | None,
+    demo_sequence: int | None,
+) -> tuple[ProviderEvent, bool]:
+    """Persist a later webhook for an existing case. Returns (event, duplicate).
+
+    Webhook content is never applied directly: the caller queues an authoritative Status API
+    read, so out-of-order or unknown states cannot regress the case (PRD 10.3).
+    """
+    duplicate = False
+    if demo_event_id is not None:
+        duplicate = (
+            session.scalar(
+                select(ProviderEvent.id).where(
+                    ProviderEvent.case_id == case.id, ProviderEvent.demo_event_id == demo_event_id
+                )
+            )
+            is not None
+        )
+    else:
+        duplicate = (
+            session.scalar(
+                select(ProviderEvent.id).where(
+                    ProviderEvent.case_id == case.id, ProviderEvent.canonical_hash == dispute.payload_hash
+                )
+            )
+            is not None
+        )
+    event = ProviderEvent(
+        case_id=case.id,
+        source="s2s_callback",
+        raw_payload=raw_body,
+        canonical_hash=dispute.payload_hash,
+        demo_event_id=demo_event_id,
+        demo_sequence=demo_sequence,
+        signature_valid=True,
+        applied_case_version=None if duplicate else case.version,
+    )
+    session.add(event)
+    audit(
+        session,
+        event_type="provider.callback_duplicate" if duplicate else "provider.callback_received",
+        summary=(
+            f"Duplicate webhook for {dispute.dispute_id} ignored."
+            if duplicate
+            else f"Webhook reports {dispute.provider_status_raw}; queued an authoritative status read."
+        ),
+        actor_type="provider",
+        case_id=case.id,
+        merchant_id=case.merchant_id,
+        data={"demo_event_id": demo_event_id, "demo_sequence": demo_sequence, "reported": dispute.provider_status_raw},
+    )
+    return event, duplicate

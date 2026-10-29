@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useSession } from '../session'
+import { ActionsPanel, InboxPanel, PackPanel } from './CasePanels'
 import type {
   CaseDetail,
   DocumentDetail,
@@ -34,7 +35,7 @@ const METHOD: Record<string, string> = {
 
 export function CaseWorkspace() {
   const { id = '' } = useParams()
-  const { token } = useSession()
+  const { token, session } = useSession()
   const [detail, setDetail] = useState<CaseDetail | null>(null)
   const [evidence, setEvidence] = useState<EvidenceOverview | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
@@ -42,6 +43,33 @@ export function CaseWorkspace() {
 
   const [reloadKey, setReloadKey] = useState(0)
   const refresh = useCallback(async () => setReloadKey((k) => k + 1), [])
+
+  // Background work (runner, simulator callbacks) finishes after HTTP responses return. Follow the
+  // persisted event feed and refresh when it advances. This is the browser reading deltas; the
+  // backend itself never polls.
+  useEffect(() => {
+    if (!token) return
+    let cursor = -1
+    let stopped = false
+    const tick = async () => {
+      try {
+        const res = await api.events(token, id, Math.max(cursor, 0))
+        if (cursor === -1) cursor = res.cursor
+        else if (res.cursor !== cursor) {
+          cursor = res.cursor
+          setReloadKey((k) => k + 1)
+        }
+      } catch {
+        /* transient; next tick retries */
+      }
+      if (!stopped) timer = window.setTimeout(tick, 1500)
+    }
+    let timer = window.setTimeout(tick, 0)
+    return () => {
+      stopped = true
+      window.clearTimeout(timer)
+    }
+  }, [token, id])
 
   useEffect(() => {
     if (!token) return
@@ -61,7 +89,7 @@ export function CaseWorkspace() {
       </p>
     )
   }
-  if (!detail || !evidence || !token) return <p aria-live="polite">Loading case…</p>
+  if (!detail || !evidence || !token || !session) return <p aria-live="polite">Loading case…</p>
 
   return (
     <div className="workspace">
@@ -89,6 +117,9 @@ export function CaseWorkspace() {
         </section>
         <FindingsPanel findings={evidence.findings} documents={evidence.documents} onSelect={setSelected} />
       </div>
+      <ActionsPanel caseId={id} token={token} session={session} version={detail.version + evidence.findings.length + reloadKey} onChanged={refresh} />
+      <PackPanel caseId={id} token={token} version={reloadKey} />
+      <InboxPanel caseId={id} token={token} session={session} version={reloadKey} onChanged={refresh} />
       <EvidencePanel
         caseId={id}
         token={token}
@@ -166,7 +197,7 @@ function AssessmentBanner({ evidence }: { evidence: EvidenceOverview }) {
   if (a.evidence_ready) {
     return (
       <div className="banner banner-ok" role="status">
-        Evidence complete and consistent for a pack (case version {a.case_version}). Submission is not implemented yet.
+        Evidence complete and consistent for a pack (case version {a.case_version}).
       </div>
     )
   }
@@ -304,7 +335,7 @@ function EvidencePanel({
                   disabled={busy}
                   onClick={async () => {
                     const blob = await api.fixtureFile(token, caseId, f.name)
-                    await doUpload(new Blob([blob], { type: 'text/plain' }), f.filename)
+                    await doUpload(blob, f.filename)
                   }}
                 >
                   Upload {f.name.replaceAll('_', ' ')}

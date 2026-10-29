@@ -9,14 +9,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.api import cases, demo, evidence, health
+from app import handlers  # noqa: F401  (registers runner handlers)
+from app.api import actions, cases, demo, evidence, health, intake
 from app.config import Settings, get_settings
 from app.db.migrate import upgrade_to_head
 from app.db.models import Merchant
 from app.db.session import init_engine, session_scope
 from app.domain.clock import get_clock
+from app.runner import resume_all
 from app.services.recovery import startup_recovery_scan
 from app.services.seed import seed_demo
+from app.simulator import api as simulator_api
 
 log = logging.getLogger("proofcircuit")
 
@@ -36,6 +39,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         with session_scope() as session:
             counts = startup_recovery_scan(session)
             log.info("Startup recovery scan: %s", counts)
+        # Single recovery pass: reconcile uncertain submissions before any repeat write, then
+        # drain pending work. No polling worker runs after this.
+        log.info("Startup recovery: %s", await resume_all(app))
         yield
 
     app = FastAPI(title="ProofCircuit", version="0.1.0", lifespan=lifespan)
@@ -44,4 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(demo.router)
     app.include_router(cases.router)
     app.include_router(evidence.router)
+    app.include_router(actions.router)
+    app.include_router(intake.router)
+    app.include_router(simulator_api.router)
     return app

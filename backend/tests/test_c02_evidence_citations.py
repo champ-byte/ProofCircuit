@@ -172,7 +172,7 @@ def test_seeded_case_has_invoice_but_missing_delivery(hero) -> None:  # type: ig
     assert delivery["status"] == "missing" and delivery["assignee"] == "Sanjay (Delivery)"
     assert ov["assessment"]["evidence_ready"] is False
     invoice = ov["documents"][0]
-    assert invoice["doc_type"] == "invoice" and invoice["extraction_method"] == "utf8_text"
+    assert invoice["doc_type"] == "invoice" and invoice["extraction_method"] == "pdf_text"
     facts = {f["field"]: f for f in invoice["facts"]}
     assert facts["order_id"]["verification"] == "span_verified"
     assert facts["order_id"]["source"]["match"] == ORDER and facts["order_id"]["source"]["recheck_ok"]
@@ -385,10 +385,12 @@ def test_evidence_is_tenant_scoped(hero) -> None:  # type: ignore[no-untyped-def
 
 def test_fixture_documents_drive_hero(hero) -> None:  # type: ignore[no-untyped-def]
     client, staff, case_id = hero
-    names = [f["name"] for f in client.get(f"/api/demo/cases/{case_id}/fixtures", headers=staff).json()]
-    assert names == ["invoice", "delivery_receipt_wrong_order", "delivery_receipt_correct"]
+    listing = client.get(f"/api/demo/cases/{case_id}/fixtures", headers=staff).json()
+    assert [f["name"] for f in listing] == ["invoice", "delivery_receipt_wrong_order", "delivery_receipt_correct"]
+    assert all(f["filename"].endswith(".pdf") for f in listing)  # names match the rendered content
     for name, ready in (("delivery_receipt_wrong_order", False), ("delivery_receipt_correct", True)):
         file = client.get(f"/api/demo/cases/{case_id}/fixtures/{name}", headers=staff)
-        assert DELIVERY_DATE in file.text
-        res = upload(client, staff, case_id, f"{name}.txt", file.content)
+        assert file.content.startswith(b"%PDF-")
+        assert DELIVERY_DATE in extract("application/pdf", file.content).pages[0]
+        res = upload(client, staff, case_id, f"{name}.pdf", file.content, "application/pdf")
         assert res.json()["assessment"]["evidence_ready"] is ready

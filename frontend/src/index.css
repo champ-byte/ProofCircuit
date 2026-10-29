@@ -416,3 +416,68 @@ mark {
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
 }
+
+.tool-result {
+  margin-top: 12px;
+  border-left: 4px solid var(--border);
+  padding: 4px 10px;
+}
+
+.tool-result pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.8rem;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.tool-ok {
+  border-color: var(--accent);
+}
+
+.tool-denied,
+.tool-error {
+  border-color: var(--danger);
+}
+
+.pack {
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+}
+
+.messages {
+  list-style: none;
+  padding: 0;
+}
+
+.msg {
+  max-width: 640px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 6px 0;
+  background: var(--surface);
+  font-family: system-ui, 'Noto Sans Devanagari', 'Mangal', sans-serif;
+}
+
+.msg-inbound {
+  margin-left: auto;
+  background: var(--accent-soft);
+}
+
+.reply {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.reply label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  font-size: 0.85rem;
+}
+
+.reply input {
+  font: inherit;
+  padding: 4px 8px;
+}

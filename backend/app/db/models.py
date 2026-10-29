@@ -169,6 +169,7 @@ class StaffTask(Base):
     merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"))
     assignee_user_id: Mapped[str] = mapped_column(ForeignKey("demo_users.id"))
     requirement_id: Mapped[str] = mapped_column(String(64))
+    kind: Mapped[str] = mapped_column(String(16), default="evidence")  # evidence | review
     request_round: Mapped[int] = mapped_column(Integer, default=1)
     locale: Mapped[str] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(32), default="open")
@@ -228,6 +229,8 @@ class EvidencePack(Base):
     document_hashes: Mapped[list[Any]] = mapped_column(JSON)  # ordered upload file hashes
     manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
     pack_hash: Mapped[str] = mapped_column(String(64))
+    upload_files: Mapped[list[Any]] = mapped_column(JSON, default=list)  # ordered {name, sha256, size, mime}
+    intent_digest: Mapped[str] = mapped_column(String(64))  # DEFEND intent identity (see domain/intent.py)
     order_status: Mapped[str] = mapped_column(String(32))
     comments: Mapped[str] = mapped_column(Text)
     storage_dir: Mapped[str] = mapped_column(String(255))
@@ -244,8 +247,12 @@ class Submission(Base):
     request_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     provider_ack: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     provider_reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    verification_state: Mapped[str] = mapped_column(String(32), default="requested")
+    # pending | sent | acknowledged | verified | uncertain | failed | review_required
+    verification_state: Mapped[str] = mapped_column(String(32), default="pending")
+    intent_digest: Mapped[str] = mapped_column(String(64), default="")
     attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reconciliation: Mapped[list[Any]] = mapped_column(JSON, default=list)  # evidence trail of reads/receipts
     created_at: Mapped[datetime] = mapped_column(default=_now)
     updated_at: Mapped[datetime] = mapped_column(default=_now, onupdate=_now)
 
@@ -351,6 +358,7 @@ class SimulatorDispute(Base):
     dispute_id: Mapped[str] = mapped_column(String(64))
     body: Mapped[dict[str, Any]] = mapped_column(JSON)  # Paytm-shaped fields (raw strings)
     dispute_status: Mapped[str] = mapped_column(String(32), default="NEW")
+    event_sequence: Mapped[int] = mapped_column(Integer, default=0)
     due_at_utc: Mapped[datetime]
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
@@ -371,5 +379,21 @@ class SimulatorSubmission(Base):
     file_hashes: Mapped[list[Any]] = mapped_column(JSON, default=list)
     order_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
     comments: Mapped[str | None] = mapped_column(Text, nullable=True)
+    intent_digest: Mapped[str] = mapped_column(String(64), default="")  # computed from received bytes
+    files_meta: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    timestamp_unit: Mapped[str] = mapped_column(String(8), default="s")
     sequence: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+
+
+class SimulatorFault(Base):
+    """Operator-injected simulator fault, consumed when triggered (demo drawer / tests)."""
+
+    __tablename__ = "sim_faults"
+    id: Mapped[str] = _id_col()
+    mid: Mapped[str] = mapped_column(String(32))
+    dispute_id: Mapped[str] = mapped_column(String(64))
+    api: Mapped[str] = mapped_column(String(16))  # status | action
+    kind: Mapped[str] = mapped_column(String(48))
+    remaining: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(default=_now)

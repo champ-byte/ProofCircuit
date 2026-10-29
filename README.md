@@ -8,7 +8,13 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
 
 - **M0 (Bootstrap)** is done: schema and migrations, settings validation, provider readiness, the seeded hero case, and the case list.
 - **M1 (Evidence)** is done: upload of TXT/JSON/text-PDF evidence, Python-computed code-point citations, the goods-not-received checklist, deterministic contradiction checks, and a case workspace at `/cases/:id`.
-- The simulator, tools and submission (M2) and the live agent (M3) are **not implemented yet**. Nothing is submitted anywhere.
+- **M2 (Tools and simulator)** is done:
+  - A Paytm-shaped simulator implementing the PRD §11.2 code tables and lifecycle, with fault injection and independent receipts.
+  - The policy gate, immutable evidence packs, and the event-triggered runner with per-case locks and startup recovery.
+  - Idempotent, independently verified simulator submissions.
+  - Reviewer-only concession and a staff inbox.
+  - The case can be driven end to end manually from the workspace.
+- The live model-driven agent (M3) is **not implemented yet**; the reasoning badge reads "Manual". No real Paytm host is ever called.
 
 ## Requirements
 

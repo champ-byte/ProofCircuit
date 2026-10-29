@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,9 +19,11 @@ from app.db.models import (
     ValidationFinding,
 )
 from app.domain.citations import snippet, verify_span
+from app.runner import enqueue, schedule
 from app.services.evidence import exclude_document, ingest_document
 from app.services.extraction import MAX_UPLOAD_BYTES, UploadRejected
 from app.services.fixtures import HERO_DOCUMENTS, render_hero_document
+from app.services.messaging import mark_staff_response
 from app.services.storage import read_original
 from app.services.validation import REQUIREMENTS, assess, is_active
 
@@ -147,7 +149,9 @@ def get_case_evidence(
 @router.post("/cases/{case_id}/evidence", status_code=status.HTTP_201_CREATED)
 def upload_evidence(
     case_id: str,
+    request: Request,
     response: Response,
+    background: BackgroundTasks,
     file: UploadFile = File(...),
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
@@ -169,6 +173,13 @@ def upload_evidence(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
     if not created:
         response.status_code = status.HTTP_200_OK
+    else:
+        uploader = db.get(DemoUser, identity.user_id)
+        if uploader is not None and uploader.role == "staff":
+            mark_staff_response(db, case, uploader.id)
+        enqueue(db, case, "evaluate", {"trigger": "evidence_uploaded", "document_id": doc.id})
+        db.commit()
+        schedule(background, request.app, case.id)
     return {"document": _doc_summary(doc, None), "created": created, "assessment": assessment}
 
 
@@ -220,6 +231,8 @@ class ExcludeRequest(BaseModel):
 def exclude(
     doc_id: str,
     req: ExcludeRequest,
+    request: Request,
+    background: BackgroundTasks,
     identity: Identity = Depends(require_role("owner", "reviewer")),
     settings: Settings = Depends(get_settings_dep),
     db: Session = Depends(get_db),
@@ -228,7 +241,11 @@ def exclude(
     if not is_active(doc):
         raise HTTPException(status.HTTP_409_CONFLICT, "document is already superseded or excluded")
     case = scoped_case(db, identity, doc.case_id)
-    return {"assessment": exclude_document(db, settings, case, doc, req.reason.strip(), identity.user_id)}
+    assessment = exclude_document(db, settings, case, doc, req.reason.strip(), identity.user_id)
+    enqueue(db, case, "evaluate", {"trigger": "evidence_excluded", "document_id": doc.id})
+    db.commit()
+    schedule(background, request.app, case.id)
+    return {"assessment": assessment}
 
 
 @router.get("/demo/cases/{case_id}/fixtures")
@@ -236,7 +253,9 @@ def list_fixtures(
     case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
 ) -> list[dict[str, str]]:
     scoped_case(db, identity, case_id)
-    return [{"name": name, "filename": filename} for name, filename in HERO_DOCUMENTS.items()]
+    return [
+        {"name": name, "filename": filename.removesuffix(".txt") + ".pdf"} for name, filename in HERO_DOCUMENTS.items()
+    ]
 
 
 @router.get("/demo/cases/{case_id}/fixtures/{name}")
@@ -257,6 +276,6 @@ def download_fixture(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "unknown fixture") from exc
     return Response(
         content=data,
-        media_type="text/plain; charset=utf-8",
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"', "X-Content-Type-Options": "nosniff"},
     )

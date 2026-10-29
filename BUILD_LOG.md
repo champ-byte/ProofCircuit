@@ -170,10 +170,147 @@ Uploading fake PDF bytes as a `.txt` file showed "Upload rejected: content is ap
 - The PDF parse timeout cannot kill a hung pypdf thread; it only stops waiting for it.
 - Only a handful of Hindi/Marathi labels are recognised. This is not a claim of multilingual extraction.
 
+## M2 Tools and simulator: done
+
+**Built**
+
+- **Paytm-shaped simulator** (`app/simulator/`). It reads and writes only the `sim_*` tables; the app can see them only through the simulator's APIs.
+  - Status API (JSON) and Action API (multipart) under `/api/simulator/v1/dispute/{status,action}`.
+  - **Result codes:** the full §11.2 tables. Status: `1001/S/SUCCESS`, 4001–4004, 5001. Action: 1001 `UPLOADED_SUCCESS` (`S`, or `A` via a fault), 1003, 4001–4011, 5001. Every one is reachable in tests. `1002` (SFTP `filesPath`) is deferred and returns 4003.
+  - **Lifecycle:** `NEW → POD_UPLOAD → POD_REJECT → POD_UPLOAD`. Expiry gives `LOST` with "Failed to respond". ACCEPT gives `LOST`. Outcomes are injected by an operator.
+  - **Request handling:** the deadline is enforced at or after the exact instant, including non-midnight deadlines. File types are sniffed from content against the assumed PDF/JPEG/PNG allowlist. `tokenType` is case-insensitive. Seconds and milliseconds `requestTimestamp` are both accepted and recorded. Optional fields come back as `null`.
+  - **Signatures:** demo HMAC-SHA256, labelled as *not* Paytm CHECKSUM.
+  - **Receipts:** an independent receipt per accepted action. Its intent digest is computed from the received bytes, orderStatus and comments. Receipts are served only by `/api/simulator/receipts` (simulator-only, signed).
+  - **Faults** are injected by an operator and consumed once:
+    - Status: `system_error`, `stale_status`.
+    - Action: `system_error_before`, `system_error_after`, `drop_response_after` (the effect is applied and the caller gets HTTP 504 with no body), `upload_failed` (4010), `ack_variant_a`.
+  - **Webhooks:** a Chargeback Peon-style S2S webhook is sent on every status change, with harness headers `X-Demo-Event-Id` and `X-Demo-Sequence`.
+- **S2S intake** (`POST /api/dispute-events`):
+  - It verifies the demo signature; an invalid one returns 401 and the event is stored for audit.
+  - A first `NEW` event creates exactly one case, with reason `requires_review`, because `disputeType` never establishes goods-not-received.
+  - Duplicates (same event ID, or the same canonical hash) are ignored.
+  - Any other webhook only queues an **authoritative Status read**, so out-of-order events cannot regress state.
+- **App adapter** (`app/providers/paytm.py`): it talks to the simulator over the real HTTP contract in-process (`httpx.ASGITransport`) and classifies results as ack / duplicate (4006) / retryable (4010) / definitive / unknown (5001, lost response, or an inconsistent tuple).
+- **Pack builder** (`app/services/pack.py`):
+  - Packs are immutable and versioned; identical content reuses the existing version.
+  - `orderStatus` is derived from a cited delivered-event fact. Dispatch-only evidence never yields a pack.
+  - `comments` comes from a deterministic template filled only with span-verified values. It references files by position and is capped at 240 code points (application policy).
+  - **Upload set:**
+    - The cover is a deterministic neutral English summary PDF.
+    - Original PDF/JPEG/PNG supporting files are uploaded, with their hashes re-verified.
+    - TXT/JSON originals are cited, never redrawn.
+  - **Outputs:** `manifest.json` (canonical; its SHA-256 is the pack hash), an escaped `evidence-index.html` with a sandbox CSP, and `cover.pdf`.
+- **Policy gate** (`app/services/policy.py`), rechecked immediately before every write, including any resend:
+  - The case is simulator-only, not closed, and has a confirmed reason.
+  - The deadline is strictly in the future.
+  - The pack is the latest one and built for the current case version, with `ORDER_DELIVERED`.
+  - File count, size and type, and the comments cap, are within limits.
+  - Fresh evidence readiness holds, with no open human review and no other submission in flight.
+  - The provider state is eligible: `NEW`, or `POD_REJECT` with repair budget left.
+  - `AUTO_SUBMIT_SIMULATOR` applies to agent actors.
+- **Submission/reconciliation** (`app/services/submission.py`):
+  - The intent is committed before the call.
+  - The idempotency key is `(merchant_id, dispute_id, action, pack_hash)`.
+  - Verification needs a successful Status read **and** a receipt whose intent digest matches.
+  - An acknowledgement alone never verifies; neither does 4006.
+  - Unknown or lost responses lead to SUBMISSION_UNCERTAIN, then bounded status reads (default 3, with backoff), then a receipt lookup, and only then **at most one** resend of the same serialized payload from an eligible state.
+  - If status reads stay unavailable, the submission stays uncertain, gets the `PROVIDER_UNAVAILABLE` flag and a human-review task. A crash leaves `sent`, and startup reconciles it before any resend.
+- **Runner** (`app/runner.py`, `app/handlers.py`):
+  - Pending work is persisted and committed before BackgroundTasks run, with one asyncio.Lock per case. A trigger that finds the case locked returns at once, because the lock holder re-checks pending work with no await before releasing.
+  - There is no polling worker. At startup a single recovery pass requeues interrupted work and queues reconciliation for every in-flight submission. Operators also get `POST /api/demo/resume-pending`.
+- **Tools** (`app/agent/tools.py`): the 9 PRD §9 tools with typed, `extra=forbid` arguments.
+  - Case and tenant come from run context only, and `source_ids` must belong to the case.
+  - There is no concede, refund, HTTP or SQL tool.
+  - Every call is persisted as a ToolCall plus an audit event with status ok, denied or error.
+  - Humans use it now through `POST /api/cases/{id}/actions` (manual runs); M3 plugs the model into the same dispatcher.
+- **Staff messaging:** approved en/hi/mr templates (missing and wrong-receipt variants; demo starter copy that needs language review). Tasks are deduplicated per `(case, requirement, round)`. Messages are delivered to the in-app inbox only (`sent_in_simulator`). A staff upload or reply marks the task responded and triggers re-evaluation.
+- **Workflow sync** (§10.1): `NEW, COLLECTING, WAITING_FOR_EVIDENCE, NEEDS_HUMAN_REVIEW, READY_TO_SUBMIT, SUBMITTING, SUBMISSION_UNCERTAIN, MONITORING, CLOSED`. Operational flags (`DEADLINE_EXPIRED`, `PROVIDER_UNAVAILABLE`, `OCR_REQUIRED`) are kept separately. Provider status is set only from authoritative reads.
+- **Human authority:**
+  - `POST /api/cases/{id}/reviews` covers approve_concession, resolve_review and confirm_reason. An approval is single-use, lasts 15 minutes and is bound to the case version and action hash.
+  - `POST /api/cases/{id}/accept-dispute` is reviewer-only and needs explicit confirmation.
+  - `POST /api/cases/{id}/refund-policy-check` is a dry run that returns `DENY_OPEN_DISPUTE` while the dispute is open; there is no refund provider at all.
+- **Other APIs:** `GET /api/cases/{id}/events?after=` (event feed), `/runs`, `/messages`, `/pack` (plus downloads), `/submissions`.
+- Hero fixtures are now deterministic text-layer PDFs; the synthetic documents themselves are the originals.
+- Migration `0003` adds the simulator fault table and the submission, pack and receipt fields, with upgrade-safe defaults.
+- **UI:**
+  - The workspace has a manual Actions panel and a pack/submission panel. It shows the "**Submission verified — dispute outcome pending**" banner, the reconciliation trail and pack downloads.
+  - There is a staff inbox with Devanagari messages and a reply box.
+  - The page follows the persisted event feed so background work appears without a reload.
+
+**Commands run**
+
+```bash
+cd backend
+uv run alembic revision --autogenerate --rev-id 0003 -m "simulator and submission fields"
+uv run pytest -q              # 154 passed
+uv run ruff check .           # All checks passed
+uv run ruff format .
+```
+
+```bash
+cd frontend
+npm run build                 # OK
+npm run lint                  # oxlint clean
+```
+
+**Tests: 154 passing** (72 new this milestone)
+
+- **C01 Paytm boundary** (`test_c01_paytm_boundary.py`, 34):
+  - Status `1001/S/SUCCESS`, never AUDIT_SUCCESS; `transactionId` spelling; null optionals.
+  - `tokenType` casing; seconds and milliseconds timestamps; `version` ignored.
+  - Status 4001–4004 and 5001. Action 4001, 4002 (including a missing orderStatus on DEFEND), 4003 (unknown action, bad orderStatus, filesPath), 4004, 4005/4011 exactly at the due instant (and allowed 1 s before), 4006, 4007, 4008, 4009 (including a disguised file), 4010, 5001, and 1003.
+  - The `A` ack variant is classified as an ack; correction is allowed only from POD_REJECT.
+  - A signed webhook creates exactly one case and a duplicate is ignored. The case stores disputeAmount, not transactionAmount, and the exact non-midnight deadline. An invalid signature gets 401.
+  - A dispute created through the simulator's webhook appears as a case; UTR and debit reach the case through an authoritative read.
+- **C05 Submission contract** (14):
+  - orderStatus is derived and every citation resolves to stored text.
+  - Comments contain only verified values and file positions, with no hashes or offsets, within 240.
+  - Manifest hashes match the files; HTML is escaped; TXT originals are not uploaded; dispatch-only evidence cannot build or submit.
+  - Happy path verified with receipt digest = submission digest = manifest digest.
+  - Deadline denied at the instant and allowed 1 s before.
+  - A stale pack is denied, a rebuild creates v2 while v1 is unchanged, and an identical rebuild is reused.
+  - An unconfirmed reason blocks submission. File-count/size/type and comments limits are enforced by the policy. The auto-submit switch applies to agents only.
+- **C06 Retry and restart** (14):
+  - A lost response or 5001 after the effect verifies with **1 attempt and 1 receipt**.
+  - 5001 before the effect, or 4010, follows: reconcile, then one resend, then verified (trail order asserted).
+  - Status 5001 is retried within bounds. A status outage leaves the submission uncertain with PROVIDER_UNAVAILABLE, and resume then verifies it without another write.
+  - A third-party 4006 never verifies, and leaves a review task.
+  - **The v1 receipt does not verify corrected pack v2** after POD_REJECT.
+  - Repeating the submit of a verified pack is idempotent.
+  - A crash after the provider accepted recovers on restart with no duplicate; a crash before the request left resends exactly once on restart.
+  - Interrupted pending work is requeued once. Duplicate webhooks are ignored. An out-of-order `NEW` webhook cannot regress `POD_UPLOAD`.
+- **C04 Authority** (8, a subset of the full group):
+  - The tool path has no concede, refund, HTTP or SQL. Tool arguments cannot switch the case, cite foreign sources, or pick a different staff assignee.
+  - Only a reviewer can approve or concede, and confirmation is required. A concession executes once and a replay is refused.
+  - A stale approval (after the case changed) and an expired one are denied. Approvals are tenant-scoped.
+  - The refund dry run makes no write.
+- **M2 manual end-to-end** (`test_m2_manual_e2e.py`, 2): the whole hero journey through the tools, plus a staff text reply resuming the case (a C03 subset).
+
+**Real runs**
+
+- **Browser journey:** fresh `data/`, uvicorn (one worker) and Vite, driven with Playwright Chromium, switching between the owner and the delivery staff user:
+  1. Start the case. Request delivery proof: a Marathi message lands in the staff inbox as "sent in simulator".
+  2. The staff user uploads the wrong-order receipt PDF, and the pack is denied with ORDER_MISMATCH.
+  3. Round-2 request, then the correct receipt: READY_TO_SUBMIT. Pack v1 is built (3 files, ORDER_DELIVERED, cited comments).
+  4. The operator injects `drop_response_after` and clicks Submit. The trail shows `action_response:unknown → reconcile` and the result is **verified with 1 attempt**; the workflow reads "Submission verified — outcome pending". Screenshot: `docs/m2-verified.png`.
+- **Restart:** I restarted uvicorn on the same database. The state was still `MONITORING`/`POD_UPLOAD` with one verified submission and no resend.
+- **Bugs found by the real runs and fixed:**
+  1. The fixture listing still named `.txt` files after the switch to PDF, so browser uploads got 422 from content sniffing. A regression assertion now covers it.
+  2. The workspace did not refresh after background work finished. TestClient hides this because it runs background tasks before returning. Fixed by following the persisted event feed.
+  3. A policy denial of `submit_defense` was recorded as a tool `ok` (no write happened). Fixed, and unexpected exceptions are now recorded as `error` tool calls.
+
+**Deviations / decisions**
+
+- The simulator runs in-process behind an ASGI transport; it is still reached only through its HTTP contract. A "lost response" is emulated as HTTP 504 with an empty body after the effect is applied.
+- **Error precedence is simulator policy.** The order is: mandatory → signature → format → lookup → DEFEND field/file checks → deadline → state. ACCEPT outside NEW/POD_REJECT returns 4003. None of this is confirmed for Paytm production.
+- **Workflow mapping:** in manual mode a blocking contradiction moves the case to `NEEDS_HUMAN_REVIEW` unless a staff request is open (then `WAITING_FOR_EVIDENCE`). The M3 agent will usually request corrected evidence instead.
+- A POD rejection currently moves the case to `NEEDS_HUMAN_REVIEW`. The bounded one-round automatic repair (C07) is scheduled for M7; `pod_repair_count` is not incremented yet.
+- In development, unset secrets are ephemeral, so demo sessions and webhook signatures change on each restart. Set `SESSION_SECRET` and `DEMO_WEBHOOK_SECRET` for a stable demo.
+
 ## Open issues / next
 
-- **M2 next**: policy gate, pending/outbox records, event-triggered runner with per-case locks, pack builder, Paytm simulator (full 11.2 code tables and lifecycle), idempotency; C01, C05, C06.
-- `POST /api/dispute-events` (signed S2S intake endpoint), the simulator APIs and the runner are M2. The normalization they use already exists and is tested.
+- **M3 next**: Gemini (`gemini-3.5-flash-lite`) Reasoner adapter through the same tool dispatcher: bounded JSON-action loop (8 proposals, 2 schema repairs), live smoke test and measured free-tier limits, OpenRouter fallback (needs `openrouter.ai` allowed), C08.
+- Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
 - Gemini adapter and live smoke test are M3. They must measure actual free-tier limits for `gemini-3.5-flash-lite` and handle 429s and daily caps.
 - OpenRouter fallback cannot be exercised here until `openrouter.ai` is allowed in the environment's network settings and `OPENROUTER_API_KEY` is set.
 - Starlette deprecation warning from the test client ("install httpx2") is harmless for now.

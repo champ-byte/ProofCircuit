@@ -6,6 +6,10 @@ import type {
   DocumentDetail,
   EvidenceOverview,
   FixtureInfo,
+  InboxView,
+  PackView,
+  RunView,
+  SubmissionView,
   ProviderReport,
 } from '../types/api'
 
@@ -55,6 +59,23 @@ export const api = {
   exclude: (token: string, docId: string, reason: string) =>
     request<unknown>(`/api/evidence/${docId}/exclude`, { method: 'POST', body: JSON.stringify({ reason }) }, token),
   fixtures: (token: string, caseId: string) => request<FixtureInfo[]>(`/api/demo/cases/${caseId}/fixtures`, {}, token),
+  action: (token: string, caseId: string, tool: string, args: Record<string, unknown> = {}) =>
+    request<{ run_id: string }>(
+      `/api/cases/${caseId}/actions`,
+      { method: 'POST', body: JSON.stringify({ tool, arguments: args, reason: 'Manual operator action' }) },
+      token,
+    ),
+  events: (token: string, caseId: string, after: number) =>
+    request<{ events: { seq: number }[]; cursor: number }>(`/api/cases/${caseId}/events?after=${after}`, {}, token),
+  startRun: (token: string, caseId: string) => request<unknown>(`/api/cases/${caseId}/runs`, { method: 'POST' }, token),
+  runs: (token: string, caseId: string) => request<RunView[]>(`/api/cases/${caseId}/runs`, {}, token),
+  packs: (token: string, caseId: string) => request<PackView[]>(`/api/cases/${caseId}/pack`, {}, token),
+  packFile: async (token: string, caseId: string, version: number, name: string) =>
+    (await send(`/api/cases/${caseId}/pack/${version}/${name}`, {}, token)).blob(),
+  submissions: (token: string, caseId: string) => request<SubmissionView[]>(`/api/cases/${caseId}/submissions`, {}, token),
+  inbox: (token: string, caseId: string) => request<InboxView>(`/api/cases/${caseId}/messages`, {}, token),
+  reply: (token: string, caseId: string, body: string) =>
+    request<unknown>(`/api/cases/${caseId}/messages`, { method: 'POST', body: JSON.stringify({ body }) }, token),
   fixtureFile: async (token: string, caseId: string, name: string) =>
     (await send(`/api/demo/cases/${caseId}/fixtures/${name}`, {}, token)).blob(),
 }

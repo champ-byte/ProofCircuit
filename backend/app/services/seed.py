@@ -150,7 +150,7 @@ def seed_demo(session: Session, settings: Settings, clock: Clock) -> Case:
             settings,
             case,
             filename=filename,
-            declared_mime="text/plain",
+            declared_mime="application/pdf",
             data=data,
             uploaded_by_user_id=None,
             actor_type="system",

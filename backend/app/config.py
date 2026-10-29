@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     agent_max_steps: int = Field(default=8, ge=1)
     agent_timeout_seconds: int = 180
     model_timeout_seconds: int = 60
+    provider_status_reads: int = Field(default=3, ge=1, le=10)  # bounded status reads per reconciliation
+    provider_retry_backoff_seconds: float = Field(default=0.5, ge=0)
 
     messaging_provider: Literal["local"] = "local"
     memory_provider: Literal["sql"] = "sql"

@@ -74,9 +74,7 @@ def _next_action(case: Case) -> str:
     }.get(WorkflowState(case.workflow_state), case.workflow_state)
 
 
-def _summary(
-    db: Session, case: Case, merchant: Merchant, owner: DemoUser | None, settings: Settings
-) -> dict[str, Any]:
+def _summary(db: Session, case: Case, merchant: Merchant, owner: DemoUser | None, settings: Settings) -> dict[str, Any]:
     now = get_clock().now()
     assessment = assess(db, case)
     remaining = int((case.deadline_utc - now).total_seconds())

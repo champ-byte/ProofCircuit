@@ -165,3 +165,54 @@ export interface FixtureInfo {
   name: string
   filename: string
 }
+
+export interface ToolCallView {
+  step: number
+  tool: string
+  arguments: Record<string, unknown>
+  rationale: string
+  status: 'ok' | 'denied' | 'error'
+  result: Record<string, unknown> | null
+}
+
+export interface RunView {
+  id: string
+  provider: string
+  model: string | null
+  mode: string
+  status: string
+  error: string | null
+  started_at: string
+  tool_calls: ToolCallView[]
+}
+
+export interface PackView {
+  id: string
+  version: number
+  case_version: number
+  pack_hash: string
+  order_status: string
+  comments: string
+  upload_files: { position: number; name: string; sha256: string; size: number; mime: string; role: string }[]
+  is_latest: boolean
+  stale: boolean
+  created_at: string
+}
+
+export interface SubmissionView {
+  id: string
+  action: string
+  pack_version: number | null
+  state: string
+  attempts: number
+  provider_reference: string | null
+  intent_digest: string
+  last_error: string | null
+  reconciliation: Record<string, unknown>[]
+  created_at: string
+}
+
+export interface InboxView {
+  tasks: { id: string; kind: string; requirement_id: string; round: number; assignee: string | null; locale: string; status: string }[]
+  messages: { id: string; direction: string; from: string | null; to: string | null; locale: string; body: string; delivery_state: string; created_at: string }[]
+}
