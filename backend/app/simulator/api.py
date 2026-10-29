@@ -157,6 +157,36 @@ class SimEvent(BaseModel):
     body: dict[str, Any] | None = None  # create_dispute only
 
 
+@router.get("/state")
+def simulator_state(
+    dispute_id: str,
+    identity: Identity = Depends(require_role("operator")),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Demo drawer view of the simulated provider (simulator-only; not a Paytm API)."""
+    merchant = db.get(Merchant, identity.merchant_id)
+    assert merchant is not None
+    dispute = sim.find_dispute(db, merchant.mid, dispute_id)
+    if dispute is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "dispute not found")
+    faults = db.scalars(
+        select(SimulatorFault).where(
+            SimulatorFault.mid == dispute.mid, SimulatorFault.dispute_id == dispute_id, SimulatorFault.remaining > 0
+        )
+    ).all()
+    receipts = db.scalars(select(SimulatorSubmission).where(SimulatorSubmission.sim_dispute_id == dispute.id)).all()
+    return {
+        "dispute_id": dispute_id,
+        "dispute_status": dispute.dispute_status,
+        "comment": dispute.body.get("comment"),
+        "due_at_utc": dispute.due_at_utc,
+        "event_sequence": dispute.event_sequence,
+        "queued_faults": [{"api": f.api, "kind": f.kind, "remaining": f.remaining} for f in faults],
+        "receipts": [sim.receipt_view(r) for r in receipts],
+        "note": "Simulator-only view for the demo drawer; not part of any Paytm API.",
+    }
+
+
 @router.post("/events")
 def inject_event(
     event: SimEvent,

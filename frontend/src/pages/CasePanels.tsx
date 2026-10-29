@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { formatIst } from '../format'
-import type { DemoSession, InboxView, PackView, RunView, SubmissionView } from '../types/api'
+import type { DemoSession, PackView, RunView, SubmissionView } from '../types/api'
 
 const ACTIONS: { tool: string; label: string; args?: Record<string, unknown> }[] = [
   { tool: 'request_evidence', label: 'Request delivery proof from staff', args: { requirement_id: 'delivery_record' } },
   { tool: 'validate_evidence', label: 'Re-run validation' },
   { tool: 'build_evidence_pack', label: 'Build evidence pack' },
   { tool: 'submit_defense', label: 'Submit defense (simulator)' },
-  { tool: 'get_submission_status', label: 'Check provider status' },
+  { tool: 'get_submission_status', label: 'Check status / retry reconciliation' },
+  {
+    tool: 'request_human_review',
+    label: 'Request human review',
+    args: { reason: 'owner_request', question: 'The owner asked a reviewer to look at this case.' },
+  },
 ]
 
 /** Manual operation through the same tools and policy gate the agent will use (M3). */
@@ -46,7 +51,6 @@ export function ActionsPanel({
   const last = runs.at(-1)?.tool_calls.at(-1)
   const agentRuns = runs.filter((r) => r.mode !== 'manual').slice(-5).reverse()
   const paused = agentRuns.find((r) => r.status === 'paused_reasoner_unavailable')
-  const [smokeMsg, setSmokeMsg] = useState<string | null>(null)
 
   return (
     <section aria-labelledby="actions-h" className="panel">
@@ -65,29 +69,6 @@ export function ActionsPanel({
           <button type="button" disabled={busy} onClick={() => run(() => api.startRun(token, caseId))}>
             Run agent / resume
           </button>
-          {session.user.role === 'operator' && (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => run(() => api.startRun(token, caseId, 'fixture_replay'))}
-              >
-                Run fixture replay (not AI)
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  run(async () => {
-                    const r = await api.smoke(token)
-                    setSmokeMsg(r.ok ? `Smoke test passed: ${r.model_returned} in ${r.latency_ms} ms` : `Smoke test failed: ${r.detail}`)
-                  })
-                }
-              >
-                Run reasoner smoke test
-              </button>
-            </>
-          )}
           {ACTIONS.map((a) => (
             <button key={a.tool} type="button" disabled={busy} onClick={() => run(() => api.action(token, caseId, a.tool, a.args))}>
               {a.label}
@@ -96,11 +77,6 @@ export function ActionsPanel({
         </div>
       ) : (
         <p className="sub">Switch to the owner or operator identity to run actions.</p>
-      )}
-      {smokeMsg && (
-        <p role="status" className="sub">
-          {smokeMsg}
-        </p>
       )}
       {agentRuns.length > 0 && (
         <div className="agent-runs">
@@ -232,70 +208,6 @@ export function PackPanel({ caseId, token, version }: { caseId: string; token: s
             ))}
           </tbody>
         </table>
-      )}
-    </section>
-  )
-}
-
-export function InboxPanel({
-  caseId,
-  token,
-  session,
-  version,
-  onChanged,
-}: {
-  caseId: string
-  token: string
-  session: DemoSession
-  version: number
-  onChanged: () => Promise<void>
-}) {
-  const [inbox, setInbox] = useState<InboxView | null>(null)
-  const [text, setText] = useState('')
-  useEffect(() => {
-    api.inbox(token, caseId).then(setInbox).catch(() => setInbox(null))
-  }, [token, caseId, version])
-  if (!inbox) return null
-  return (
-    <section aria-labelledby="inbox-h" className="panel">
-      <h2 id="inbox-h">Staff inbox (in-app simulator; no WhatsApp)</h2>
-      {inbox.tasks.length === 0 && <p className="sub">No staff tasks yet.</p>}
-      <ul className="timeline">
-        {inbox.tasks.map((t) => (
-          <li key={t.id}>
-            <span className="tag">{t.kind}</span> {t.requirement_id.replaceAll('_', ' ')} · round {t.round} · {t.assignee} ·{' '}
-            {t.status}
-          </li>
-        ))}
-      </ul>
-      <ul className="messages">
-        {inbox.messages.map((m) => (
-          <li key={m.id} className={`msg msg-${m.direction}`} lang={m.locale.split('-')[0]}>
-            <div className="sub">
-              {m.direction === 'outbound' ? `To ${m.to}` : `From ${m.from}`} · {formatIst(m.created_at)} ·{' '}
-              {m.delivery_state.replaceAll('_', ' ')}
-            </div>
-            {m.body}
-          </li>
-        ))}
-      </ul>
-      {session.user.role === 'staff' && (
-        <form
-          className="reply"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            if (!text.trim()) return
-            await api.reply(token, caseId, text.trim())
-            setText('')
-            await onChanged()
-          }}
-        >
-          <label>
-            Reply as {session.user.display_name}
-            <input value={text} onChange={(e) => setText(e.target.value)} />
-          </label>
-          <button type="submit">Send</button>
-        </form>
       )}
     </section>
   )

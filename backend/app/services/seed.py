@@ -24,6 +24,7 @@ from app.services.intake import open_case
 
 FIXTURES_DIR = REPO_ROOT / "fixtures"
 RUNTIME_SUBDIRS = ("evidence", "packs")
+PRESERVED_ON_RESET = {"reasoner_calls", "provider_checks"}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -31,8 +32,14 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def reset_demo(session: Session, settings: Settings) -> None:
-    """Delete all demo rows and runtime files. Only ever touches subdirectories of DATA_DIR."""
+    """Delete all demo rows and runtime files. Only ever touches subdirectories of DATA_DIR.
+
+    Inference accounting and provider smoke checks are kept: a demo reset must not reset the
+    daily model-call cap or forget which reasoner passed its live check.
+    """
     for table in reversed(Base.metadata.sorted_tables):
+        if table.name in PRESERVED_ON_RESET:
+            continue
         session.execute(table.delete())
     data_root = settings.data_path.resolve()
     for sub in RUNTIME_SUBDIRS:

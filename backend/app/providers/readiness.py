@@ -158,4 +158,19 @@ def provider_report(settings: Settings) -> dict[str, object]:
         "integrations": [asdict(p) for p in integrations],
         "synthetic_data": True,
         "paytm_mode": settings.paytm_mode,
+        "usage": _usage(settings),
+    }
+
+
+def _usage(settings: Settings) -> dict[str, object]:
+    try:
+        from app.services.reasoner_accounting import calls_last_24h
+
+        used: int | None = calls_last_24h()
+    except RuntimeError:  # engine not initialised
+        used = None
+    return {
+        "calls_24h": used,
+        "cap": settings.reasoner_daily_call_cap,
+        "min_interval_s": settings.reasoner_min_interval_seconds,
     }

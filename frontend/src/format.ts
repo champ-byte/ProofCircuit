@@ -4,11 +4,13 @@ export function formatIst(utc: string): string {
   return `${text} IST`
 }
 
-export function formatCountdown(seconds: number): string {
+/** "47h 59m left" (or with seconds). Never negative: at/after the deadline it says so in words. */
+export function formatCountdown(seconds: number, withSeconds = false): string {
   if (seconds <= 0) return 'Deadline passed'
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
-  return `${h}h ${m}m left`
+  const s = seconds % 60
+  return withSeconds ? `${h}h ${m}m ${String(s).padStart(2, '0')}s left` : `${h}h ${m}m left`
 }
 
 export const STATE_LABELS: Record<string, string> = {
@@ -21,4 +23,9 @@ export const STATE_LABELS: Record<string, string> = {
   SUBMISSION_UNCERTAIN: 'Submission uncertain',
   MONITORING: 'Submission verified — outcome pending',
   CLOSED: 'Closed',
+}
+
+/** Slice a string by Unicode code points (backend offsets are code points, not UTF-16 units). */
+export function codePointSlice(text: string, start: number, end?: number): string {
+  return Array.from(text).slice(start, end).join('')
 }

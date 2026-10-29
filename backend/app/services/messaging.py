@@ -12,7 +12,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Case, ChecklistItem, DemoUser, Message, OutboxEvent, StaffTask
+from app.db.models import AuditEvent, Case, ChecklistItem, DemoUser, Message, OutboxEvent, StaffTask
 from app.domain.clock import get_clock
 from app.services.audit import audit
 
@@ -281,6 +281,12 @@ def inbox(session: Session, case: Case) -> dict[str, Any]:
     }
     tasks = session.scalars(select(StaffTask).where(StaffTask.case_id == case.id).order_by(StaffTask.created_at)).all()
     messages = session.scalars(select(Message).where(Message.case_id == case.id).order_by(Message.created_at)).all()
+    questions = {
+        e.data.get("staff_task_id"): e.data.get("question")
+        for e in session.scalars(
+            select(AuditEvent).where(AuditEvent.case_id == case.id, AuditEvent.event_type == "review.requested")
+        )
+    }
     return {
         "tasks": [
             {
@@ -291,6 +297,7 @@ def inbox(session: Session, case: Case) -> dict[str, Any]:
                 "assignee": users.get(t.assignee_user_id),
                 "locale": t.locale,
                 "status": t.status,
+                "question": questions.get(t.id) if t.kind == "review" else None,
                 "created_at": t.created_at,
             }
             for t in tasks

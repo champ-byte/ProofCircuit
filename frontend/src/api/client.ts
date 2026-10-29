@@ -10,6 +10,9 @@ import type {
   PackView,
   RunView,
   SubmissionView,
+  AuditEventView,
+  EvaluationResults,
+  SimulatorState,
   ProviderReport,
 } from '../types/api'
 
@@ -66,7 +69,30 @@ export const api = {
       token,
     ),
   events: (token: string, caseId: string, after: number) =>
-    request<{ events: { seq: number }[]; cursor: number }>(`/api/cases/${caseId}/events?after=${after}`, {}, token),
+    request<{ events: AuditEventView[]; cursor: number }>(`/api/cases/${caseId}/events?after=${after}`, {}, token),
+  evidenceContent: async (token: string, docId: string) => (await send(`/api/evidence/${docId}/content`, {}, token)).blob(),
+  review: (token: string, caseId: string, body: Record<string, unknown>) =>
+    request<{ approval_id?: string; expires_at?: string; consequence?: string }>(
+      `/api/cases/${caseId}/reviews`,
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+  concede: (token: string, caseId: string, approvalId: string) =>
+    request<{ submission_id: string }>(
+      `/api/cases/${caseId}/accept-dispute`,
+      { method: 'POST', body: JSON.stringify({ approval_id: approvalId, confirm: true }) },
+      token,
+    ),
+  refundCheck: (token: string, caseId: string) =>
+    request<{ decision: string; reason: string }>(`/api/cases/${caseId}/refund-policy-check`, { method: 'POST' }, token),
+  simState: (token: string, disputeId: string) =>
+    request<SimulatorState>(`/api/simulator/state?dispute_id=${encodeURIComponent(disputeId)}`, {}, token),
+  simEvent: (token: string, body: Record<string, unknown>) =>
+    request<Record<string, unknown>>('/api/simulator/events', { method: 'POST', body: JSON.stringify(body) }, token),
+  reset: (token: string) =>
+    request<{ case_id: string }>('/api/demo/reset', { method: 'POST', body: JSON.stringify({ confirm: true }) }, token),
+  resume: (token: string) => request<Record<string, number>>('/api/demo/resume-pending', { method: 'POST' }, token),
+  evaluation: () => request<EvaluationResults>('/api/evaluation/results'),
   startRun: (token: string, caseId: string, mode: 'live' | 'fixture_replay' = 'live') =>
     request<{ reasoning_label: string }>(
       `/api/cases/${caseId}/runs`,

@@ -18,6 +18,7 @@ export interface ProviderReport {
   integrations: ProviderReadiness[]
   synthetic_data: boolean
   paytm_mode: string
+  usage: { calls_24h: number | null; cap: number; min_interval_s: number }
 }
 
 export interface DemoUser {
@@ -213,6 +214,47 @@ export interface SubmissionView {
 }
 
 export interface InboxView {
-  tasks: { id: string; kind: string; requirement_id: string; round: number; assignee: string | null; locale: string; status: string }[]
+  tasks: {
+    id: string
+    kind: string
+    requirement_id: string
+    round: number
+    assignee: string | null
+    locale: string
+    status: string
+    question: string | null
+  }[]
   messages: { id: string; direction: string; from: string | null; to: string | null; locale: string; body: string; delivery_state: string; created_at: string }[]
+}
+
+export interface AuditEventView {
+  seq: number
+  event_type: string
+  summary: string
+  actor_type: string
+  data: Record<string, unknown>
+  created_at: string
+}
+
+export interface SimulatorState {
+  dispute_id: string
+  dispute_status: string
+  comment: string | null
+  due_at_utc: string
+  event_sequence: number
+  queued_faults: { api: string; kind: string; remaining: number }[]
+  receipts: { reference: string; action: string; orderStatus: string | null; intentDigest: string; createdAt: string }[]
+}
+
+export interface EvaluationResults {
+  status: string
+  planned: number
+  executed: number
+  not_run: number
+  label: string
+  categories: { category: string; planned: number; executed: number }[]
+  split: { development: number; held_out: number; first_pass: number; first_pass_selection: string }
+  mode: string | null
+  metrics: unknown
+  note: string
 }

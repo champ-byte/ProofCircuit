@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useSession } from '../session'
 import { STATE_LABELS, formatCountdown, formatIst } from '../format'
+import { secondsUntil, useNow } from '../hooks'
 import type { CaseSummary } from '../types/api'
 
 export function CasesPage({ cases }: { cases: CaseSummary[] }) {
+  const now = useNow(1000)
   if (cases.length === 0) {
     return <p className="empty">No dispute cases for this merchant.</p>
   }
@@ -37,7 +39,9 @@ export function CasesPage({ cases }: { cases: CaseSummary[] }) {
               <td className="num">{c.amount_display}</td>
               <td>
                 {formatIst(c.deadline_utc)}
-                <div className={c.deadline_expired ? 'sub warn' : 'sub'}>{formatCountdown(c.seconds_to_deadline)}</div>
+                <div className={secondsUntil(c.deadline_utc, now) <= 0 ? 'sub warn' : 'sub'}>
+                  {formatCountdown(secondsUntil(c.deadline_utc, now))}
+                </div>
               </td>
               <td>{STATE_LABELS[c.workflow_state] ?? c.workflow_state}</td>
               <td>

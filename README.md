@@ -17,6 +17,10 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
 - **M3 (Real agent)** is done. A Gemini-driven agent (default `gemini-3.5-flash-lite`) chooses each next tool through the same dispatcher and policy gate as manual mode.
   - Runs are event-triggered and coalesced, bounded (8 proposals, 2 schema repairs), and capped at a daily call limit.
   - OpenRouter is an optional fallback. A clearly labelled fixture replay is available as a non-AI demo mode.
+- **M4 (Product UI)** is done:
+  - A case workspace with a sticky header (amount at risk, a live deadline countdown), plain-language status banners, a key-steps timeline and the full audit log.
+  - Source previews that open at the cited span, plus side-by-side mismatch views.
+  - A reviewer panel with a two-step concession, a collapsible six-tab demo drawer, and an `/evaluation` page.
 - No real Paytm host is ever called.
 
 ### Enabling the live agent
@@ -92,6 +96,23 @@ uv run ruff check .
 cd frontend
 npm run build
 npm run lint
+```
+
+```bash
+cd frontend
+npm test
+```
+
+Browser E2E: start the backend and frontend first. The script resets demo data through the drawer and refuses to run while the live agent is active, so it never spends model quota.
+
+```bash
+cd backend
+AGENT_AUTORUN=false uv run uvicorn --factory app.main:create_app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+```bash
+cd frontend
+npm run e2e
 ```
 
 Contract tests never call a live model and ignore any provider keys present in the environment.

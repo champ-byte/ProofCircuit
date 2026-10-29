@@ -404,9 +404,108 @@ npm run lint                           # oxlint clean
 - The badge reflects only live providers with a fresh passing smoke test. Replay runs are labelled per run and never change it.
 - **Google data use:** on the free tier Google may use what we send, so only synthetic case data is sent.
 
+## M4 Product UI: done
+
+**Built**
+
+- **Routes:** `/cases` (queue with ticking countdowns, blocker, next action), `/cases/:id` (workspace) and `/evaluation`, plus a skip link and main navigation.
+  - The workspace remounts for each case, so state from one case never carries over to another.
+- **Case header** (sticky):
+  - Merchant, the dispute, order and transaction IDs, and **Amount at risk**.
+  - The deadline in IST with a countdown that ticks every second, plus workflow, provider status (labelled simulator) and flags.
+  - Debit and UTR appear only when the provider reports them, marked as such.
+- **Status banner:** one mapping (`src/status.ts`) from case state to plain-language text with an icon and a word, never color alone.
+  - A verified upload reads "Submission verified — dispute outcome pending … This is not a win".
+  - Other states: blocked by contradiction, needs review, waiting for staff, uncertain/reconciling, deadline passed, closed WON/LOST (simulated).
+- **Key steps:** concise steps derived from stored audit events, each linking to its event in the full log, which can be toggled open.
+  - Steps: observed gap, evidence requested, staff response, contradiction detected, review requested, pack built, submission requested, receipt verified.
+- **Evidence:**
+  - Every checklist and finding source opens the document at the exact cited span, which is highlighted, focused and scrolled into view. Spans are code-point correct.
+  - The original bytes are shown beside the extracted text (PDF iframe or image).
+  - Findings with details get a side-by-side "Dispute record vs cited document" view with the cited excerpt.
+  - The upload control is kept.
+- **Reviewer panel** (reviewer identity only):
+  - Open review requests with their questions and a Resolve button, confirm reason, and exclude a document (a source-backed reason is required).
+  - **Concession modal:** step 1 records the approval and shows the amount and consequences. Step 2 requires typing `CONCEDE`. Focus is trapped and Escape cancels.
+- **Demo drawer** (collapsible right panel; it moves below the content under 1,100 px), with ARIA tabs supporting arrow, Home and End keys:
+  - **Staff inbox:** it holds its *own* delivery or billing staff session, so replies and uploads happen in the same tab without switching identity. Devanagari messages carry a `lang` attribute.
+  - **Fault injector:** live simulator state; all action and status faults; POD rejection with a comment; WON/LOST outcomes; resending the webhook.
+  - **Identity.**
+  - **Seed / reset:** requires confirmation, then re-login and navigation to the new case.
+  - **Providers:** readiness, call usage against the cap, the smoke test, and fixture replay (not AI).
+  - **Resume pending work.**
+- **Backend additions:**
+  - `GET /api/simulator/state` (operator only, simulator extension).
+  - `usage` in `/api/providers`.
+  - Reviewer questions included in the inbox.
+  - `GET /api/evaluation/results`, an honest placeholder: "40 planned · 0 executed · 40 not run", the split, and no metrics.
+- **Fix:** a demo reset now **keeps `reasoner_calls` and `provider_checks`**. Previously it wiped them, so a reset could have bypassed the daily model-call cap and forgotten the smoke test.
+
+**Commands run**
+
+```bash
+cd backend
+uv run pytest -q                   # 196 passed
+uv run ruff check .                # All checks passed
+```
+
+```bash
+cd frontend
+npm install -D vitest@5.0.5 @testing-library/react@16.3.3 @testing-library/dom jsdom@30.1.3 playwright@1.63.0
+npm test                           # 13 passed
+npm run build                      # OK
+npm run lint                       # oxlint clean
+npm run e2e                        # passed, against live servers in manual mode
+```
+
+**Tests**
+
+- **Backend:** 196 passing, 5 new (`test_m4_ui_api.py`):
+  - The simulator state endpoint is operator-only and lists queued faults.
+  - Provider usage is reported.
+  - The reviewer question appears in the inbox.
+  - The evaluation placeholder makes no claims.
+  - A reset keeps quota accounting and smoke checks.
+- **Frontend unit tests** (vitest, 13):
+  - Status banner: a verified upload never reads as a win; WON only as a simulated outcome when closed; contradiction vs review; deadline; debit only when reported.
+  - Key-steps mapping.
+  - Countdown text and expiry.
+  - Code-point slicing; a naive UTF-16 slice would be wrong.
+  - `HighlightedPage` with Devanagari and emoji, focusing the cited span, and skipping overlapping or out-of-range spans without corrupting the text.
+  - Concession modal: needs an explanation, then the approval call, then the exact case-sensitive word `CONCEDE` before conceding. Escape cancels.
+  - Tabs: arrow, Home and End keys.
+- **Browser E2E** (`frontend/e2e/hero.e2e.mjs`, Playwright 1.63.0 with the preinstalled Chromium), driven only through the UI and drawer:
+  1. Reset through the drawer.
+  2. Request proof; check the Marathi message in the staff inbox.
+  3. Upload the wrong receipt: "Submission blocked: contradiction found". The compare view shows both order IDs, and "Open source" focuses `ORD-DEMO-OTHER`.
+  4. Round 2, then the correct receipt: "Evidence complete — ready to submit".
+  5. Build the pack, inject `drop_response_after`, submit: "Submission verified — dispute outcome pending". The trail reads `action_response:unknown → reconcile`, and all 7 key steps are present.
+  6. Reset, switch to the reviewer, concede in two steps: "Dispute closed — provider reports LOST".
+  7. At 390 px there is no horizontal scroll, and the run had **no page errors and no failed requests**.
+  - Screenshots: `docs/m4-blocked.png`, `docs/m4-verified.png`, `docs/m4-conceded.png`, `docs/m4-mobile.png`.
+- **Bugs the E2E caught, both fixed:**
+  1. A finding's "Open source" opened the document but not the cited span, because a bare document link came before the fact link. Fact-level citations are now preferred.
+  2. After a reset, the reused workspace kept the old case's selected document, causing repeated 404s. The workspace now remounts per case.
+
+**Live run** (your Gemini key, synthetic data):
+
+- Smoke test passed: `gemini-3.5-flash-lite`, 1,542 ms.
+- Then, through the new UI with the drawer acting as Sanjay:
+  1. The agent requested proof: "Requesting the missing delivery record from staff…".
+  2. After the wrong receipt it adapted: "Requesting a corrected delivery record because the current document references the wrong order ID."
+  3. After the correct receipt it built and submitted: **verified**.
+- **Total: 5 calls** (1 smoke test, 4 proposals). The Providers tab showed "5 / 150 cap".
+- Screenshot: `docs/m4-live-agent.png`.
+
+**Not done / notes**
+
+- The `/evaluation` page is an honest placeholder until the M7 harness runs.
+- Browsers differ in how they show inline PDFs. Headless Chromium does not render them, so the extracted, highlighted text is the primary source view and the original is shown alongside.
+- The E2E needs running servers (it is not a CI-hermetic test). Hindi and Marathi copy still needs native-speaker review.
+
 ## Open issues / next
 
-- **M4 next**: product UI — case workspace polish, right-hand demo drawer (staff chat, simulator fault injector, identity, seed/reset, provider readiness, resume pending work), inline reviewer journey (concession with consequences), source preview at cited spans.
+- **M5 next**: Sarvam speech-to-text for one staff voice note (`SpeechProvider`), with audio/transcript provenance and staff confirmation; `faster-whisper` fallback. Needs a Sarvam key with credit (SARVAM_API_KEY) and network access to Sarvam — not yet available in this environment.
 - Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
 - Actual Gemini free-tier quota for this key is still unmeasured (no limit was approached); the cap/pacing/429 paths are tested with fakes.
 - OpenRouter fallback is implemented and mock-tested but cannot be exercised live until `openrouter.ai` is allowed in the environment's network settings and `OPENROUTER_API_KEY` is set.
