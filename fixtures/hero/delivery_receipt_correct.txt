@@ -1,0 +1,8 @@
+METRO FURNITURE DEMO — DELIVERY RECEIPT (SYNTHETIC DEMO DOCUMENT)
+Receipt No: DLV-DEMO-0418
+Order ID: ORD-DEMO-18500
+Delivered On: {{DELIVERY_DATE}}
+Delivered To: Registered address on file
+Received By (signature): P. Deshmukh
+Delivery Agent: Sanjay
+This document is synthetic and was generated for a hackathon demo.

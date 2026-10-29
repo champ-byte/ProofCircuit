@@ -1,0 +1,9 @@
+METRO FURNITURE DEMO — TAX INVOICE (SYNTHETIC DEMO DOCUMENT)
+Invoice No: INV-DEMO-7731
+Order ID: ORD-DEMO-18500
+Order Date: {{ORDER_DATE}}
+Customer: CUST-DEMO-001
+Item: Sheesham wood 3-seater sofa x 1
+Amount: INR 18500.00
+Payment: Paytm, Transaction ID TXN-DEMO-001
+This document is synthetic and was generated for a hackathon demo.

@@ -1,0 +1,15 @@
+{
+  "_note": "Synthetic demo organisation. Fictional merchant; no real people or businesses.",
+  "merchant": {"name": "Metro Furniture Demo", "mid": "MID-DEMO-001", "default_locale": "en-IN"},
+  "users": [
+    {"handle": "owner", "display_name": "Asha (Owner)", "role": "owner", "locale": "en-IN"},
+    {"handle": "reviewer", "display_name": "Ravi (Reviewer)", "role": "reviewer", "locale": "en-IN"},
+    {"handle": "operator", "display_name": "Demo Operator", "role": "operator", "locale": "en-IN"},
+    {"handle": "staff-delivery", "display_name": "Sanjay (Delivery)", "role": "staff", "staff_function": "delivery", "locale": "mr-IN"},
+    {"handle": "staff-billing", "display_name": "Meera (Billing)", "role": "staff", "staff_function": "billing", "locale": "hi-IN"}
+  ],
+  "other_merchants": [
+    {"name": "Isolation Check Traders Demo", "mid": "MID-DEMO-002", "default_locale": "en-IN",
+     "users": [{"handle": "owner", "display_name": "Other Owner", "role": "owner", "locale": "en-IN"}]}
+  ]
+}
