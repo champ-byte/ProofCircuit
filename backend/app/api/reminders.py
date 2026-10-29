@@ -37,7 +37,7 @@ def reminder_command(
     response: Response,
     background: BackgroundTasks,
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     """Called by n8n with N8N_SERVICE_TOKEN. Recipient, locale and text always come from the stored task."""
     try:
@@ -84,7 +84,7 @@ def retry_reminder_trigger(
     request: Request,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("owner", "operator")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     try:

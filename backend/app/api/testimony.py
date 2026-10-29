@@ -48,7 +48,10 @@ def _error(exc: testimony.TestimonyError) -> HTTPException:
 
 @router.get("/cases/{case_id}/voice-notes")
 def list_voice_notes(
-    case_id: str, request: Request, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str,
+    request: Request,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     available, detail = transcription_available(request.app)
@@ -67,7 +70,7 @@ def upload_voice_note(
     file: UploadFile = File(...),
     identity: Identity = Depends(require_role("staff")),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     data = file.file.read(MAX_UPLOAD_BYTES + 1)
@@ -101,7 +104,7 @@ def get_audio(
     note_id: str,
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
     note = scoped_note(db, identity, note_id)
     return Response(
@@ -143,7 +146,7 @@ def confirm(
     request: Request,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("staff")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     note = scoped_note(db, identity, note_id)
     case = scoped_case(db, identity, note.case_id)
@@ -162,7 +165,7 @@ def correct(
     request: Request,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("staff")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     note = scoped_note(db, identity, note_id)
     case = scoped_case(db, identity, note.case_id)
@@ -181,7 +184,7 @@ def transcribe_manually(
     request: Request,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("staff")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     note = scoped_note(db, identity, note_id)
     case = scoped_case(db, identity, note.case_id)
@@ -199,7 +202,7 @@ def retry_transcription(
     request: Request,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("staff", "operator")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     note = scoped_note(db, identity, note_id)
     if identity.role == "staff" and identity.user_id != note.staff_user_id:
@@ -225,7 +228,7 @@ def voice_fixture(
     case_id: str,
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
     """Synthetic Marathi voice note (espeak-ng, robotic voice). Downloading it is not an upload."""
     if not settings.demo_mode:

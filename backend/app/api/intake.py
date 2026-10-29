@@ -30,7 +30,7 @@ async def dispute_event(
     request: Request,
     background: BackgroundTasks,
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     try:
         payload = json.loads(await request.body())

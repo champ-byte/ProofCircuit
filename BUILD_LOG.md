@@ -796,7 +796,7 @@ uv run pytest -q && uv run ruff check . && uv run ruff format --check .         
      - n8n's callback arrived at `remind_at` (11:50:21.01 vs due 11:50:20.99) and was **skipped: `task_responded`**. The inbox still held 1 reminder.
 - **Real browser:** the drawer showed "Reminder scheduled by n8n for 29 Oct 2026, 5:19 pm IST" and "Reminder sent to the staff inbox (n8n callback; no WhatsApp)" for round 1, and the scheduled line for round 2. Its skipped callback is only in the audit timeline, because skipped callbacks are not persisted as reminder rows.
 
-**Found during the live run (not fixed, logged below):** the `/api/demo/reset` response can arrive before its commit is visible. A login made immediately after it can pick up a pre-reset user ID, and later requests then get "demo session no longer valid". This is the same root cause as the E2E reset race fixed in the test earlier today. The live script waits 2 s after reset.
+**Found during the live run:** the `/api/demo/reset` response could arrive before its commit was visible. The live script waited 2 s after reset as a workaround. **Fixed** in the next entry, which also removed that wait.
 
 **Commands run**
 
@@ -812,11 +812,35 @@ uv run --project backend python -I n8n/live_check.py .                      # M6
 AGENT_AUTORUN=false uv run uvicorn ... ; E2E_ALLOW_LIVE=1 npm run e2e           # passed (reminders off)
 ```
 
+## Fix: request writes committed before the response is sent (2026-10-29)
+
+**Bug:** right after `POST /api/demo/reset`, an immediate login could get a pre-reset user, and the next request failed with "demo session no longer valid".
+
+**Root cause (verified):**
+- `get_db` commits in the code after `yield`, and every endpoint declared it as `Depends(get_db)`.
+- In FastAPI 0.162 the default dependency scope is `"request"`. Its exit code runs **after the response has been sent** (the `Depends` docstring says so).
+- So any endpoint without an explicit `db.commit()` answered before its writes were visible to other connections. About half the endpoints call `db.commit()` themselves before scheduling background work, so they were unaffected; reset was not among them.
+- A failed commit there would also have been hidden behind a 2xx the client had already received.
+- This was the underlying cause of the E2E reset race worked around earlier today (the test's `resetDemo()` URL wait stays, because the old case can still show the same banner).
+
+**Fix:**
+- All 44 `get_db` declarations (`app/api/*`, `app/simulator/api.py`, `deps.current_identity`) are now `Depends(get_db, scope="function")`, so the commit runs before the response is sent. A commit failure now surfaces as an error response.
+- `get_db`'s docstring states the rule.
+- `n8n/live_check.py` no longer waits after reset.
+
+**Tests and runs:**
+- New `tests/test_db_commit_timing.py`: an ASGI probe opens a second session the moment the reset response starts. It **failed before the fix** (it saw only the old case) and passes after it.
+- Backend: **240 passed**; ruff check and format clean.
+- Real uvicorn, reset → immediate login → read the new case, measured with `scratchpad/reset_race.py`:
+  - On the pre-fix code (stashed temporarily): **19/20** cycles succeeded; 1 got 401 "demo session no longer valid".
+  - With the fix: **50/50**.
+- `n8n/live_check.py` with no post-reset wait: `M6 LIVE CHECK PASSED`.
+- Browser E2E: passed.
+
 ## Open issues / next
 
-- **Demo reset commit race:** `POST /api/demo/reset` (and likely other `get_db` endpoints) can return before the commit is visible to the next request. Seen as "demo session no longer valid" right after a reset in the M6 live script, and as the E2E reset race. Worth fixing by committing explicitly before returning in reset. Not fixed.
 - **n8n:** the n8n container keeps running (`restart: unless-stopped`) until `docker compose -f n8n/docker-compose.yml down`. Reminders are enabled only for the processes started with the settings; `backend/.env` was **not** written in this session (the user can run `python n8n/setup.py --write-backend-env`).
-- **Backend 500 when an action races a demo reset:** `POST /cases/{id}/actions` can read the case just before a concurrent `/api/demo/reset` deletes it. The `agent_runs` insert then fails with an IntegrityError → 500 instead of 404/409. This only happens in demo mode, where reset deletes data; the E2E no longer triggers it. Not fixed.
+- **Backend 500 when an action races a demo reset:** `POST /cases/{id}/actions` can read the case just before a concurrent `/api/demo/reset` deletes it. The `agent_runs` insert then fails with an IntegrityError → 500 instead of 404/409. This only happens in demo mode, where reset deletes data; the E2E no longer triggers it. The commit-timing fix narrows the window (clients now see the reset before they act), but a truly concurrent action can still hit it. Not fixed.
 - **Speech:** `WHISPER_MODEL` stays `small` (decision 7). The robotic espeak smoke fixture still fails for every model, so live transcription needs `SPEECH_REQUIRE_PASSING_SMOKE=false` until a human reference clip or Sarvam replaces it. The Sarvam adapter is still unbuilt (no key or access).
 - **Node:** the user has Node 26 (current), while HANDOFF lists Node ≥ 22.19. Everything passed on 26.
 - **Next milestones:** M7 tests and evaluation (C03/C04 completion, C07 POD repair, ten-case first pass), M8 optional.

@@ -41,7 +41,7 @@ async def dispute_status(
     request: Request,
     background: BackgroundTasks,
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> JSONResponse:
     try:
         payload = json.loads(await request.body())
@@ -74,7 +74,7 @@ async def dispute_action(
     request: Request,
     background: BackgroundTasks,
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
     form = await request.form(max_files=50, max_fields=50)
     params: dict[str, str] = {}
@@ -118,7 +118,7 @@ def list_receipts(
     disputeId: str,
     request: Request,
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> list[dict[str, Any]]:
     _check_receipt_signature(request, settings, {"mid": mid, "disputeId": disputeId})
     rows = db.scalars(
@@ -131,7 +131,10 @@ def list_receipts(
 
 @router.get("/receipts/{reference}")
 def get_receipt(
-    reference: str, request: Request, settings: Settings = Depends(get_settings_dep), db: Session = Depends(get_db)
+    reference: str,
+    request: Request,
+    settings: Settings = Depends(get_settings_dep),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     _check_receipt_signature(request, settings, {"reference": reference})
     row = db.scalar(select(SimulatorSubmission).where(SimulatorSubmission.reference == reference))
@@ -161,7 +164,7 @@ class SimEvent(BaseModel):
 def simulator_state(
     dispute_id: str,
     identity: Identity = Depends(require_role("operator")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     """Demo drawer view of the simulated provider (simulator-only; not a Paytm API)."""
     merchant = db.get(Merchant, identity.merchant_id)
@@ -194,7 +197,7 @@ def inject_event(
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("operator")),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     merchant = db.get(Merchant, identity.merchant_id)
     assert merchant is not None

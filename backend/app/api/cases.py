@@ -123,7 +123,7 @@ def _scoped_query(identity: Identity):  # type: ignore[no-untyped-def]
 def list_cases(
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> list[dict[str, Any]]:
     rows = db.execute(_scoped_query(identity).order_by(Case.deadline_utc)).all()
     return [_summary(db, c, m, o, settings) for c, m, o in rows]
@@ -134,7 +134,7 @@ def get_case(
     case_id: str,
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     row = db.execute(_scoped_query(identity).where(Case.id == case_id)).first()
     if row is None:

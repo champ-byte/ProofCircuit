@@ -14,7 +14,9 @@ router = APIRouter(prefix="/api", tags=["health"])
 
 
 @router.get("/health")
-def health(settings: Settings = Depends(get_settings_dep), db: Session = Depends(get_db)) -> dict[str, Any]:
+def health(
+    settings: Settings = Depends(get_settings_dep), db: Session = Depends(get_db, scope="function")
+) -> dict[str, Any]:
     db.execute(text("SELECT 1"))
     report = provider_report(settings)
     return {

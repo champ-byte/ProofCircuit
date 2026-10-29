@@ -29,7 +29,9 @@ class SessionRequest(BaseModel):
 
 
 @router.get("/users")
-def list_demo_users(_: Settings = Depends(_require_demo_mode), db: Session = Depends(get_db)) -> list[dict[str, Any]]:
+def list_demo_users(
+    _: Settings = Depends(_require_demo_mode), db: Session = Depends(get_db, scope="function")
+) -> list[dict[str, Any]]:
     rows = db.execute(select(DemoUser, Merchant).join(Merchant, DemoUser.merchant_id == Merchant.id)).all()
     return [
         {
@@ -46,7 +48,9 @@ def list_demo_users(_: Settings = Depends(_require_demo_mode), db: Session = Dep
 
 @router.post("/session")
 def create_session(
-    req: SessionRequest, settings: Settings = Depends(_require_demo_mode), db: Session = Depends(get_db)
+    req: SessionRequest,
+    settings: Settings = Depends(_require_demo_mode),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     row = db.execute(
         select(DemoUser, Merchant)
@@ -73,7 +77,7 @@ class ResetRequest(BaseModel):
 def seed(
     settings: Settings = Depends(_require_demo_mode),
     identity: Identity = Depends(require_role("operator")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = seed_demo(db, settings, get_clock())
     return {"case_id": case.id, "dispute_id": case.external_dispute_id}
@@ -84,7 +88,7 @@ def reset(
     req: ResetRequest,
     settings: Settings = Depends(_require_demo_mode),
     identity: Identity = Depends(require_role("operator")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     if not req.confirm:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "reset requires confirm=true")

@@ -57,7 +57,7 @@ def run_action(
     response: Response,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("owner", "operator")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     if req.tool not in AGENT_TOOLS:
@@ -99,7 +99,7 @@ def start_run(
     req: RunRequest | None = None,
     identity: Identity = Depends(require_role("owner", "operator")),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     """Start/resume. Live runs use the model only after a passing smoke test; otherwise the case is
     re-evaluated deterministically (manual mode). Fixture replay is operator-only and always labelled."""
@@ -131,7 +131,7 @@ async def provider_smoke(
 
 @router.get("/cases/{case_id}/runs")
 def list_runs(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> list[dict[str, Any]]:
     case = scoped_case(db, identity, case_id)
     runs = db.scalars(select(AgentRun).where(AgentRun.case_id == case.id).order_by(AgentRun.started_at)).all()
@@ -165,7 +165,10 @@ def list_runs(
 
 @router.get("/cases/{case_id}/events")
 def case_events(
-    case_id: str, after: int = 0, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str,
+    after: int = 0,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     rows = db.scalars(
@@ -197,7 +200,7 @@ class StaffMessage(BaseModel):
 
 @router.get("/cases/{case_id}/messages")
 def get_inbox(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> dict[str, Any]:
     return messaging.inbox(db, scoped_case(db, identity, case_id))
 
@@ -209,7 +212,7 @@ def post_staff_message(
     request: Request,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("staff")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     staff = db.get(DemoUser, identity.user_id)
@@ -239,7 +242,7 @@ def review(
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("reviewer")),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     db.add(
@@ -331,7 +334,7 @@ def accept_dispute(
     response: Response,
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("reviewer")),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     """ "Accept the customer's dispute (concede)": human-only, single-use, version-bound approval."""
     case = scoped_case(db, identity, case_id)
@@ -373,7 +376,7 @@ def accept_dispute(
 
 @router.post("/cases/{case_id}/refund-policy-check")
 def refund_check(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     result = refund_policy(case)
@@ -395,7 +398,7 @@ def refund_check(
 
 @router.get("/cases/{case_id}/pack")
 def list_packs(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> list[dict[str, Any]]:
     case = scoped_case(db, identity, case_id)
     packs = db.scalars(select(EvidencePack).where(EvidencePack.case_id == case.id).order_by(EvidencePack.version)).all()
@@ -424,7 +427,7 @@ def download_pack_file(
     filename: Literal["manifest.json", "evidence-index.html", "cover.pdf"],
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
     case = scoped_case(db, identity, case_id)
     pack = db.scalar(select(EvidencePack).where(EvidencePack.case_id == case.id, EvidencePack.version == version))
@@ -449,7 +452,7 @@ def download_pack_file(
 
 @router.get("/cases/{case_id}/submissions")
 def list_submissions(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> list[dict[str, Any]]:
     case = scoped_case(db, identity, case_id)
     subs = db.scalars(select(Submission).where(Submission.case_id == case.id).order_by(Submission.created_at)).all()

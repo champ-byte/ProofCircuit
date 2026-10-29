@@ -80,7 +80,6 @@ def request_proof(case_id):
 r = c.post("/api/demo/reset", headers=login("operator"), json={"confirm": True})
 r.raise_for_status()
 case_id = r.json()["case_id"]
-time.sleep(2)  # the reset response can arrive before its commit is visible (logged as an open issue)
 log("reset; case", case_id)
 
 # 1. Evidence request -> backend triggers n8n automatically

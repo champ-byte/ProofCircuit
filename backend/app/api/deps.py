@@ -30,6 +30,9 @@ def get_settings_dep(request: Request) -> Settings:
 
 
 def get_db() -> Iterator[Session]:
+    """Request session that commits on success. Always declare it as `Depends(get_db, scope="function")`:
+    the default "request" scope would commit only after the response is sent, so a client acting on
+    the response could read stale state and a failed commit would hide behind a 2xx."""
     session = session_factory()()
     try:
         yield session
@@ -82,7 +85,7 @@ def verify_token(settings: Settings, token: str) -> Identity | None:
 
 
 def current_identity(
-    request: Request, settings: Settings = Depends(get_settings_dep), db: Session = Depends(get_db)
+    request: Request, settings: Settings = Depends(get_settings_dep), db: Session = Depends(get_db, scope="function")
 ) -> Identity:
     header = request.headers.get("authorization", "")
     if not header.lower().startswith("bearer "):

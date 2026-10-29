@@ -141,7 +141,7 @@ def evidence_overview(db: Session, case: Case) -> dict[str, Any]:
 
 @router.get("/cases/{case_id}/evidence")
 def get_case_evidence(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> dict[str, Any]:
     return evidence_overview(db, scoped_case(db, identity, case_id))
 
@@ -155,7 +155,7 @@ def upload_evidence(
     file: UploadFile = File(...),
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     case = scoped_case(db, identity, case_id)
     data = file.file.read(MAX_UPLOAD_BYTES + 1)
@@ -185,7 +185,7 @@ def upload_evidence(
 
 @router.get("/evidence/{doc_id}")
 def get_document(
-    doc_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    doc_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> dict[str, Any]:
     doc = scoped_document(db, identity, doc_id)
     pages = db.scalars(
@@ -205,7 +205,7 @@ def get_document_content(
     doc_id: str,
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
     doc = scoped_document(db, identity, doc_id)
     data = read_original(settings, doc.storage_key)
@@ -235,7 +235,7 @@ def exclude(
     background: BackgroundTasks,
     identity: Identity = Depends(require_role("owner", "reviewer")),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> dict[str, Any]:
     doc = scoped_document(db, identity, doc_id)
     if not is_active(doc):
@@ -250,7 +250,7 @@ def exclude(
 
 @router.get("/demo/cases/{case_id}/fixtures")
 def list_fixtures(
-    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db)
+    case_id: str, identity: Identity = Depends(current_identity), db: Session = Depends(get_db, scope="function")
 ) -> list[dict[str, str]]:
     scoped_case(db, identity, case_id)
     return [
@@ -264,7 +264,7 @@ def download_fixture(
     name: str,
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings_dep),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ) -> Response:
     """Synthetic demo documents for staff to upload. Rendering is not an upload."""
     if not settings.demo_mode:
