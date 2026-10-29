@@ -17,9 +17,9 @@ This page is short on purpose. [BUILD_LOG.md](BUILD_LOG.md) holds the detailed h
   - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI, M5 Staff voice notes (local faster-whisper only; Sarvam not built).
   - Not started: M6 n8n follow-up, M7 Tests and evaluation, M8 Optional.
 - **Tests:**
-  - Backend: 221 pytest passed.
+  - Backend: 222 pytest passed (locally on Windows too, after adding `tzdata`).
   - Frontend: 20 vitest passed, and `npm run e2e` (Playwright) passes against a running stack.
-  - Live faster-whisper `small`/`medium` ran but failed the synthetic Marathi smoke check (CER 0.85–1.00), so transcription is blocked by default and staff type a labelled transcription.
+  - Speech: on one human Marathi recording (local, not committed), faster-whisper scored CER 0.21 (`small`), 0.16 (`medium`) and 0.09 (`large-v3`). All three still fail the robotic espeak smoke fixture, so transcription stays blocked by default unless `SPEECH_REQUIRE_PASSING_SMOKE=false`. See BUILD_LOG "Local setup and M5 follow-up".
   - Live Gemini hero runs passed in M3 and M4 (5 calls each).
 - **PRD test groups:**
   - Done: C01, C02, C05, C06, C08.
@@ -53,7 +53,7 @@ The cloud container's database, smoke-test results and downloaded models do not 
 
 **Prerequisites:**
 
-- Required: Python ≥ 3.11, [uv](https://docs.astral.sh/uv/), Node 22 and git.
+- Required: Python ≥ 3.11, [uv](https://docs.astral.sh/uv/), Node ≥ 22.19 (jsdom's undici 8 needs it) and git.
 - Optional: ffmpeg (audio), Docker (M6 n8n), and Ollama with an installed Gemma tag (M8).
 
 **Get the branch** (the work is not on `main`):
@@ -107,7 +107,7 @@ cd backend && SPEECH_PROVIDER=faster_whisper uv run python -m app.cli smoke-spee
 - No proxy blocks: Hugging Face, Docker Hub (n8n) and `openrouter.ai` should be reachable.
 - Playwright needs its own browser (`npx playwright install chromium`, as above). `PC_CHROMIUM=/path/to/chrome` also works.
 - Stop servers with Ctrl+C. The `ps aux | grep` workaround below only mattered in the cloud shell.
-- **Open test:** record a short human Marathi or Hindi voice note (synthetic content, e.g. the line in `fixtures/hero/voice_note_mr.txt`). Upload it from the drawer, or measure it against the known script. M5 could not test this; see BUILD_LOG M5.
+- **Human speech:** measure any recording with `uv run python -m app.cli transcribe-file AUDIO --reference ../fixtures/hero/voice_note_mr.txt --out result.json`. One human Marathi clip has been measured (see BUILD_LOG); Hindi is still untested.
 - Record the local environment (OS, Python, Node, CPU/GPU, Docker/Ollama) in BUILD_LOG.md at the start of the first local milestone.
 
 ## Run and verify

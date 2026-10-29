@@ -11,6 +11,7 @@ from app.db.migrate import upgrade_to_head
 from app.db.session import init_engine, session_scope
 from app.domain.clock import get_clock
 from app.providers.readiness import provider_report
+from app.providers.speech import WHISPER_LANGUAGES
 from app.services.seed import reset_demo, seed_demo
 
 
@@ -27,6 +28,11 @@ def main(argv: list[str] | None = None) -> int:
     smoke.add_argument("--provider", default=None, help="gemini | openrouter (default: REASONER_PROVIDER)")
     sub.add_parser("smoke-speech", help="transcribe the synthetic Marathi fixture with local faster-whisper")
     sub.add_parser("speech-download", help="explicitly download WHISPER_MODEL into the Hugging Face cache")
+    tf = sub.add_parser("transcribe-file", help="measure local faster-whisper on a recording (records no check)")
+    tf.add_argument("audio", help="path to the recording")
+    tf.add_argument("--locale", default="mr-IN", choices=sorted(WHISPER_LANGUAGES))
+    tf.add_argument("--reference", default=None, help="UTF-8 text file with what was said; adds the CER")
+    tf.add_argument("--out", default=None, help="write the UTF-8 JSON result here instead of stdout")
     args = parser.parse_args(argv)
 
     try:
@@ -55,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
 
         print(f"Model {settings.whisper_model!r} at {download_model(settings.whisper_model)}")
         return 0
+    if args.cmd == "transcribe-file":
+        return _transcribe_file(settings, args.audio, args.locale, args.reference, args.out)
 
     settings.data_path.mkdir(parents=True, exist_ok=True)
     upgrade_to_head(settings.resolved_database_url)
@@ -108,6 +116,24 @@ def _smoke_speech(settings) -> int:  # type: ignore[no-untyped-def]
     init_engine(settings)
     result = asyncio.run(smoke_speech(settings))
     print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["ok"] else 1
+
+
+def _transcribe_file(settings, audio: str, locale: str, reference: str | None, out: str | None) -> int:  # type: ignore[no-untyped-def]
+    import asyncio
+    from pathlib import Path
+
+    from app.services.speech_smoke import transcribe_file
+
+    ref = Path(reference).read_text(encoding="utf-8").strip() if reference else None
+    result = asyncio.run(transcribe_file(settings, Path(audio), locale, ref))
+    text = json.dumps(result, indent=2, ensure_ascii=False)
+    if out:
+        Path(out).write_text(text + "\n", encoding="utf-8")
+        cer = result.get("character_error_rate")
+        print(f"ok={result['ok']} cer={cer} latency_ms={result.get('latency_ms')} -> {out}")
+    else:
+        print(text)
     return 0 if result["ok"] else 1
 
 

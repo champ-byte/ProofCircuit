@@ -6,8 +6,10 @@ the known script is a measurement on one robotic espeak-ng clip, not an accuracy
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
+from pathlib import Path
 from typing import Any
 
 from app.config import REPO_ROOT, Settings
@@ -79,3 +81,49 @@ async def smoke_speech(settings: Settings, provider: Any | None = None) -> dict[
         "transcript": text,
         "character_error_rate": round(cer, 4),
     }
+
+
+async def transcribe_file(
+    settings: Settings,
+    audio_path: Path,
+    locale: str,
+    reference: str | None = None,
+    provider: Any | None = None,
+) -> dict[str, Any]:
+    """Measure the product STT path on any local recording; one clip is not the readiness gate.
+
+    Unlike `smoke_speech`, nothing is recorded in `provider_checks`.
+    """
+    stt = provider or FasterWhisperProvider(settings)
+    audio = audio_path.read_bytes()
+    base = {
+        "audio": audio_path.name,
+        "audio_sha256": hashlib.sha256(audio).hexdigest(),
+        "audio_bytes": len(audio),
+        "locale": locale,
+        "model": settings.whisper_model_dir or settings.whisper_model,
+    }
+    try:
+        result = await stt.transcribe(audio, locale)
+    except SpeechError as exc:
+        return {**base, "ok": False, "error": f"{exc.kind}: {exc}"}
+    text = " ".join(s.text for s in result.segments)
+    out: dict[str, Any] = {
+        **base,
+        "ok": bool(text.strip()),
+        "provider": result.provider,
+        "model": result.model,
+        "language": result.language,
+        "language_probability": result.language_probability,
+        "duration_ms": result.duration_ms,
+        "latency_ms": result.latency_ms,
+        "notes": result.notes,
+        "segments": [{"text": s.text, "start_ms": s.start_ms, "end_ms": s.end_ms} for s in result.segments],
+        "transcript": text,
+    }
+    if reference is not None:
+        cer = character_error_rate(reference, text)
+        out["reference"] = reference
+        out["character_error_rate"] = round(cer, 4)
+        out["within_smoke_limit"] = bool(text.strip()) and cer <= settings.speech_smoke_max_cer
+    return out

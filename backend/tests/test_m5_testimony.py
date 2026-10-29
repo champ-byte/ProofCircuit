@@ -432,6 +432,38 @@ def test_faster_whisper_readiness_needs_local_model_then_smoke(tmp_path: Path, c
     speech_mod._location_cache.clear()
 
 
+def test_transcribe_file_measures_a_recording_without_recording_a_check(tmp_path: Path) -> None:
+    import hashlib
+
+    from app.main import create_app
+    from app.providers.readiness import latest_check
+    from app.services.speech_smoke import transcribe_file
+
+    settings = make_settings(tmp_path, speech_provider="faster_whisper")
+    audio = tmp_path / "Recording.m4a"
+    audio.write_bytes(b"\x00\x00\x00\x20ftypM4A stand-in")
+    script = (REPO_ROOT / "fixtures" / "hero" / "voice_note_mr.txt").read_text(encoding="utf-8").strip()
+    with TestClient(create_app(settings)):
+        exact = FakeSpeechProvider([stt((script, 0, 11000))])
+        good = asyncio.run(transcribe_file(settings, audio, "mr-IN", script, exact))
+        assert good["ok"] is True and good["character_error_rate"] == 0 and good["within_smoke_limit"] is True
+        assert good["audio_sha256"] == hashlib.sha256(audio.read_bytes()).hexdigest()
+        assert exact.calls == [{"bytes": audio.stat().st_size, "locale": "mr-IN"}]
+
+        wrong = FakeSpeechProvider([stt(("meat, Greek yogurt salt", 0, 6000))])
+        bad = asyncio.run(transcribe_file(settings, audio, "mr-IN", script, wrong))
+        assert bad["character_error_rate"] > 0.35 and bad["within_smoke_limit"] is False
+
+        plain = asyncio.run(transcribe_file(settings, audio, "mr-IN", None, FakeSpeechProvider([stt((MR_1, 0, 1))])))
+        assert plain["transcript"] == MR_1 and "character_error_rate" not in plain
+
+        failing = FakeSpeechProvider([SpeechError("failed", "decoder broke")])
+        failed = asyncio.run(transcribe_file(settings, audio, "mr-IN", script, failing))
+        assert failed["ok"] is False and failed["error"] == "failed: decoder broke"
+        # A measurement is not the readiness gate: no provider check is written.
+        assert latest_check("faster_whisper", settings.whisper_model, 24 * 365) is None
+
+
 def test_character_error_rate() -> None:
     from app.services.speech_smoke import character_error_rate
 

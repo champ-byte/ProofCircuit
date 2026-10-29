@@ -9,6 +9,19 @@ Entries record commands actually run, test results and open issues. Nothing belo
 - Ollama is not installed, so the local Gemma fallback cannot run in this environment.
 - `GEMINI_API_KEY` is set in the environment settings, not in the repo. A read-only `GET /v1beta/models` with the key succeeded. Gemini 3.x text models available to the key include `gemini-3.5-flash-lite`, `gemini-3.8-flash`, `gemini-3.1-flash-lite`, `gemini-3-flash-preview` and `gemini-3.1-pro-preview`. No generation call has been made yet.
 
+## Environment (local session, 2026-10-29)
+
+The user's own machine, from here on. Cloud-only gotchas in HANDOFF.md (proxy blocks, preinstalled Chromium, `pkill` matching the shell) do not apply.
+
+- **OS:** Windows 11 Home 10.0.26200. Shells: PowerShell 5.1 and Git Bash.
+- **CPU/GPU:** Intel i7-14650HX (16 cores, 24 threads), 15.7 GB RAM. NVIDIA RTX 4050 Laptop GPU, 6 GB, driver 566.24. Speech runs on the CPU (`int8`); CUDA is not set up.
+- **Python:** system 3.11.9, but `uv` 0.9.8 runs the backend on its managed CPython 3.12.12.
+- **Node:** 22.14.0, npm 10.9.2. **Too old for the locked frontend** (see the local setup entry below).
+- **Docker:** 28.5.1 installed (needed for M6). **Ollama:** 0.32.14 client installed, but no server was running.
+- **ffmpeg:** not on PATH. Not needed: PyAV bundles its decoders, including AAC/M4A.
+- **Secrets:** `GEMINI_API_KEY` is in the repo-root `.env` (gitignored); the settings loader confirms it is set, and it was never printed. `SESSION_SECRET`/`DEMO_WEBHOOK_SECRET` are unset, so they are ephemeral per process.
+- **Speech stack:** faster-whisper 1.2.1, CTranslate2 4.8.4, PyAV 16.1.0. The Hugging Face cache already held `Systran/faster-whisper-small` and `-base` from before this project.
+
 ## Decisions that deviate from PRD.md
 
 1. **Gemini is the default primary reasoner** (`REASONER_PROVIDER=gemini`), using the user's free-tier key; OpenRouter becomes the optional fallback (`FALLBACK_PROVIDER=openrouter`, disabled by default). PRD §6.2 made OpenRouter primary and Gemini a P1 adapter. This was the user's decision, given that `openrouter.ai` is blocked here and Gemini is reachable.
@@ -635,9 +648,71 @@ E2E_ALLOW_LIVE=1 npm run e2e           # passed (backend AGENT_AUTORUN=false; 0 
 - With the Gemini smoke check fresh, `/api/health` reads `live` even under `AGENT_AUTORUN=false`, so the E2E needs `E2E_ALLOW_LIVE=1`. With autorun off and no "Run agent" click, no model call is made (checked: 5 before, 5 after).
 - Smoke checks for speech are kept for a year per model (there is no quota to protect). A new model name needs its own check.
 
+## Local setup and M5 follow-up: human Marathi STT measured (2026-10-29)
+
+**Local setup problems found**
+
+1. **Backend: 34 failed, 121 errors on first run.** Windows has no system IANA timezone database, so `ZoneInfo("Asia/Kolkata")` raised `ZoneInfoNotFoundError` in seeding. A diagnostic run with `uv run --with tzdata pytest -q` passed all 221. With the user's approval, `tzdata` (2026.6) is now a backend dependency. Linux and macOS ignore it.
+2. **Frontend: `npm test` cannot start.** jsdom 30.1.3 pulls undici 8.12.3, which requires Node ≥ 22.19 (it uses `zlib.createZstdDecompress`); this machine has Node 22.14.0. Every vitest worker fails with `TypeError: Cannot read properties of undefined (reading 'bind')`. The user will upgrade Node. **The frontend tests, build, lint and E2E have not been run locally yet.**
+
+**Added:** `uv run python -m app.cli transcribe-file AUDIO [--locale mr-IN|hi-IN|en-IN] [--reference FILE] [--out FILE]` (`services/speech_smoke.transcribe_file`).
+- It runs the exact product STT path (`FasterWhisperProvider`: forced language, beam 5, no VAD, duration cap) on any local recording.
+- It reports the transcript, segments, latency, audio SHA-256 and, with a reference, the CER from the same `character_error_rate`.
+- It writes **no** `provider_checks` row: one clip is a measurement, not the readiness gate.
+- `--out` writes UTF-8 JSON, because the Windows console mangles Devanagari.
+- New test: `test_transcribe_file_measures_a_recording_without_recording_a_check` (exact transcript gives CER 0; a wrong one is over the limit; no reference gives no CER; the hash matches; errors are reported; no check is written).
+
+**Recording:** a human Marathi voice note by the user reading exactly `fixtures/hero/voice_note_mr.txt` (synthetic content).
+- `Recording.m4a`: 234,017 bytes, 9.17 s, SHA-256 `eb26aea80f0917fa76a00482ef0a3a1621b9d26dfc9b401827e53b3cb6368afd`.
+- **Kept local, not committed** (user decision).
+- Level: peak −19.6 dBFS, RMS −31.1 dBFS. This is quiet (speech usually peaks around −6 dBFS) but clean, and it transcribed well, so volume was not the limiting factor.
+
+**Live results** (real faster-whisper, CPU `int8` on the i7-14650HX, `language=mr` forced, same settings as the product):
+
+| Model | Human recording (9.2 s): transcript | CER | Latency | espeak fixture smoke (11.2 s) |
+| --- | --- | --- | --- | --- |
+| `small` | मी आदी चुकी ची पावती पात्वली होती, ती पावती तुस्रे अडर ची होती, आता या अडर ची योग्या डिलिवरी पावती पात्वता है. | **0.21** | 8.9 s | fail, CER 0.41, 7.9 s |
+| `medium` | मी आधी चुक्कीची पावती पाथवली होती, ती पावती दुस्रे आओर्डर्ची होती, आता या आओर्डर्ची योग्या डिलिवरी पावती पाथवता है। | **0.16** | 12.8 s | fail, empty transcript (CER 1.00), 80 s |
+| `large-v3` | मी आधी चुकीची पावती पाठवली होती, ती पावती दूसरे ओर्डरची होती, आता या ओर्डरची योग्य डिलिवरी पावती पाठवता है | **0.09** | 22.3 s | fail, CER 0.41, 25.9 s |
+
+Reference: मी आधी चुकीची पावती पाठवली होती. ती पावती दुसऱ्या ऑर्डरची होती. आता या ऑर्डरची योग्य डिलिव्हरी पावती पाठवत आहे.
+
+- **Conclusion (measured):**
+  - All three models meet the 0.35 CER bar on this one human recording, and `large-v3` is nearly exact.
+  - All three still fail the robotic espeak-ng fixture, so the smoke gate stays **failed** and transcription stays blocked by default. That gate measures a synthetic voice, not human speech.
+  - Every model ends with the Hindi "पाठवता है" instead of Marathi "पाठवत आहे". `small`/`medium` also mangle the English loanword "ऑर्डर", and `small`/`medium` spell retroflex sounds wrongly (पात्वली/पाथवली for पाठवली). The remaining errors are Hindi bias and loanwords, not audio level.
+  - One speaker and one sentence: this is evidence, not an accuracy claim.
+  - Latency on this CPU is about 1–2.5× real time, far faster than the cloud's 4 CPUs (92–218 s).
+- **Real product run** (`large-v3`):
+  - Setup: backend on 127.0.0.1:8000 with `SPEECH_PROVIDER=faster_whisper WHISPER_MODEL=large-v3 SPEECH_REQUIRE_PASSING_SMOKE=false AGENT_AUTORUN=false`. The UI badge showed the failed-smoke override text.
+  - Upload: the M4A went up as Sanjay via `POST /api/cases/{id}/voice-notes` and returned 201 `awaiting_transcription`. It was sniffed as `audio/mp4`, with a matching SHA-256 and a duration of 9173 ms.
+  - The runner produced transcript v1 after 28 s (STT latency 27.6 s). The transcript is `method=stt`, `model=large-v3`, **unconfirmed**. Its one segment is 0–8380 ms, `timestamp_in_range: true`, with the code-point recheck OK.
+  - No model call was made (autorun off). The uploaded copy lives under the gitignored `data/evidence/` and goes away on `cli reset --yes`.
+- **Models in the HF cache:** `small` 0.45 GB (pre-existing), `medium` 1.43 GB, `large-v3` 2.88 GB. None failed on human speech, so none were deleted (the user asked to delete only the ones that don't work).
+
+**Commands run**
+
+```bash
+git fetch origin claude/stoic-pasteur-3b0gu1 && git checkout claude/stoic-pasteur-3b0gu1
+cd backend && uv sync --extra speech && uv run pytest -q          # 34 failed, 121 errors (tzdata)
+uv run --with tzdata pytest -q                                     # 221 passed (diagnostic)
+uv add tzdata && uv sync --extra speech && uv run pytest -q        # 221 passed
+uv run python -m app.cli smoke-reasoner                            # ok, gemini-3.5-flash-lite, 1 call, 7.0 s
+cd frontend && npm ci && npm test                                  # cannot start: Node 22.14 < 22.19 (undici 8)
+WHISPER_MODEL=medium uv run python -m app.cli speech-download; WHISPER_MODEL=large-v3 ...   # downloaded
+SPEECH_PROVIDER=faster_whisper WHISPER_MODEL={small,medium,large-v3} uv run python -m app.cli transcribe-file Recording.m4a --reference ../fixtures/hero/voice_note_mr.txt --out <scratch>/<model>.json
+SPEECH_PROVIDER=faster_whisper WHISPER_MODEL={small,medium,large-v3} uv run python -m app.cli smoke-speech   # all fail
+uv run pytest -q && uv run ruff check . && uv run ruff format --check .                    # 222 passed, clean
+```
+
 ## Open issues / next
 
-- **Speech quality:** faster-whisper `small`/`medium` failed the synthetic Marathi smoke check (CER 0.85–1.00, 92–218 s per 11 s clip on 4 CPUs). Test with a human recording, and consider `large-v3` or a GPU if available. The Sarvam adapter is still unbuilt (no key or access).
+- **Frontend on this machine:** upgrade Node to ≥ 22.19, then run `npm ci && npm test` (expect 20), `npx playwright install chromium` and the E2E.
+- **Speech decisions pending (user):**
+  - Should the default `WHISPER_MODEL` become `large-v3` (best CER, ~22 s per 9 s clip, 2.9 GB) or stay `small` (CER 0.21, ~9 s)?
+  - Should the robotic espeak smoke fixture be replaced or supplemented by a human reference clip, so the gate measures human speech? The user's recording is kept local by their decision.
+  - Should `medium` be removed from the cache? It sits between `small` and `large-v3` and is the slowest on the fixture.
+  - The Sarvam adapter is still unbuilt (no key or access).
 - **Next milestones:** M6 n8n follow-up, M7 tests and evaluation (C03/C04 completion, C07 POD repair, ten-case first pass), M8 optional.
 - Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
 - Actual Gemini free-tier quota for this key is still unmeasured (no limit was approached); the cap/pacing/429 paths are tested with fakes.
