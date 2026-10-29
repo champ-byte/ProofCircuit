@@ -46,7 +46,7 @@ def test_configured_key_is_untested_until_smoke_test_and_never_exposed(tmp_path:
         assert secret not in resp.text
         assert resp.json()["reasoners"][0]["status"] == "configured_untested"
         assert resp.json()["reasoning_mode"]["mode"] == "manual"  # untested is not live
-        record_smoke_result("gemini", True, "smoke ok")
+        record_smoke_result("gemini", True, "smoke ok", model_requested=s.gemini_model, model_returned=s.gemini_model)
         body = c.get("/api/providers").json()
         assert body["reasoners"][0]["status"] == "ready"
         assert body["reasoning_mode"] == {"mode": "live", "label": f"Gemini — {s.gemini_model}"}

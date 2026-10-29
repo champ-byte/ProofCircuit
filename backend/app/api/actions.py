@@ -26,7 +26,7 @@ from app.domain.clock import get_clock
 from app.domain.enums import DisputeReason
 from app.domain.money import format_inr
 from app.providers.base import AGENT_TOOLS
-from app.runner import enqueue, resume_all, schedule
+from app.runner import enqueue, enqueue_continuation, resume_all, schedule
 from app.services import messaging
 from app.services.audit import audit
 from app.services.policy import approval_payload_hash, check_concession, refund_policy
@@ -86,22 +86,47 @@ def run_action(
     return {"run_id": run.id, "pending_work_id": work.id}
 
 
+class RunRequest(BaseModel):
+    mode: Literal["live", "fixture_replay"] = "live"
+
+
 @router.post("/cases/{case_id}/runs")
 def start_run(
     case_id: str,
     request: Request,
     response: Response,
     background: BackgroundTasks,
+    req: RunRequest | None = None,
     identity: Identity = Depends(require_role("owner", "operator")),
+    settings: Settings = Depends(get_settings_dep),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Event-triggered start/resume. M2 runs the deterministic evaluator; M3 adds the model loop."""
+    """Start/resume. Live runs use the model only after a passing smoke test; otherwise the case is
+    re-evaluated deterministically (manual mode). Fixture replay is operator-only and always labelled."""
     case = scoped_case(db, identity, case_id)
-    work = enqueue(db, case, "evaluate", {"trigger": "manual_start", "actor_id": identity.user_id})
+    mode = req.mode if req else "live"
+    if mode == "fixture_replay" and identity.role != "operator":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "fixture replay is an operator demo control")
+    work = enqueue_continuation(db, case, "manual_start", mode=mode)
     db.commit()
     schedule(background, request.app, case.id)
     _accepted(response)
-    return {"pending_work_id": work.id, "mode": "manual"}
+    from app.providers.readiness import provider_report
+
+    label = "Fixture replay" if mode == "fixture_replay" else provider_report(settings)["reasoning_mode"]["label"]
+    return {"pending_work_id": work.id, "mode": mode, "reasoning_label": label}
+
+
+@router.post("/providers/smoke")
+async def provider_smoke(
+    request: Request,
+    provider: Literal["gemini", "openrouter"] = "gemini",
+    identity: Identity = Depends(require_role("operator")),
+) -> dict[str, Any]:
+    """Operator-triggered live smoke test (spends 1–4 inference calls)."""
+    from app.services.smoke import smoke_test
+
+    return await smoke_test(request.app, provider)
 
 
 @router.get("/cases/{case_id}/runs")
@@ -190,7 +215,7 @@ def post_staff_message(
     staff = db.get(DemoUser, identity.user_id)
     assert staff is not None
     message = messaging.staff_reply(db, case, staff, msg.body)
-    enqueue(db, case, "evaluate", {"trigger": "staff_reply", "message_id": message.id})
+    enqueue_continuation(db, case, "staff_reply")
     db.commit()
     schedule(background, request.app, case.id)
     return {"message_id": message.id}
@@ -287,7 +312,7 @@ def review(
             merchant_id=case.merchant_id,
         )
     if req.decision != "approve_concession":
-        enqueue(db, case, "evaluate", {"trigger": req.decision})
+        enqueue_continuation(db, case, req.decision)
     db.commit()
     schedule(background, request.app, case.id)
     return result

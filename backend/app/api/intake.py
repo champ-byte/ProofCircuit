@@ -17,7 +17,7 @@ from app.config import Settings
 from app.db.models import Merchant, ProviderEvent
 from app.domain.enums import DisputeReason, ProviderDisputeStatus
 from app.domain.paytm import PaytmFieldError, canonical_hash, normalize_callback_body
-from app.runner import enqueue, schedule
+from app.runner import enqueue, enqueue_continuation, schedule
 from app.services.audit import audit
 from app.services.intake import find_case, open_case, record_status_callback
 from app.simulator.signing import sign_body, verify
@@ -92,7 +92,7 @@ async def dispute_event(
         event = db.scalar(select(ProviderEvent).where(ProviderEvent.case_id == case.id))
         if event is not None:
             event.demo_event_id, event.demo_sequence = demo_event_id, demo_sequence
-        enqueue(db, case, "evaluate", {"trigger": "case_opened"})
+        enqueue_continuation(db, case, "case_opened")
         db.commit()
         schedule(background, request.app, case.id)
         return {"accepted": True, "case_id": case.id, "created": True, "duplicate": False}

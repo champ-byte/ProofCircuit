@@ -67,7 +67,18 @@ export const api = {
     ),
   events: (token: string, caseId: string, after: number) =>
     request<{ events: { seq: number }[]; cursor: number }>(`/api/cases/${caseId}/events?after=${after}`, {}, token),
-  startRun: (token: string, caseId: string) => request<unknown>(`/api/cases/${caseId}/runs`, { method: 'POST' }, token),
+  startRun: (token: string, caseId: string, mode: 'live' | 'fixture_replay' = 'live') =>
+    request<{ reasoning_label: string }>(
+      `/api/cases/${caseId}/runs`,
+      { method: 'POST', body: JSON.stringify({ mode }) },
+      token,
+    ),
+  smoke: (token: string) =>
+    request<{ ok: boolean; model_returned?: string; detail?: string; latency_ms?: number }>(
+      '/api/providers/smoke?provider=gemini',
+      { method: 'POST' },
+      token,
+    ),
   runs: (token: string, caseId: string) => request<RunView[]>(`/api/cases/${caseId}/runs`, {}, token),
   packs: (token: string, caseId: string) => request<PackView[]>(`/api/cases/${caseId}/pack`, {}, token),
   packFile: async (token: string, caseId: string, version: number, name: string) =>

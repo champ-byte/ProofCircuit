@@ -7,22 +7,64 @@ until the M3 live smoke test passes. Only `ready` providers may drive a live age
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from datetime import timedelta
 from typing import Literal
 
 from app.config import Settings
+from app.domain.clock import get_clock
 
 Status = Literal["ready", "configured_untested", "unconfigured", "disabled", "failed", "not_implemented"]
 
-# Live smoke-test outcomes recorded at runtime (populated by the M3 preflight).
-_smoke_results: dict[str, tuple[bool, str]] = {}
 
+def record_smoke_result(
+    provider: str,
+    ok: bool,
+    detail: str,
+    *,
+    model_requested: str = "",
+    model_returned: str | None = None,
+    capabilities: dict[str, object] | None = None,
+) -> None:
+    """Persist a live smoke-test outcome (survives restarts; expires after SMOKE_CHECK_TTL_HOURS)."""
+    from app.db.models import ProviderCheck
+    from app.db.session import session_scope
 
-def record_smoke_result(provider: str, ok: bool, detail: str) -> None:
-    _smoke_results[provider] = (ok, detail)
+    with session_scope() as session:
+        session.add(
+            ProviderCheck(
+                provider=provider,
+                model_requested=model_requested,
+                model_returned=model_returned,
+                ok=ok,
+                detail=detail,
+                capabilities=capabilities or {},
+            )
+        )
 
 
 def clear_smoke_results() -> None:
-    _smoke_results.clear()
+    """Kept for test isolation; persisted checks live in each test's own database."""
+
+
+def latest_check(provider: str, model: str | None, ttl_hours: int) -> object | None:
+    from sqlalchemy import select
+
+    from app.db.models import ProviderCheck
+    from app.db.session import session_scope
+
+    try:
+        with session_scope() as session:
+            row = session.scalar(
+                select(ProviderCheck)
+                .where(ProviderCheck.provider == provider, ProviderCheck.model_requested == (model or ""))
+                .order_by(ProviderCheck.checked_at.desc())
+            )
+            if row is None or row.checked_at < get_clock().now() - timedelta(hours=ttl_hours):
+                return None
+            session.expunge(row)
+            return row
+    except RuntimeError:  # engine not initialised (e.g. CLI before init-db)
+        return None
 
 
 @dataclass
@@ -47,10 +89,13 @@ def _reasoner_readiness(name: str, role: str, settings: Settings) -> ProviderRea
         missing = "OPENROUTER_API_KEY is not set"
         notes = [f"data_collection={settings.openrouter_data_collection}", f"allow_paid={settings.allow_paid_models}"]
     elif name == "ollama":
-        model = settings.ollama_model or None
-        configured = bool(settings.ollama_model)
-        missing = "OLLAMA_MODEL is blank (discover the installed tag with `ollama list`)"
-        notes = []
+        return ProviderReadiness(
+            name,
+            role,
+            "not_implemented",
+            settings.ollama_model or None,
+            "Optional local Gemma adapter is M8; fallback unavailable.",
+        )
     else:  # manual
         return ProviderReadiness(name, role, "disabled", None, "Manual operation; no model inference.")
 
@@ -58,11 +103,14 @@ def _reasoner_readiness(name: str, role: str, settings: Settings) -> ProviderRea
         return ProviderReadiness(name, role, "disabled", model, "FALLBACK_ENABLED=false", notes)
     if not configured:
         return ProviderReadiness(name, role, "unconfigured", model, missing, notes)
-    smoke = _smoke_results.get(name)
-    if smoke is None:
-        return ProviderReadiness(name, role, "configured_untested", model, "Live smoke test not yet run.", notes)
-    ok, detail = smoke
-    return ProviderReadiness(name, role, "ready" if ok else "failed", model, detail, notes)
+    check = latest_check(name, model, settings.smoke_check_ttl_hours)
+    if check is None:
+        return ProviderReadiness(
+            name, role, "configured_untested", model, "Live smoke test not run (or expired).", notes
+        )
+    returned = getattr(check, "model_returned", None) or model
+    detail = f"{getattr(check, 'detail', '')} (checked {check.checked_at.isoformat()})"
+    return ProviderReadiness(name, role, "ready" if check.ok else "failed", returned, detail, notes)
 
 
 def provider_report(settings: Settings) -> dict[str, object]:

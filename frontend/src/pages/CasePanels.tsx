@@ -44,18 +44,50 @@ export function ActionsPanel({
     }
   }
   const last = runs.at(-1)?.tool_calls.at(-1)
+  const agentRuns = runs.filter((r) => r.mode !== 'manual').slice(-5).reverse()
+  const paused = agentRuns.find((r) => r.status === 'paused_reasoner_unavailable')
+  const [smokeMsg, setSmokeMsg] = useState<string | null>(null)
 
   return (
     <section aria-labelledby="actions-h" className="panel">
-      <h2 id="actions-h">Actions (manual mode)</h2>
+      <h2 id="actions-h">Agent and actions</h2>
       <p className="sub">
-        No model is running yet. Each button calls the same backend tool the agent will use; the policy gate decides.
+        The agent runs automatically after each event once a reasoner passes its smoke test. Manual buttons call the same
+        backend tools; the policy gate decides either way.
       </p>
+      {paused && agentRuns[0]?.id === paused.id && (
+        <div className="banner banner-warn" role="status">
+          Reasoner unavailable: {paused.error}. Manual operation still works.
+        </div>
+      )}
       {canAct ? (
         <div className="fixture-buttons">
           <button type="button" disabled={busy} onClick={() => run(() => api.startRun(token, caseId))}>
-            Start / resume case
+            Run agent / resume
           </button>
+          {session.user.role === 'operator' && (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => run(() => api.startRun(token, caseId, 'fixture_replay'))}
+              >
+                Run fixture replay (not AI)
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    const r = await api.smoke(token)
+                    setSmokeMsg(r.ok ? `Smoke test passed: ${r.model_returned} in ${r.latency_ms} ms` : `Smoke test failed: ${r.detail}`)
+                  })
+                }
+              >
+                Run reasoner smoke test
+              </button>
+            </>
+          )}
           {ACTIONS.map((a) => (
             <button key={a.tool} type="button" disabled={busy} onClick={() => run(() => api.action(token, caseId, a.tool, a.args))}>
               {a.label}
@@ -64,6 +96,36 @@ export function ActionsPanel({
         </div>
       ) : (
         <p className="sub">Switch to the owner or operator identity to run actions.</p>
+      )}
+      {smokeMsg && (
+        <p role="status" className="sub">
+          {smokeMsg}
+        </p>
+      )}
+      {agentRuns.length > 0 && (
+        <div className="agent-runs">
+          <h3>Agent runs</h3>
+          <ol className="timeline">
+            {agentRuns.map((r) => (
+              <li key={r.id}>
+                <span className="tag">{r.mode === 'fixture_replay' ? 'Fixture replay (not AI)' : 'Live model'}</span>{' '}
+                {r.provider}
+                {r.model ? ` — ${r.model}` : ''} · {r.status.replaceAll('_', ' ')} · {formatIst(r.started_at)}
+                <ul>
+                  {r.tool_calls.map((c) => (
+                    <li key={c.step} className={`tool-${c.status}`}>
+                      <strong>
+                        {c.step}. {c.tool}
+                      </strong>{' '}
+                      → {c.status}
+                      {c.rationale && <div className="sub">“{c.rationale}”</div>}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
       {last && (
         <div className={`tool-result tool-${last.status}`} role="status">

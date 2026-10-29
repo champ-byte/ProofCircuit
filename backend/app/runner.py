@@ -174,3 +174,16 @@ async def resume_all(app: Any) -> dict[str, Any]:
         await process_case(app, case_id)
     counts["cases_processed"] = len(cases)
     return counts
+
+
+def enqueue_continuation(session: Session, case: Case, trigger: str, *, mode: str = "live") -> PendingWork:
+    """Event-triggered continuation. Coalesced: a still-pending agent run will see the newest state."""
+    existing = session.scalar(
+        select(PendingWork).where(
+            PendingWork.case_id == case.id, PendingWork.kind == "agent_run", PendingWork.status == PendingStatus.PENDING
+        )
+    )
+    if existing is not None and existing.payload.get("mode", "live") == mode:
+        existing.payload = {**existing.payload, "coalesced": [*existing.payload.get("coalesced", []), trigger]}
+        return existing
+    return enqueue(session, case, "agent_run", {"trigger": trigger, "mode": mode})

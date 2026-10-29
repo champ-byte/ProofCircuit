@@ -14,7 +14,21 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
   - Idempotent, independently verified simulator submissions.
   - Reviewer-only concession and a staff inbox.
   - The case can be driven end to end manually from the workspace.
-- The live model-driven agent (M3) is **not implemented yet**; the reasoning badge reads "Manual". No real Paytm host is ever called.
+- **M3 (Real agent)** is done. A Gemini-driven agent (default `gemini-3.5-flash-lite`) chooses each next tool through the same dispatcher and policy gate as manual mode.
+  - Runs are event-triggered and coalesced, bounded (8 proposals, 2 schema repairs), and capped at a daily call limit.
+  - OpenRouter is an optional fallback. A clearly labelled fixture replay is available as a non-AI demo mode.
+- No real Paytm host is ever called.
+
+### Enabling the live agent
+
+The agent runs only after a live smoke test has passed (1–4 model calls; the result is kept for 24 hours):
+
+```bash
+cd backend
+uv run python -m app.cli smoke-reasoner
+```
+
+Until then, and whenever the reasoner is unavailable or `REASONER_DAILY_CALL_CAP` is reached, the reasoning badge reads "Manual" and every action still works by hand.
 
 ## Requirements
 
@@ -29,6 +43,7 @@ Copy `.env.example` to `.env` if you want a local file. Real environment variabl
 | --- | --- | --- |
 | `GEMINI_API_KEY` | Live reasoning (M3+). | Default primary reasoner. The free tier has low daily limits, and Google may use free-tier data, so send synthetic data only. |
 | `GEMINI_MODEL` | Live reasoning. | Default `gemini-3.5-flash-lite`. Only Gemini 3.x models are used. |
+| `REASONER_DAILY_CALL_CAP`, `REASONER_MIN_INTERVAL_SECONDS`, `AGENT_AUTORUN` | Quota control. | Defaults: 150 calls per rolling 24 h, at least 4 s between calls, agent runs triggered by events. |
 | `OPENROUTER_API_KEY`, `FALLBACK_ENABLED=true` | Optional fallback. | Requires network access to `openrouter.ai`. |
 | `SESSION_SECRET`, `DEMO_WEBHOOK_SECRET` | Stable demo sessions. | If left as placeholders in development, a random secret is generated each run. |
 

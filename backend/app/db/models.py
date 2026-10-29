@@ -397,3 +397,37 @@ class SimulatorFault(Base):
     kind: Mapped[str] = mapped_column(String(48))
     remaining: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(default=_now)
+
+
+class ReasonerCall(Base):
+    """One inference request (quota accounting and audit). Never stores prompts' secrets or thoughts."""
+
+    __tablename__ = "reasoner_calls"
+    id: Mapped[str] = _id_col()
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    case_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    provider: Mapped[str] = mapped_column(String(32), index=True)
+    model_requested: Mapped[str] = mapped_column(String(128))
+    model_returned: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    purpose: Mapped[str] = mapped_column(String(32))  # propose | repair | smoke
+    status: Mapped[str] = mapped_column(String(32))  # ok | invalid_output | rate_limited | error | timeout
+    http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=_now, index=True)
+
+
+class ProviderCheck(Base):
+    """Persisted live smoke-test result; readiness is `ready` only while a passing check is fresh."""
+
+    __tablename__ = "provider_checks"
+    id: Mapped[str] = _id_col()
+    provider: Mapped[str] = mapped_column(String(32), index=True)
+    model_requested: Mapped[str] = mapped_column(String(128))
+    model_returned: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    ok: Mapped[bool] = mapped_column(Boolean)
+    detail: Mapped[str] = mapped_column(Text)
+    capabilities: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # e.g. schema field that worked
+    checked_at: Mapped[datetime] = mapped_column(default=_now)

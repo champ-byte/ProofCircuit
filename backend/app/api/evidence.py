@@ -19,7 +19,7 @@ from app.db.models import (
     ValidationFinding,
 )
 from app.domain.citations import snippet, verify_span
-from app.runner import enqueue, schedule
+from app.runner import enqueue_continuation, schedule
 from app.services.evidence import exclude_document, ingest_document
 from app.services.extraction import MAX_UPLOAD_BYTES, UploadRejected
 from app.services.fixtures import HERO_DOCUMENTS, render_hero_document
@@ -177,7 +177,7 @@ def upload_evidence(
         uploader = db.get(DemoUser, identity.user_id)
         if uploader is not None and uploader.role == "staff":
             mark_staff_response(db, case, uploader.id)
-        enqueue(db, case, "evaluate", {"trigger": "evidence_uploaded", "document_id": doc.id})
+        enqueue_continuation(db, case, "evidence_uploaded")
         db.commit()
         schedule(background, request.app, case.id)
     return {"document": _doc_summary(doc, None), "created": created, "assessment": assessment}
@@ -242,7 +242,7 @@ def exclude(
         raise HTTPException(status.HTTP_409_CONFLICT, "document is already superseded or excluded")
     case = scoped_case(db, identity, doc.case_id)
     assessment = exclude_document(db, settings, case, doc, req.reason.strip(), identity.user_id)
-    enqueue(db, case, "evaluate", {"trigger": "evidence_excluded", "document_id": doc.id})
+    enqueue_continuation(db, case, "evidence_excluded")
     db.commit()
     schedule(background, request.app, case.id)
     return {"assessment": assessment}

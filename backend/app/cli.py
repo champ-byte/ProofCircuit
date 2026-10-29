@@ -23,6 +23,8 @@ def main(argv: list[str] | None = None) -> int:
     reset = sub.add_parser("reset", help="delete all demo data and runtime files, then reseed")
     reset.add_argument("--yes", action="store_true", help="confirm the destructive reset")
     sub.add_parser("providers", help="print provider readiness (no secrets)")
+    smoke = sub.add_parser("smoke-reasoner", help="live smoke test of a reasoner (spends 1-4 model calls)")
+    smoke.add_argument("--provider", default=None, help="gemini | openrouter (default: REASONER_PROVIDER)")
     args = parser.parse_args(argv)
 
     try:
@@ -37,8 +39,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     if args.cmd == "providers":
+        settings.data_path.mkdir(parents=True, exist_ok=True)
+        upgrade_to_head(settings.resolved_database_url)
+        init_engine(settings)
         print(json.dumps(provider_report(settings), indent=2, ensure_ascii=False))
         return 0
+    if args.cmd == "smoke-reasoner":
+        return _smoke(settings, args.provider or settings.reasoner_provider)
 
     settings.data_path.mkdir(parents=True, exist_ok=True)
     upgrade_to_head(settings.resolved_database_url)
@@ -65,6 +72,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Reset complete; reseeded case {case.id}")
         return 0
     return 1
+
+
+def _smoke(settings, provider: str) -> int:  # type: ignore[no-untyped-def]
+    import asyncio
+    from types import SimpleNamespace
+
+    from app.services.smoke import smoke_test
+
+    settings.data_path.mkdir(parents=True, exist_ok=True)
+    upgrade_to_head(settings.resolved_database_url)
+    init_engine(settings)
+    app = SimpleNamespace(state=SimpleNamespace(settings=settings))
+    result = asyncio.run(smoke_test(app, provider))
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["ok"] else 1
 
 
 if __name__ == "__main__":

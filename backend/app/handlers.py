@@ -69,3 +69,35 @@ async def reconcile_status(app: Any, work: PendingWork) -> dict[str, Any]:
 @handler("concede")
 async def concede(app: Any, work: PendingWork) -> dict[str, Any]:
     return await submission.send_concession(app, work.payload["submission_id"])
+
+
+@handler("agent_run")
+async def agent_run(app: Any, work: PendingWork) -> dict[str, Any]:
+    """Deterministic re-evaluation first; then the model loop only when a reasoner is ready."""
+    from app.agent.loop import run_agent
+    from app.providers.router import ready_candidates
+    from app.services.audit import audit
+
+    settings = app.state.settings
+    base = await evaluate(app, work)
+    trigger = work.payload.get("trigger", "event")
+    mode = work.payload.get("mode", "live")
+    if mode == "fixture_replay":
+        return {**base, "agent": await run_agent(app, work.case_id, trigger=trigger, mode="fixture_replay")}
+    reason = None
+    if not settings.agent_autorun and trigger != "manual_start":
+        reason = "AGENT_AUTORUN=false"
+    elif not ready_candidates(settings):
+        reason = "no reasoner has passed a live smoke test (manual mode)"
+    if reason:
+        with session_scope() as session:
+            audit(
+                session,
+                event_type="agent.not_run",
+                summary=f"Agent not run: {reason}.",
+                actor_type="system",
+                case_id=work.case_id,
+                data={"trigger": trigger},
+            )
+        return {**base, "agent": {"status": "not_run", "reason": reason}}
+    return {**base, "agent": await run_agent(app, work.case_id, trigger=trigger, mode="live")}

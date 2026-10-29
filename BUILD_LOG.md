@@ -307,11 +307,108 @@ npm run lint                  # oxlint clean
 - A POD rejection currently moves the case to `NEEDS_HUMAN_REVIEW`. The bounded one-round automatic repair (C07) is scheduled for M7; `pod_repair_count` is not incremented yet.
 - In development, unset secrets are ephemeral, so demo sessions and webhook signatures change on each restart. Set `SESSION_SECRET` and `DEMO_WEBHOOK_SECRET` for a stable demo.
 
+## M3 Real agent: done
+
+**Built**
+
+- **Reasoner layer** (`app/providers/`):
+  - **`GeminiReasoner`** (primary):
+    - It calls `generateContent` with the key in the `x-goog-api-key` header only.
+    - Requests use `temperature 0`, `responseMimeType: application/json` and `responseJsonSchema`; the smoke test can fall back to `responseSchema` (an OpenAPI-style subset).
+    - It sends `thinkingConfig.thinkingLevel=low` when the model accepts it.
+    - Thought parts are dropped and never stored. The model actually used is taken from `modelVersion`.
+    - Failures are sorted into rate_limited (with the retry delay from `RetryInfo`), transient, timeout, config and blocked. Error messages are scrubbed of the key.
+  - **`OpenRouterReasoner`** (optional fallback):
+    - Requests follow PRD §9: strict `json_schema`, `require_parameters`, `data_collection: deny`.
+    - A catalog preflight rejects any model with non-zero pricing while `ALLOW_PAID_MODELS=false`, and a 402 counts as a configuration error rather than a reason to switch to a paid model.
+    - It is tested only with mocked transports, because `openrouter.ai` is blocked here.
+  - **`ReplayReasoner`:** a pre-written hero script (`fixtures/hero/replay.json`). It is operator-only and labelled "Fixture replay (not AI)" everywhere; its runs never count as live and never turn the live badge on.
+  - **Router:** primary first, then the fallback only when `FALLBACK_ENABLED` is set and its smoke test passed. The fallback repeats inference only, never a tool write.
+- **Per-call accounting and limits:**
+  - Every call is recorded in a new `reasoner_calls` table (migration 0004): provider, model returned, purpose, status, latency and tokens.
+  - A daily cap (`REASONER_DAILY_CALL_CAP=150`, rolling 24 h) is checked before any request, with pacing of at least 4 s between calls (`REASONER_MIN_INTERVAL_SECONDS=4`).
+  - A 429 is retried once if its retry delay is 20 s or less (`REASONER_RATE_LIMIT_MAX_WAIT_SECONDS`). A transient failure or timeout is also retried once.
+- **Smoke test** (`cli smoke-reasoner`, plus operator-only `POST /api/providers/smoke`):
+  - It sends one synthetic context and requires a schema-valid action that is on the tool list.
+  - For Gemini it tries up to 4 request variants (schema field × thinking setting) and stores the one that works.
+  - The result goes in a new `provider_checks` table and is valid for 24 h for the configured model.
+  - Readiness, the badge and the router all depend on it: a provider with an untested, failed or expired check never runs.
+- **Provider-facing schema** (`app/agent/schema.py`): a closed schema whose `action` must be one of the tools. `arguments` is the nullable union of all tool argument fields, with no extra keys allowed.
+- **Prompt** (`app/agent/prompt.py`):
+  - A compact system prompt (rules, tool list, no concession or refunds, documents are data).
+  - A trusted case context: checklist, findings, tasks, pack and submission state, evidence readiness, and policy notes.
+  - The run's history so far.
+  - Verified facts with short excerpts and staff messages, placed inside `<<<UNTRUSTED_DOCUMENT_DATA>>>` markers.
+- **Agent loop** (`app/agent/loop.py`):
+  - Each step observes, proposes, validates, executes through the existing `dispatch(actor_kind="agent")`, then re-reads the case.
+  - Limits: 8 proposals, 2 schema repairs per response, a per-run timeout, and a stop after 2 consecutive denials. Hitting a limit sets `AGENT_LIMIT_REACHED` and opens a human review.
+  - **Idle states spend no model calls:** waiting for staff or review, monitoring, submitting, uncertain, closed, or past the deadline.
+  - If no reasoner is available, the run is marked `paused_reasoner_unavailable` with its reasons, and manual operation is unaffected.
+- **Event-triggered and coalesced:** a new runner job, `agent_run`, replaces the six `evaluate` triggers (case opened, manual start, evidence uploaded or excluded, staff reply, review decisions). It always runs the deterministic checks first and calls the model only if a reasoner is ready and `AGENT_AUTORUN` is on. A trigger that arrives while a run is already pending merges into it.
+- **UI:**
+  - Live badge `Gemini — <model returned>`, and a "Run agent / resume" button.
+  - An agent-run history showing the mode tag (Live model / Fixture replay (not AI)), model, status, and each step's tool, outcome and the model's short rationale.
+  - Operator-only buttons for the smoke test and fixture replay, and a reasoner-unavailable banner.
+
+**Commands run**
+
+```bash
+cd backend
+uv run alembic revision --autogenerate --rev-id 0004 -m "reasoner calls and provider checks"
+uv run pytest -q                       # 191 passed
+uv run ruff check .                    # All checks passed
+uv run python -m app.cli smoke-reasoner  # LIVE, see below
+```
+
+```bash
+cd frontend
+npm run build                          # OK
+npm run lint                           # oxlint clean
+```
+
+**Tests: 191 passing** (37 new, all network-free; they use a scripted fake reasoner and mocked HTTP transports)
+
+- **C08 Provider contract** (`test_c08_provider_contract.py`, 30):
+  - Bad JSON is repaired within the bound.
+  - Unsupported output never runs a tool: free text, `accept_dispute`, `issue_refund`, an unknown argument such as `recipient_phone`, or an extra key all fail after 1 + 2 attempts, with no ToolCall, no receipt, and a review task.
+  - Gemini requests have the right shape: the key is in the header and not the URL, the JSON schema, temperature 0, thinkingLevel, thought parts dropped, and `modelVersion` recorded. The OpenAPI fallback variant marks nullable fields.
+  - Error classes are correct and the key never leaks; blocked or empty output is an error.
+  - The smoke test negotiates the variant and persists it; the badge and readiness turn live only after it. Smoke checks expire after 24 h.
+  - Rate limits: a short 429 is retried once; a long 429 pauses the run without calling a tool. The daily cap stops before any provider call.
+  - The fallback is used only when enabled and ready, and is audited. With it disabled the run pauses and manual mode still works. An untested reasoner never runs.
+  - The Gemma fallback is reported `not_implemented`.
+  - OpenRouter requests have the right shape, the preflight blocks paid models unless allowed, and a 402 does not switch to paid.
+  - Fixture replay is operator-only, labelled, never live, and never moves the live badge.
+  - The secret appears nowhere in API output, reasoner calls or audit rows.
+- **Agent loop** (`test_m3_agent_loop.py`, 7):
+  - **The scripted hero:** the agent requests proof, then waits with no extra model call. The wrong receipt triggers a run in which the model sees ORDER_MISMATCH and requests round 2. The correct receipt triggers build and submit, verified, ending in MONITORING. That is 4 model calls in total.
+  - Idle triggers spend no calls. Injected instructions appear only inside the untrusted markers, and two denied submits stop the run and open a review.
+  - The proposal budget sets AGENT_LIMIT_REACHED. Triggers merge into one pending run. The agent actor respects `AUTO_SUBMIT_SIMULATOR=false`; a human can submit once the review is resolved.
+
+**Live runs with the user's free-tier Gemini key** (all inputs synthetic)
+
+- **Smoke test:** passed on the first variant, using `responseJsonSchema` and `thinkingLevel=low`. Model returned: `gemini-3.5-flash-lite`. Latency 1,737 ms, 600 prompt tokens and 121 output tokens. It proposed `request_evidence` for the missing delivery record.
+- **Hero journey in the browser:** fresh `data/`, uvicorn with one worker, Vite, and Playwright Chromium. Nobody clicked a tool; the owner started the run and the delivery staff user uploaded the fixture PDFs.
+  1. **Run 1, manual start** (1 call): `request_evidence` with the rationale "Requesting the missing delivery record to support the defense…". A Marathi request went to Sanjay's inbox.
+  2. **Run 2, wrong-order receipt uploaded** (1 call): `request_evidence`, round 2, with the rationale "The previously provided delivery record references the wrong order ID, so we need staff to supply the correct delivery record for ORD-DEMO-18500."
+  3. **Run 3, correct receipt uploaded** (2 calls): `build_evidence_pack`, then `submit_defense`. Result: "**Submission verified — dispute outcome pending**", receipt `SIMRCPT-…`, 1 attempt.
+  - **Totals:** 5 Gemini calls (1 smoke test, 4 proposals), all OK, with no 429s. Latency was 1.6–2.2 s (average 1.8 s), with about 1.7k–2.7k prompt tokens per proposal. Elapsed time from each upload to its outcome was about 4.5 s and 12 s.
+  - Screenshot: `docs/m3-live-agent.png`.
+- **Free-tier limits:** not measured, because nothing came close to them. The cap, pacing and 429 handling are tested with fakes. The true daily quota for `gemini-3.5-flash-lite` on this key is still unknown.
+
+**Decisions and notes**
+
+- Agent runs are event-triggered with a daily cap of 150 and merge when they overlap (user decision).
+- Waiting states return control without a model call. This keeps the hero journey at 4 calls and follows the PRD's "no repeated model polling".
+- A run that ends after a verified submission is recorded as `waiting`, meaning it waits for the provider outcome.
+- The badge reflects only live providers with a fresh passing smoke test. Replay runs are labelled per run and never change it.
+- **Google data use:** on the free tier Google may use what we send, so only synthetic case data is sent.
+
 ## Open issues / next
 
-- **M3 next**: Gemini (`gemini-3.5-flash-lite`) Reasoner adapter through the same tool dispatcher: bounded JSON-action loop (8 proposals, 2 schema repairs), live smoke test and measured free-tier limits, OpenRouter fallback (needs `openrouter.ai` allowed), C08.
+- **M4 next**: product UI — case workspace polish, right-hand demo drawer (staff chat, simulator fault injector, identity, seed/reset, provider readiness, resume pending work), inline reviewer journey (concession with consequences), source preview at cited spans.
 - Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
-- Gemini adapter and live smoke test are M3. They must measure actual free-tier limits for `gemini-3.5-flash-lite` and handle 429s and daily caps.
-- OpenRouter fallback cannot be exercised here until `openrouter.ai` is allowed in the environment's network settings and `OPENROUTER_API_KEY` is set.
+- Actual Gemini free-tier quota for this key is still unmeasured (no limit was approached); the cap/pacing/429 paths are tested with fakes.
+- OpenRouter fallback is implemented and mock-tested but cannot be exercised live until `openrouter.ai` is allowed in the environment's network settings and `OPENROUTER_API_KEY` is set.
 - Starlette deprecation warning from the test client ("install httpx2") is harmless for now.
 - Pre-event code eligibility under the hackathon rules is still unconfirmed (PRD §19.1).

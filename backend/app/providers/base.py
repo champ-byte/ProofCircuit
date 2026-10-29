@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, Field
@@ -31,22 +32,32 @@ class ProposedAction(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
 
 
-class AgentContext(BaseModel):
-    case_id: str
-    case_version: int
-    summary: dict[str, Any]
-    allowed_actions: list[str]
+class ReasonerError(Exception):
+    """Inference failed. `kind` drives routing: rate_limited | config | transient | timeout | blocked."""
+
+    def __init__(
+        self, kind: str, message: str, *, http_status: int | None = None, retry_after: float | None = None
+    ) -> None:
+        super().__init__(message)
+        self.kind = kind
+        self.http_status = http_status
+        self.retry_after = retry_after
 
 
-class ProposalResult(BaseModel):
-    action: ProposedAction
-    provider: str
-    model: str | None  # model the provider actually reported
+@dataclass
+class Completion:
+    text: str  # model output text only; private reasoning/thought parts are dropped by adapters
+    model_returned: str | None
     latency_ms: int
-    attempts: int
+    prompt_tokens: int | None = None
+    output_tokens: int | None = None
 
 
 class Reasoner(Protocol):
-    name: str
+    """Inference only. Adapters never execute tools; the loop validates and the backend authorizes."""
 
-    async def propose(self, context: AgentContext) -> ProposalResult: ...
+    name: str
+    model: str
+    mode: str  # live | fixture_replay
+
+    async def complete(self, *, system: str, user: str, schema: dict[str, Any]) -> Completion: ...

@@ -78,6 +78,15 @@ class Settings(BaseSettings):
     agent_max_steps: int = Field(default=8, ge=1)
     agent_timeout_seconds: int = 180
     model_timeout_seconds: int = 60
+    agent_autorun: bool = True  # event-triggered agent runs (only when a reasoner is ready)
+    agent_max_schema_repairs: int = Field(default=2, ge=0, le=5)
+    agent_max_consecutive_denials: int = Field(default=2, ge=1)
+    reasoner_daily_call_cap: int = Field(default=150, ge=0)  # rolling 24h, all purposes
+    reasoner_min_interval_seconds: float = Field(default=4.0, ge=0)
+    reasoner_max_output_tokens: int = Field(default=2048, ge=64)  # thinking models may use part of it
+    gemini_thinking_level: str = "low"  # sent only if the smoke test shows the model accepts it; "" = omit
+    reasoner_rate_limit_max_wait_seconds: float = Field(default=20.0, ge=0)
+    smoke_check_ttl_hours: int = Field(default=24, ge=1)
     provider_status_reads: int = Field(default=3, ge=1, le=10)  # bounded status reads per reconciliation
     provider_retry_backoff_seconds: float = Field(default=0.5, ge=0)
 
