@@ -126,12 +126,9 @@ def provider_report(settings: Settings) -> dict[str, object]:
         "label": f"{live.name.capitalize()} — {live.model}" if live else "Manual",
     }
 
-    reminders_ready = bool(
-        settings.reminders_enabled
-        and settings.n8n_reminder_webhook_url
-        and settings.n8n_webhook_token
-        and settings.n8n_service_token
-    )
+    from app.services.reminders import availability
+
+    reminders_ready, reminders_detail = availability(settings)
     integrations = [
         ProviderReadiness("paytm", "integration", "ready", None, "Local Paytm-shaped simulator (no live hosts)."),
         ProviderReadiness("messaging", "integration", "ready", None, "Local in-app staff inbox; no WhatsApp."),
@@ -141,9 +138,10 @@ def provider_report(settings: Settings) -> dict[str, object]:
         ProviderReadiness(
             "n8n_reminders",
             "integration",
-            "not_implemented" if reminders_ready else "disabled",
+            "configured" if reminders_ready else "disabled",
             None,
-            "Reminders require REMINDERS_ENABLED, webhook URL and both tokens.",
+            reminders_detail,
+            ["n8n only schedules; the backend rechecks cancellation and delivers to the local inbox."],
         ),
     ]
     return {

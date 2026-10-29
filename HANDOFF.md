@@ -9,13 +9,13 @@ This page is short on purpose. [BUILD_LOG.md](BUILD_LOG.md) holds the detailed h
   - Do one PRD §17 milestone at a time, then stop and report to the user.
   - Keep BUILD_LOG.md updated with the commands run, the tests passed and the open issues.
   - Never claim a feature works without a passing test or a real run.
-- **Last milestone commit:** M5 (staff voice notes, local faster-whisper).
+- **Last milestone commit:** M6 (n8n staff reminders).
 
 ## Status (verified 2026-10-29)
 
 - **Milestones:**
-  - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI, M5 Staff voice notes (local faster-whisper only; Sarvam not built).
-  - Not started: M6 n8n follow-up, M7 Tests and evaluation, M8 Optional.
+  - Done: M0 Bootstrap, M1 Evidence, M2 Tools and simulator, M3 Real agent, M4 Product UI, M5 Staff voice notes (local faster-whisper only; Sarvam not built), M6 n8n follow-up (optional self-hosted n8n; live exit check passed).
+  - Not started: M7 Tests and evaluation, M8 Optional.
 - **Tests:**
   - Backend: 222 pytest passed (locally on Windows too, after adding `tzdata`).
   - Frontend: 20 vitest passed, and `npm run e2e` (Playwright) passes against a running stack.
@@ -45,7 +45,8 @@ These are user decisions; see BUILD_LOG "Decisions that deviate from PRD.md".
    - Demo HMAC signatures are not Paytm CHECKSUM.
 5. **Agent tools:** the agent has no concede or refund tool. Concession is reviewer-only and takes two steps.
 6. **Speech (M5):** local faster-whisper only. Weights are never downloaded at runtime. Transcripts are staff testimony and never satisfy the checklist, `orderStatus` or the pack. Pin `av<17` for faster-whisper 1.2.1. `WHISPER_MODEL` stays `small` for now, because Sarvam AI may replace local STT; `large-v3` scored best on a human clip (see BUILD_LOG).
-7. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
+7. **Reminders (M6):** n8n only schedules. The backend starts the workflow, keeps cancellation, recipient and idempotency authority, and delivers reminders to the local inbox only. Two separate tokens: `N8N_WEBHOOK_TOKEN` (backend → n8n) and `N8N_SERVICE_TOKEN` (n8n → backend). n8n is pinned to `n8nio/n8n:2.45.6`, set up through `python n8n/setup.py` (CLI, no UI or account).
+8. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
 
 ## Local setup (your own machine)
 
@@ -174,6 +175,7 @@ Items marked *(cloud only)* applied to the claude.ai cloud container, not to a l
 | Simulator | `backend/app/simulator/` (Paytm-shaped API, faults, receipts, webhooks) |
 | API | `backend/app/api/` (cases, evidence, actions/runs, demo, intake, evaluation) |
 | Seed and fixtures | `backend/app/services/seed.py`, `fixtures.py` (deterministic hero PDFs), `fixtures/` |
+| n8n reminders | `backend/app/services/reminders.py` (trigger, callback rules, sending), `api/reminders.py`, `frontend/src/components/Reminder.tsx`, `n8n/` (workflow export, compose, `setup.py`, `live_check.py`, README) |
 | Speech / testimony | `backend/app/providers/speech.py`, `services/testimony.py`, `services/speech_smoke.py`, `api/testimony.py`, `frontend/src/components/Testimony.tsx` |
 | UI | `frontend/src/pages/` (CaseWorkspace, CasePanels, CasesPage, EvaluationPage), `frontend/src/components/` (DemoDrawer, Evidence, Reviewer, …) |
 | E2E | `frontend/e2e/hero.e2e.mjs` |
@@ -183,7 +185,6 @@ Items marked *(cloud only)* applied to the claude.ai cloud container, not to a l
 Ask the user which of these to do before starting:
 
 - **M5 follow-up (optional):** measure STT on a human Marathi/Hindi recording; Sarvam stays blocked until `SARVAM_API_KEY` and network access exist.
-- **M6 n8n follow-up:** a workflow JSON, a local/Docker setup, and backend task creation that triggers the n8n webhook, which then calls the reminder command. Must meet the PRD §12.1 trigger, authentication, retry and cancellation checks.
 - **M7 Tests and evaluation:**
   - Finish C03 and C04, and add C07 (one bounded POD repair round).
   - Build the 40-case corpus generator and run the 10-case first pass with real counts.

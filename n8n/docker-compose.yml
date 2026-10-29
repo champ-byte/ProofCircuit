@@ -1,0 +1,33 @@
+# Optional self-hosted n8n Community for ProofCircuit staff reminders (PRD 12.1, P0+).
+# The app runs without it. Secrets come from n8n/.env (gitignored), created by `python n8n/setup.py`.
+name: proofcircuit-n8n
+
+services:
+  n8n:
+    image: n8nio/n8n:2.45.6 # pinned; the `stable` tag on 2026-10-29
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678" # editor and webhooks on localhost only
+    environment:
+      GENERIC_TIMEZONE: Asia/Kolkata
+      TZ: Asia/Kolkata
+      N8N_HOST: 127.0.0.1
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://127.0.0.1:5678/
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?run python n8n/setup.py first}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+      # The HTTP Request node reads BACKEND_BASE_URL; nothing else in the workflow uses env access.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Inside the container `localhost` is the container itself, not the machine running the backend.
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://host.docker.internal:8000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Linux; Docker Desktop provides this name already
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

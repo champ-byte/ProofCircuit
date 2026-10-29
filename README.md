@@ -25,7 +25,11 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
   - Staff send a voice note from the drawer. The original audio and its SHA-256, the speaker, the linked request, the locale, the provider/model and timed segments (code-point spans) are stored and shown.
   - Speech-to-text output is **unconfirmed** until the speaker confirms it or corrects it; a correction is a new version and the earlier ones are kept. With no usable speech-to-text, the speaker types a labelled human transcription.
   - A transcript is **staff testimony**: it never satisfies a checklist item, never feeds `orderStatus` and is not part of the submitted pack. The matching delivery document is still required.
-  - Measured result on the bundled synthetic (espeak-ng) Marathi clip: `small` and `medium` both failed to transcribe it usefully, so the smoke check fails and transcription is blocked by default. See BUILD_LOG.md.
+  - Measured result on the bundled synthetic (espeak-ng) Marathi clip: `small` and `medium` both failed to transcribe it usefully, so the smoke check fails and transcription is blocked by default. On one human Marathi recording, `small`/`medium`/`large-v3` scored CER 0.21/0.16/0.09. See BUILD_LOG.md.
+- **M6 (n8n follow-up)** is done, as an optional self-hosted n8n Community workflow ([n8n/README.md](n8n/README.md)).
+  - When a staff evidence request is created, the backend starts the workflow itself (an authenticated, retried, persisted trigger). n8n waits until `remind_at` and calls `POST /api/cases/{id}/reminders` with a separate service token.
+  - The backend keeps all authority: one reminder per request round, idempotent callbacks, and cancellation if staff replied or uploaded, the request was superseded, the case moved on or the deadline passed. Reminders go to the local in-app inbox only.
+  - Without `REMINDERS_ENABLED`, a webhook URL and both tokens, reminders are reported unavailable and the rest of the app works unchanged.
 - No real Paytm host is ever called.
 
 ### Enabling the live agent
@@ -54,8 +58,9 @@ Models are never downloaded implicitly at runtime. With `SPEECH_PROVIDER=disable
 
 ## Requirements
 
-- Python ≥ 3.11 (tested with 3.13.17) and [uv](https://docs.astral.sh/uv/) (tested with 0.11.32)
-- Node.js 22 (tested with 22.22.0) and npm 10
+- Python ≥ 3.11 (tested with 3.13.17 and 3.12.12) and [uv](https://docs.astral.sh/uv/) (tested with 0.11.32 and 0.9.8)
+- Node.js ≥ 22.19 (tested with 22.22.0 and 26.13.0) and npm 10+
+- Optional: Docker with the compose plugin, for the n8n reminder workflow (tested with Docker 28.5.1)
 
 ## Configuration
 

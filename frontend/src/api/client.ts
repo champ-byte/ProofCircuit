@@ -112,6 +112,8 @@ export const api = {
     (await send(`/api/cases/${caseId}/pack/${version}/${name}`, {}, token)).blob(),
   submissions: (token: string, caseId: string) => request<SubmissionView[]>(`/api/cases/${caseId}/submissions`, {}, token),
   inbox: (token: string, caseId: string) => request<InboxView>(`/api/cases/${caseId}/messages`, {}, token),
+  retryReminderTrigger: (token: string, caseId: string, triggerId: string) =>
+    request<unknown>(`/api/cases/${caseId}/reminder-triggers/${triggerId}/retry`, { method: 'POST' }, token),
   reply: (token: string, caseId: string, body: string) =>
     request<unknown>(`/api/cases/${caseId}/messages`, { method: 'POST', body: JSON.stringify({ body }) }, token),
   fixtureFile: async (token: string, caseId: string, name: string) =>

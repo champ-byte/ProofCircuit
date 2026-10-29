@@ -194,6 +194,29 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
 
+class StaffReminder(Base):
+    """One n8n reminder callback per (merchant, case, task, round, reminder number) (PRD 12.1).
+
+    `queued` until the runner rechecks cancellation under the case lock, then `sent` (local inbox)
+    or `skipped` with a reason. Never a claim of external delivery.
+    """
+
+    __tablename__ = "staff_reminders"
+    id: Mapped[str] = _id_col()
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id"))
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"), index=True)
+    staff_task_id: Mapped[str] = mapped_column(ForeignKey("staff_tasks.id"))
+    request_round: Mapped[int] = mapped_column(Integer)
+    reminder_number: Mapped[int] = mapped_column(Integer)
+    dedup_key: Mapped[str] = mapped_column(String(255), unique=True)
+    status: Mapped[str] = mapped_column(String(16), default="queued")  # queued | sent | skipped
+    reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    message_id: Mapped[str | None] = mapped_column(ForeignKey("messages.id"), nullable=True)
+    actor: Mapped[str] = mapped_column(String(64))  # authenticated service identity
+    created_at: Mapped[datetime] = mapped_column(default=_now)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
 class VoiceNote(Base):
     """Original staff voice-note audio (PRD 8.3 P0+). Testimony, never a delivery document."""
 

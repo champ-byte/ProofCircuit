@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
+import { ReminderStatus } from './Reminder'
 import { StaffVoiceNotes } from './Testimony'
 import { formatIst } from '../format'
 import { useSession } from '../session'
@@ -129,6 +130,7 @@ export function DemoDrawer({
                 setStaffHandle={setStaffHandle}
                 version={version}
                 run={run}
+                operator={operator}
               />
             )}
             {tab === 'faults' && operator && (
@@ -207,6 +209,7 @@ function StaffInbox({
   setStaffHandle,
   version,
   run,
+  operator,
 }: {
   caseId: string
   staff: DemoSession
@@ -214,6 +217,7 @@ function StaffInbox({
   setStaffHandle: (h: string) => void
   version: number
   run: Runner
+  operator: DemoSession | null
 }) {
   const [inbox, setInbox] = useState<InboxView | null>(null)
   const [fixtures, setFixtures] = useState<FixtureInfo[]>([])
@@ -238,6 +242,18 @@ function StaffInbox({
           .map((t) => (
             <li key={t.id}>
               Task: {t.requirement_id.replaceAll('_', ' ')} · round {t.round} · <strong>{t.status}</strong>
+              <ReminderStatus
+                reminder={t.reminder}
+                onRetry={
+                  operator && t.reminder?.trigger
+                    ? () =>
+                        void run(
+                          () => api.retryReminderTrigger(operator.token, caseId, t.reminder!.trigger!.id),
+                          'Reminder scheduling retried with the same trigger identity.',
+                        )
+                    : undefined
+                }
+              />
             </li>
           ))}
       </ul>

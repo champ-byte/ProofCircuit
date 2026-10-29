@@ -72,8 +72,13 @@ class Settings(BaseSettings):
     n8n_webhook_token: SecretStr | None = None
     n8n_service_token: SecretStr | None = None
     backend_base_url: str = "http://127.0.0.1:8000"
-    reminder_delay_seconds: int = 120
-    max_reminders_per_request_round: int = 1
+    reminder_delay_seconds: int = Field(default=120, ge=1)
+    max_reminders_per_request_round: int = Field(default=1, ge=1, le=1)  # P0+: one per request round
+    # Merchants the n8n service identity may remind (comma-separated MIDs); it has no other permission.
+    reminder_merchant_mids: str = "MID-DEMO-001"
+    n8n_trigger_timeout_seconds: float = Field(default=10.0, gt=0)
+    n8n_trigger_retries: int = Field(default=2, ge=0, le=5)  # retries after the first attempt, transient only
+    reminder_due_tolerance_seconds: int = Field(default=5, ge=0)  # n8n and backend clocks may differ slightly
 
     agent_max_steps: int = Field(default=8, ge=1)
     agent_timeout_seconds: int = 180

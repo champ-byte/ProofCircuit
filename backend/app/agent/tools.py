@@ -30,7 +30,7 @@ from app.domain.citations import snippet
 from app.domain.clock import get_clock
 from app.providers.base import AGENT_TOOLS
 from app.runner import enqueue
-from app.services import messaging, submission
+from app.services import messaging, reminders, submission
 from app.services.audit import audit
 from app.services.pack import PackBlocked, build_pack
 from app.services.validation import is_active
@@ -223,6 +223,10 @@ async def _request_evidence(app: Any, ctx: ToolContext, args: RequestEvidenceArg
         )
         if created:
             enqueue(session, case, "deliver_outbox", {"staff_task_id": task.id})
+            # Same transaction as the task and message (PRD 12.1); dispatched after commit by the runner.
+            trigger = reminders.create_trigger(session, app.state.settings, case, task)
+            if trigger is not None:
+                enqueue(session, case, "dispatch_reminder_trigger", {"outbox_event_id": trigger.id})
         sync_workflow(session, app.state.settings, case)
         return {"staff_task_id": task.id, "created": created, "round": task.request_round, "locale": task.locale}
 

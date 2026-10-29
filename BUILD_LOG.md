@@ -715,12 +715,111 @@ SPEECH_PROVIDER=faster_whisper WHISPER_MODEL={small,medium,large-v3} uv run pyth
 uv run pytest -q && uv run ruff check . && uv run ruff format --check .                    # 222 passed, clean
 ```
 
+## M6 n8n follow-up: done (2026-10-29)
+
+**User decisions:**
+- The user started Docker Desktop themselves.
+- n8n is set up through its CLI by a script, with no UI clicks and no n8n account created by the agent.
+- The live run used `REMINDER_DELAY_SECONDS=30`; the default stays 120.
+
+**Built**
+
+- **Trigger, backend → n8n** (`services/reminders.py`):
+  - When `request_evidence` creates a **new** task/round, a `staff.evidence_requested` OutboxEvent is persisted in the same transaction as the task and message. A `dispatch_reminder_trigger` PendingWork is created with it.
+  - After commit, the existing runner POSTs the trigger to `N8N_REMINDER_WEBHOOK_URL` with `Authorization: Bearer N8N_WEBHOOK_TOKEN`.
+  - Payload: `event_id` (the outbox row ID, reused on every retry), `event_type`, `case_id`, `staff_task_id`, `request_round`, `reminder_number: 1`, and aware-UTC `requested_at`/`remind_at`/`deadline_at`. There are no files, recipients, free text or secrets.
+  - Eligibility is rechecked before dispatch; an answered, superseded or closed task, or an expired deadline, marks the trigger `skipped`.
+  - Retries cover only connection errors, time-outs and 5xx, with `N8N_TRIGGER_RETRIES=2` bounded retries and short backoff. On exhaustion the trigger is `failed`; a 4xx (authentication or configuration) makes it `paused` and is never retried.
+  - Both show **"Reminder scheduling unavailable"**, with an explicit owner/operator retry (`POST /api/cases/{id}/reminder-triggers/{event}/retry`) that reuses the same event identity.
+  - Pending dispatches are ordinary PendingWork, so the single startup recovery scan and **Resume pending work** cover them. There is no polling worker.
+- **Bug avoided:** `deliver_outbox` used to complete *every* pending outbox event of a case as a staff message. It now filters `event_type == "staff_message"`, so n8n triggers sharing the table are never consumed (tested).
+- **Callback, n8n → backend** (`api/reminders.py`, `POST /api/cases/{id}/reminders`):
+  - Authentication: `N8N_SERVICE_TOKEN` (constant-time compare). A missing or wrong token, or a demo session token, gets 401. Feature off gives 503.
+  - The service identity can reach only `REMINDER_MERCHANT_MIDS`; anything else is a scoped 404, and an unknown task is 404. `reminder_number` above `MAX_REMINDERS_PER_REQUEST_ROUND=1` is 422.
+  - Idempotency key: `(merchant_id, case_id, staff_task_id, request_round, reminder_number)`, unique in the new `staff_reminders` table (migration `0006`). A process lock plus the unique key cover concurrent duplicates. Duplicates return `200 already_processed` with the stored result.
+  - Cancellation is checked at the callback and **again under the case lock just before sending**:
+    - The task is still open and is the latest round.
+    - The round is unchanged.
+    - There has been no inbound staff message or voice note since the request; an evidence upload already marks the task responded.
+    - The case is still `WAITING_FOR_EVIDENCE`.
+    - The deadline is in the future.
+  - Results: a not-due call (with `REMINDER_DUE_TOLERANCE_SECONDS=5`) returns `200 skipped: not_due` and is not persisted, so a later due call can still succeed. A newly accepted call returns `202 queued`.
+  - Sending: the recipient, locale and template (`REMINDER_TEMPLATES`, en/hi/mr demo copy) come from the stored task. The message goes to the local in-app inbox through the existing outbox (`sent_in_simulator`). Audit events record the service actor (`reminder.queued` / `reminder.sent` / `reminder.skipped`). A reminder never resolves the request.
+- **Readiness:** `n8n_reminders` is `configured`, with the webhook URL and delay, or `disabled`, naming what is missing. No secrets are shown.
+- **UI:** each staff task in the drawer inbox shows its reminder state:
+  - "Reminder scheduled by n8n for <IST time>", or "Reminder scheduling unavailable: <error> (n attempts)" with a **Retry** button (operator session).
+  - "Reminder sent to the staff inbox (n8n callback; no WhatsApp)", or "n8n callback skipped: <reason>". This is component `Reminder.tsx`.
+- **n8n deliverables** (`n8n/`):
+  - `staff-reminder.json`: Webhook (Header Auth) → Wait until `remind_at` → HTTP Request with Header Auth, 3 tries 5 s apart (safe because the callback is idempotent). It holds credential references only.
+  - `docker-compose.yml`: `n8nio/n8n:2.45.6` (the `stable` tag on 2026-10-29), `127.0.0.1:5678` only, persistent volume, `BACKEND_BASE_URL=http://host.docker.internal:8000`, `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` for that one variable. It is a separate compose file rather than a `--profile`, so the app's own setup stays Docker-free.
+  - `setup.py`:
+    - Generates the secrets into gitignored `n8n/.env`.
+    - Imports the two credentials and the workflow with the n8n CLI (`import:credentials`, `import:workflow`, `publish:workflow`), then restarts n8n.
+    - With `--write-backend-env`, appends the backend settings to gitignored `backend/.env`.
+    - It never prints secrets.
+  - `README.md`: covers import, credentials, publishing, the production vs test URL, addresses, a sample trigger test, and stopping.
+
+**Tests**
+
+- **Backend: 239 passed (17 new in `tests/test_m6_reminders.py`).** The n8n webhook is an `httpx.MockTransport`, so the tests are network-free.
+  - Feature off: no trigger and a 503 callback, while the request journey is unchanged.
+  - One trigger per task/round with the exact payload and webhook token; a duplicate request sends no second trigger.
+  - Transient 503/connect-error/200 gives 3 attempts with one `event_id`. Exhausted retries are labelled unavailable; the explicit retry reuses the ID, staff get 403, and a repeat gets 409.
+  - 401 pauses with no retry.
+  - A pending trigger rechecks eligibility (an answered task is skipped).
+  - An interrupted dispatch resumes through `/api/demo/resume-pending` with the same `event_id`.
+  - Callback authentication: no token, the webhook token, or a demo session all get 401; an out-of-scope merchant gets 404.
+  - Unknown task/case → 404; reminder number 2 → 422; a changed round → skipped.
+  - Not due → skipped and not persisted. When due → 202, exactly one Marathi reminder in the inbox, the task stays open, and two duplicate callbacks return `already_processed`. One `reminder.sent` audit is recorded, with a service actor.
+  - Reply, evidence upload or voice note before due → skipped.
+  - Expired deadline → skipped.
+  - A reply landing between an accepted callback and sending wins (skipped; the send handler is idempotent).
+  - The staff-message outbox never consumes triggers.
+  - Readiness shows `configured` without secrets.
+- **Frontend: 24 passed (4 new in `src/__tests__/reminder.test.tsx`).** They cover the off state, the scheduled time in IST, the unavailable label with retry, and sent vs skipped wording. Build and lint are clean.
+- **Browser E2E (reminders off):** `E2E_ALLOW_LIVE=1 npm run e2e` passed.
+
+**Live run (real n8n 2.45.6 in Docker Desktop, real backend, 30 s delay, `AGENT_AUTORUN=false`, 0 model calls)**
+
+- **Setup:** `python n8n/setup.py` imported 2 credentials and 1 workflow and published it; `docker cp` leaves root-owned files, so temp-file cleanup runs as root (fixed after the first run). The webhook returned **403** with no token and with a wrong token. The n8n container reached the backend at `host.docker.internal:8000` with the backend bound to `127.0.0.1`.
+- **Script:** `n8n/live_check.py`, on a fresh reset, `M6 LIVE CHECK PASSED`:
+  1. **Request → n8n started automatically:** the owner's **Request delivery proof** went through the same `request_evidence` tool the agent uses. The trigger was delivered after 1 attempt, about 1 s after the request.
+  2. **One eligible reminder reached the staff inbox** about 30 s later, without anyone starting the workflow: "स्मरणपत्र — ऑर्डर ORD-DEMO-18500: डिलिव्हरी पावती अजून मिळालेली नाही. कृपया पावती पाठवा." (`sent_in_simulator`). Audit: `reminder.queued` → `reminder.sent`, service actor.
+  3. **Duplicates:**
+     - A manual duplicate callback returned `200 already_processed`.
+     - A wrong service token got **401**.
+     - Re-posting the **same trigger** to n8n (a lost-acknowledgement retry) ran a second n8n execution. Its callback returned `200` (already processed), and there was still **1** reminder in the inbox.
+     - The backend log for the case shows five reminder POSTs: 202, 200, 401, 200, 200.
+  4. **A reply before the due time suppressed delivery:**
+     - Staff replied, and a new request created round 2, whose trigger was delivered.
+     - Staff replied again before it was due.
+     - n8n's callback arrived at `remind_at` (11:50:21.01 vs due 11:50:20.99) and was **skipped: `task_responded`**. The inbox still held 1 reminder.
+- **Real browser:** the drawer showed "Reminder scheduled by n8n for 29 Oct 2026, 5:19 pm IST" and "Reminder sent to the staff inbox (n8n callback; no WhatsApp)" for round 1, and the scheduled line for round 2. Its skipped callback is only in the audit timeline, because skipped callbacks are not persisted as reminder rows.
+
+**Found during the live run (not fixed, logged below):** the `/api/demo/reset` response can arrive before its commit is visible. A login made immediately after it can pick up a pre-reset user ID, and later requests then get "demo session no longer valid". This is the same root cause as the E2E reset race fixed in the test earlier today. The live script waits 2 s after reset.
+
+**Commands run**
+
+```bash
+cd backend && uv run alembic revision --autogenerate --rev-id 0006 -m "staff reminders"
+uv run pytest -q && uv run ruff check . && uv run ruff format --check .        # 239 passed, clean
+cd frontend && npm test && npm run lint && npm run build                       # 24 passed, clean
+docker pull n8nio/n8n:2.45.6
+python n8n/setup.py                                                             # 2 credentials, 1 workflow, published
+curl -X POST http://127.0.0.1:5678/webhook/proofcircuit-staff-reminder ...      # 403 without / with wrong token
+REMINDERS_ENABLED=true N8N_REMINDER_WEBHOOK_URL=... REMINDER_DELAY_SECONDS=30 AGENT_AUTORUN=false uv run uvicorn ...
+uv run --project backend python -I n8n/live_check.py .                      # M6 LIVE CHECK PASSED
+AGENT_AUTORUN=false uv run uvicorn ... ; E2E_ALLOW_LIVE=1 npm run e2e           # passed (reminders off)
+```
+
 ## Open issues / next
 
+- **Demo reset commit race:** `POST /api/demo/reset` (and likely other `get_db` endpoints) can return before the commit is visible to the next request. Seen as "demo session no longer valid" right after a reset in the M6 live script, and as the E2E reset race. Worth fixing by committing explicitly before returning in reset. Not fixed.
+- **n8n:** the n8n container keeps running (`restart: unless-stopped`) until `docker compose -f n8n/docker-compose.yml down`. Reminders are enabled only for the processes started with the settings; `backend/.env` was **not** written in this session (the user can run `python n8n/setup.py --write-backend-env`).
 - **Backend 500 when an action races a demo reset:** `POST /cases/{id}/actions` can read the case just before a concurrent `/api/demo/reset` deletes it. The `agent_runs` insert then fails with an IntegrityError → 500 instead of 404/409. This only happens in demo mode, where reset deletes data; the E2E no longer triggers it. Not fixed.
 - **Speech:** `WHISPER_MODEL` stays `small` (decision 7). The robotic espeak smoke fixture still fails for every model, so live transcription needs `SPEECH_REQUIRE_PASSING_SMOKE=false` until a human reference clip or Sarvam replaces it. The Sarvam adapter is still unbuilt (no key or access).
 - **Node:** the user has Node 26 (current), while HANDOFF lists Node ≥ 22.19. Everything passed on 26.
-- **Next milestones:** M6 n8n follow-up, M7 tests and evaluation (C03/C04 completion, C07 POD repair, ten-case first pass), M8 optional.
+- **Next milestones:** M7 tests and evaluation (C03/C04 completion, C07 POD repair, ten-case first pass), M8 optional.
 - Still partial: C03 (staff continuation) and C04 (authority) beyond the subsets above; C07 (POD repair) is M7.
 - Actual Gemini free-tier quota for this key is still unmeasured (no limit was approached); the cap/pacing/429 paths are tested with fakes.
 - OpenRouter fallback is implemented and mock-tested but cannot be exercised live until `openrouter.ai` is allowed in the environment's network settings and `OPENROUTER_API_KEY` is set.

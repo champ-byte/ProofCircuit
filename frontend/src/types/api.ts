@@ -213,6 +213,26 @@ export interface SubmissionView {
   created_at: string
 }
 
+/** n8n reminder state for one staff task (PRD 12.1). The trigger is backend → n8n; reminders are n8n's callbacks. */
+export interface TaskReminderView {
+  trigger?: {
+    id: string
+    status: 'pending' | 'delivered' | 'skipped' | 'failed' | 'paused'
+    remind_at: string | null
+    attempts: number
+    error: string | null
+    label: string | null
+  }
+  reminders: {
+    reminder_id: string
+    status: 'queued' | 'sent' | 'skipped'
+    reason: string | null
+    message_id: string | null
+    reminder_number: number
+    created_at: string
+  }[]
+}
+
 export interface InboxView {
   tasks: {
     id: string
@@ -223,6 +243,7 @@ export interface InboxView {
     locale: string
     status: string
     question: string | null
+    reminder: TaskReminderView | null
   }[]
   messages: { id: string; direction: string; from: string | null; to: string | null; locale: string; body: string; delivery_state: string; created_at: string }[]
 }

@@ -159,7 +159,11 @@ def deliver_outbox(session: Session, case_id: str) -> int:
     """Deliver queued messages to the local in-app inbox (never an external channel)."""
     delivered = 0
     for event in session.scalars(
-        select(OutboxEvent).where(OutboxEvent.case_id == case_id, OutboxEvent.status == "pending")
+        select(OutboxEvent).where(
+            OutboxEvent.case_id == case_id,
+            OutboxEvent.event_type == "staff_message",  # n8n triggers share the table; never touch them here
+            OutboxEvent.status == "pending",
+        )
     ):
         message = session.get(Message, event.payload.get("message_id"))
         if message is not None and message.delivery_state == "queued":
@@ -287,6 +291,9 @@ def inbox(session: Session, case: Case) -> dict[str, Any]:
             select(AuditEvent).where(AuditEvent.case_id == case.id, AuditEvent.event_type == "review.requested")
         )
     }
+    from app.services.reminders import task_reminders  # reminders imports this module
+
+    reminder_info = task_reminders(session, case)
     return {
         "tasks": [
             {
@@ -299,6 +306,7 @@ def inbox(session: Session, case: Case) -> dict[str, Any]:
                 "status": t.status,
                 "question": questions.get(t.id) if t.kind == "review" else None,
                 "created_at": t.created_at,
+                "reminder": reminder_info.get(t.id),
             }
             for t in tasks
         ],

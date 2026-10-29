@@ -10,7 +10,7 @@ from app.db.session import session_scope
 from app.domain.clock import get_clock
 from app.domain.enums import PendingStatus, WorkflowState
 from app.runner import handler
-from app.services import messaging, submission
+from app.services import messaging, reminders, submission
 from app.services.workflow import set_state, sync_workflow
 
 
@@ -54,6 +54,17 @@ async def run_tool(app: Any, work: PendingWork) -> dict[str, Any]:
 async def deliver(app: Any, work: PendingWork) -> dict[str, Any]:
     with session_scope() as session:
         return {"delivered": messaging.deliver_outbox(session, work.case_id)}
+
+
+@handler("dispatch_reminder_trigger")
+async def dispatch_reminder_trigger(app: Any, work: PendingWork) -> dict[str, Any]:
+    return await reminders.dispatch_trigger(app, work.payload["outbox_event_id"])
+
+
+@handler("send_reminder")
+async def send_reminder(app: Any, work: PendingWork) -> dict[str, Any]:
+    with session_scope() as session:
+        return reminders.send_reminder(session, work.payload["reminder_id"])
 
 
 @handler("reconcile_submission")
