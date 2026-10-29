@@ -47,6 +47,69 @@ These are user decisions; see BUILD_LOG "Decisions that deviate from PRD.md".
 6. **Speech (M5):** local faster-whisper only. Weights are never downloaded at runtime. Transcripts are staff testimony and never satisfy the checklist, `orderStatus` or the pack. Pin `av<17` for faster-whisper 1.2.1.
 7. **Stored values:** money is stored as integer paise and times as UTC. Paytm's naive timestamps are read as IST. Citations are Unicode code-point spans computed in Python.
 
+## Local setup (your own machine)
+
+The cloud container's database, smoke-test results and downloaded models do not carry over. On a new machine, do this once.
+
+**Prerequisites:**
+
+- Required: Python ≥ 3.11, [uv](https://docs.astral.sh/uv/), Node 22 and git.
+- Optional: ffmpeg (audio), Docker (M6 n8n), and Ollama with an installed Gemma tag (M8).
+
+**Get the branch** (the work is not on `main`):
+
+```bash
+git clone https://github.com/champ-byte/ProofCircuit.git
+```
+
+```bash
+cd ProofCircuit && git checkout claude/stoic-pasteur-3b0gu1
+```
+
+**Secrets:** set them in your shell, or in a repo-root `.env`, which is gitignored. Never commit them or paste them into chat.
+
+```bash
+export GEMINI_API_KEY=your-key-here
+```
+
+```bash
+export SESSION_SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))") DEMO_WEBHOOK_SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+```
+
+**Install and verify:** expect 221 backend and 20 frontend tests to pass.
+
+```bash
+cd backend && uv sync --extra speech && uv run pytest -q
+```
+
+```bash
+cd frontend && npm ci && npm test && npx playwright install chromium
+```
+
+**Re-enable the live agent:** 1–4 Gemini calls; the result lasts 24 h.
+
+```bash
+cd backend && uv run python -m app.cli smoke-reasoner
+```
+
+**Optional speech-to-text:** downloads ~460 MB for `small`. Models are never downloaded at runtime.
+
+```bash
+cd backend && SPEECH_PROVIDER=faster_whisper uv run python -m app.cli speech-download
+```
+
+```bash
+cd backend && SPEECH_PROVIDER=faster_whisper uv run python -m app.cli smoke-speech
+```
+
+**What differs from the cloud container:**
+
+- No proxy blocks: Hugging Face, Docker Hub (n8n) and `openrouter.ai` should be reachable.
+- Playwright needs its own browser (`npx playwright install chromium`, as above). `PC_CHROMIUM=/path/to/chrome` also works.
+- Stop servers with Ctrl+C. The `ps aux | grep` workaround below only mattered in the cloud shell.
+- **Open test:** record a short human Marathi or Hindi voice note (synthetic content, e.g. the line in `fixtures/hero/voice_note_mr.txt`). Upload it from the drawer, or measure it against the known script. M5 could not test this; see BUILD_LOG M5.
+- Record the local environment (OS, Python, Node, CPU/GPU, Docker/Ollama) in BUILD_LOG.md at the start of the first local milestone.
+
 ## Run and verify
 
 ```bash
@@ -73,17 +136,21 @@ cd frontend && npm run dev
 
 ## Environment gotchas (learned the hard way)
 
-- **Network:**
-  - `generativelanguage.googleapis.com` is reachable.
+Items marked *(cloud only)* applied to the claude.ai cloud container, not to a local machine.
+
+- **Network** *(cloud only)*:
+  - `generativelanguage.googleapis.com` is reachable; since M5, `huggingface.co` and `*.xethub.hf.co` too.
   - `openrouter.ai` and the `ai.google.dev` docs are blocked (proxy 403).
   - Ollama is not installed.
-- **Stopping servers:** `pgrep -f` or `pkill -f` with a pattern matches the agent's own shell and kills it. Stop servers with `ps aux | grep '[u]vicorn' | awk '{print $2}' | xargs kill`.
+- **Stopping servers** *(cloud only)*: `pgrep -f` or `pkill -f` with a pattern matches the agent's own shell and kills it. Stop servers with `ps aux | grep '[u]vicorn' | awk '{print $2}' | xargs kill`.
+- **E2E with a fresh smoke check:** `/api/health` reads `live` even under `AGENT_AUTORUN=false`, so run `E2E_ALLOW_LIVE=1 npm run e2e` (no model call happens with autorun off).
+- **Speech deps:** faster-whisper 1.2.1 needs `av<17` (pinned in the `speech` extra); `av` 19 raises `TypeError` on every transcription.
 - **Background tasks:**
   - `TestClient` runs `BackgroundTasks` before returning, but a real server does not.
   - The UI follows `/api/cases/{id}/events`, so verify UI flows in a real browser, not only with TestClient.
 - **Scratch scripts:**
   - Run them from `backend/` with `PYTHONPATH=.`.
-  - For Node scripts, use the preinstalled Playwright with `NODE_PATH=$(npm root -g)`. Do not run `playwright install`.
+  - *(cloud only)* For Node scripts, use the preinstalled Chromium and do not run `playwright install`. ES-module scripts ignore `NODE_PATH`, so import Playwright from `frontend/node_modules/playwright/index.mjs`.
 - **Secrets:** without `SESSION_SECRET` and `DEMO_WEBHOOK_SECRET`, secrets are regenerated on each restart, so old demo sessions stop working after a restart.
 - **Test clock:**
   - Tests use a fixed clock in 2030 and the session TTL is 12 h. After advancing the clock, call `relogin()` (see `tests/helpers.py`).
