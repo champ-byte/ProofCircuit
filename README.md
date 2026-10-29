@@ -6,7 +6,9 @@ An AI teammate that prepares a merchant's payment-dispute response: it finds mis
 
 ## Status
 
-Milestone **M0 (Bootstrap)** is done. It covers the schema and migrations, settings validation, provider readiness, the seeded hero case, and the case list. Evidence handling (M1), the simulator and tools (M2), and the live agent (M3) are **not implemented yet**.
+- **M0 (Bootstrap)** is done: schema and migrations, settings validation, provider readiness, the seeded hero case, and the case list.
+- **M1 (Evidence)** is done: upload of TXT/JSON/text-PDF evidence, Python-computed code-point citations, the goods-not-received checklist, deterministic contradiction checks, and a case workspace at `/cases/:id`.
+- The simulator, tools and submission (M2) and the live agent (M3) are **not implemented yet**. Nothing is submitted anywhere.
 
 ## Requirements
 

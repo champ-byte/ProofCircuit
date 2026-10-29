@@ -18,6 +18,8 @@ from app.domain.clock import Clock
 from app.domain.enums import DisputeReason
 from app.domain.paytm import format_naive_time, normalize_callback_body
 from app.services.audit import audit
+from app.services.evidence import ingest_document
+from app.services.fixtures import render_hero_document
 from app.services.intake import open_case
 
 FIXTURES_DIR = REPO_ROOT / "fixtures"
@@ -139,5 +141,18 @@ def seed_demo(session: Session, settings: Settings, clock: Clock) -> Case:
             case_id=case.id,
             merchant_id=merchant.id,
             data={"deadline_raw": dispute.deadline_raw, "timezone_assumption": dispute.timezone_assumption},
+        )
+        # Hero starting point: the invoice is present, delivery proof is missing. The invoice goes
+        # through the same ingestion/extraction path as any upload.
+        filename, data = render_hero_document("invoice", case, settings)
+        ingest_document(
+            session,
+            settings,
+            case,
+            filename=filename,
+            declared_mime="text/plain",
+            data=data,
+            uploaded_by_user_id=None,
+            actor_type="system",
         )
     return case

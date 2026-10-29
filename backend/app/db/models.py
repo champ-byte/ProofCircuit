@@ -92,6 +92,10 @@ class EvidenceDocument(Base):
     sha256: Mapped[str] = mapped_column(String(64))
     extraction_status: Mapped[str] = mapped_column(String(32), default="pending")
     extraction_method: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    extraction_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    page_count: Mapped[int] = mapped_column(Integer, default=0)
+    # invoice | delivery_record | dispatch_record | other | unknown (deterministic classification)
+    doc_type: Mapped[str] = mapped_column(String(32), default="unknown")
     uploaded_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("demo_users.id"), nullable=True)
     superseded_by_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     exclusion_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -117,6 +121,7 @@ class ExtractedFact(Base):
     field: Mapped[str] = mapped_column(String(64))
     raw_value: Mapped[str] = mapped_column(Text)
     normalized_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    unit: Mapped[str | None] = mapped_column(String(32), nullable=True)  # e.g. "paise:INR", "date"
     span_start: Mapped[int | None] = mapped_column(Integer, nullable=True)  # code points, end-exclusive
     span_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     page_text_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -150,8 +155,11 @@ class ValidationFinding(Base):
     status: Mapped[str] = mapped_column(String(16), default="open")
     source_ids: Mapped[list[Any]] = mapped_column(JSON, default=list)
     explanation: Mapped[str] = mapped_column(Text)
+    fingerprint: Mapped[str] = mapped_column(String(64), index=True)  # rule + sources + values
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # side-by-side values
     case_version: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(default=_now)
+    resolved_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
 
 class StaffTask(Base):

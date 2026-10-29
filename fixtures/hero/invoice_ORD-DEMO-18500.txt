@@ -5,5 +5,6 @@ Order Date: {{ORDER_DATE}}
 Customer: CUST-DEMO-001
 Item: Sheesham wood 3-seater sofa x 1
 Amount: INR 18500.00
-Payment: Paytm, Transaction ID TXN-DEMO-001
+Payment Mode: Paytm
+Transaction ID: TXN-DEMO-001
 This document is synthetic and was generated for a hackathon demo.

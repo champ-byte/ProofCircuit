@@ -15,6 +15,7 @@ from app.db.models import AuditEvent, Case, DemoUser, Merchant
 from app.domain.clock import get_clock
 from app.domain.enums import WorkflowState
 from app.domain.money import format_inr
+from app.services.validation import assess
 
 router = APIRouter(prefix="/api/cases", tags=["cases"])
 
@@ -46,6 +47,8 @@ class CaseSummary(BaseModel):
     owner: str | None
     next_action: str
     synthetic: bool
+    evidence_ready: bool
+    blocker: str | None
 
 
 class TimelineEvent(BaseModel):
@@ -71,8 +74,11 @@ def _next_action(case: Case) -> str:
     }.get(WorkflowState(case.workflow_state), case.workflow_state)
 
 
-def _summary(case: Case, merchant: Merchant, owner: DemoUser | None, settings: Settings) -> dict[str, Any]:
+def _summary(
+    db: Session, case: Case, merchant: Merchant, owner: DemoUser | None, settings: Settings
+) -> dict[str, Any]:
     now = get_clock().now()
+    assessment = assess(db, case)
     remaining = int((case.deadline_utc - now).total_seconds())
     return {
         "id": case.id,
@@ -101,6 +107,8 @@ def _summary(case: Case, merchant: Merchant, owner: DemoUser | None, settings: S
         "owner": owner.display_name if owner else None,
         "next_action": _next_action(case),
         "synthetic": case.synthetic,
+        "evidence_ready": assessment["evidence_ready"],
+        "blocker": assessment["blockers"][0] if assessment["blockers"] else None,
     }
 
 
@@ -120,7 +128,7 @@ def list_cases(
     db: Session = Depends(get_db),
 ) -> list[dict[str, Any]]:
     rows = db.execute(_scoped_query(identity).order_by(Case.deadline_utc)).all()
-    return [_summary(c, m, o, settings) for c, m, o in rows]
+    return [_summary(db, c, m, o, settings) for c, m, o in rows]
 
 
 @router.get("/{case_id}", response_model=CaseDetail)
@@ -137,7 +145,7 @@ def get_case(
     case, merchant, owner = row
     events = db.scalars(select(AuditEvent).where(AuditEvent.case_id == case.id).order_by(AuditEvent.seq)).all()
     return {
-        **_summary(case, merchant, owner, settings),
+        **_summary(db, case, merchant, owner, settings),
         "timeline": [
             {
                 "seq": e.seq,

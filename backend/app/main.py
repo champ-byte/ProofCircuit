@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.api import cases, demo, health
+from app.api import cases, demo, evidence, health
 from app.config import Settings, get_settings
 from app.db.migrate import upgrade_to_head
 from app.db.models import Merchant
@@ -43,4 +43,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(demo.router)
     app.include_router(cases.router)
+    app.include_router(evidence.router)
     return app

@@ -1,4 +1,13 @@
-import type { CaseSummary, DemoSession, DemoUser, ProviderReport } from '../types/api'
+import type {
+  CaseDetail,
+  CaseSummary,
+  DemoSession,
+  DemoUser,
+  DocumentDetail,
+  EvidenceOverview,
+  FixtureInfo,
+  ProviderReport,
+} from '../types/api'
 
 export class ApiError extends Error {
   readonly status: number
@@ -8,10 +17,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+async function send(path: string, init: RequestInit = {}, token?: string): Promise<Response> {
   const headers = new Headers(init.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  if (typeof init.body === 'string' && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   const resp = await fetch(path, { ...init, headers })
   if (!resp.ok) {
     let detail = resp.statusText
@@ -22,7 +31,11 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
     }
     throw new ApiError(resp.status, String(detail))
   }
-  return (await resp.json()) as T
+  return resp
+}
+
+async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+  return (await (await send(path, init, token)).json()) as T
 }
 
 export const api = {
@@ -31,4 +44,17 @@ export const api = {
   createSession: (mid: string, handle: string) =>
     request<DemoSession>('/api/demo/session', { method: 'POST', body: JSON.stringify({ mid, handle }) }),
   cases: (token: string) => request<CaseSummary[]>('/api/cases', {}, token),
+  caseDetail: (token: string, id: string) => request<CaseDetail>(`/api/cases/${id}`, {}, token),
+  evidence: (token: string, id: string) => request<EvidenceOverview>(`/api/cases/${id}/evidence`, {}, token),
+  document: (token: string, id: string) => request<DocumentDetail>(`/api/evidence/${id}`, {}, token),
+  upload: (token: string, caseId: string, file: File | Blob, filename: string) => {
+    const form = new FormData()
+    form.append('file', file, filename)
+    return request<{ created: boolean }>(`/api/cases/${caseId}/evidence`, { method: 'POST', body: form }, token)
+  },
+  exclude: (token: string, docId: string, reason: string) =>
+    request<unknown>(`/api/evidence/${docId}/exclude`, { method: 'POST', body: JSON.stringify({ reason }) }, token),
+  fixtures: (token: string, caseId: string) => request<FixtureInfo[]>(`/api/demo/cases/${caseId}/fixtures`, {}, token),
+  fixtureFile: async (token: string, caseId: string, name: string) =>
+    (await send(`/api/demo/cases/${caseId}/fixtures/${name}`, {}, token)).blob(),
 }

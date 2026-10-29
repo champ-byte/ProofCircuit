@@ -69,7 +69,8 @@ def test_seeded_hero_case_visible(client: TestClient) -> None:
     assert case["seconds_to_deadline"] == 48 * 3600 and case["deadline_expired"] is False
 
     detail = client.get(f"/api/cases/{case['id']}", headers=headers).json()
-    assert [e["event_type"] for e in detail["timeline"]] == ["case.opened", "demo.seeded"]
+    events = [e["event_type"] for e in detail["timeline"]]
+    assert events[:3] == ["case.opened", "demo.seeded", "evidence.uploaded"]
 
 
 def test_tenant_isolation(client: TestClient) -> None:
