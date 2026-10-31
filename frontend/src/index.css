@@ -2741,6 +2741,9 @@ main { max-width: 1560px; padding: 28px clamp(20px, 4vw, 64px) 40px; }
 
 /* Operational pages share a restrained, row-based layout. */
 :root { --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px; --space-5: 32px; }
+:root { --font-display: 'Poppins', 'Inter Variable', sans-serif; --font-body: 'Inter Variable', Inter, sans-serif; }
+h1, h2, h3, .brand-name { font-family: var(--font-display); }
+table, input, select, textarea, button { font-family: var(--font-body); }
 .workspace-layout { display: flex; flex-direction: column; gap: var(--space-4); }
 .workspace, .workspace-layout > .drawer { width: 100%; min-width: 0; }
 .workspace-layout > .drawer { position: static; max-height: none; border: 1px solid var(--border); box-shadow: none; border-radius: 8px; padding: var(--space-3); }
