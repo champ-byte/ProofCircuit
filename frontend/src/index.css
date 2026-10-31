@@ -2792,3 +2792,33 @@ table, input, select, textarea, button { font-family: var(--font-body); }
 @media (prefers-reduced-motion: reduce) {
  *, *::before, *::after { scroll-behavior: auto; transition-duration: 0s; animation-duration: 0s; }
 }
+
+.workflow-chart { padding: 24px; border: 1px solid var(--border); border-radius: 10px; background: white; }
+.workflow-chart-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+.workflow-chart-heading h2 { margin: 0 0 6px; color: var(--text); font-size: 1.25rem; }
+.workflow-chart-heading p:last-child { max-width: 52ch; margin: 0; color: var(--muted); font-size: .85rem; }
+.workflow-chart-total { display: grid; align-content: center; gap: 4px; padding: 8px 16px; border-left: 2px solid #b8d8e7; }
+.workflow-chart-total span { color: var(--muted); font-size: .76rem; }
+.workflow-chart-total strong { color: var(--text); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.workflow-bars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 28px; padding: 0 8px; }
+.workflow-bar-group { display: grid; grid-template-rows: auto 116px auto; gap: 8px; text-align: center; color: var(--muted); font-size: .76rem; }
+.workflow-bar-group strong { color: var(--text); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.workflow-bar-track { display: flex; align-items: end; justify-content: center; border-bottom: 1px solid var(--border); }
+.workflow-bar { position: relative; width: min(54px, 58%); min-height: 4px; border-radius: 3px 3px 0 0; transition: height 250ms ease; }
+.workflow-bar::before { content: ''; position: absolute; left: 6px; right: -6px; top: -6px; height: 6px; background: inherit; filter: brightness(1.16); transform: skewX(-45deg); transform-origin: bottom left; }
+.workflow-bar::after { content: ''; position: absolute; top: -3px; bottom: 0; right: -6px; width: 6px; background: inherit; filter: brightness(.8); transform: skewY(-45deg); transform-origin: top left; }
+.journey-event { padding: 10px 12px; border-left: 2px solid #2e9b84; background: #f4faf8; color: #315469; }
+.journey-event a { margin-left: 8px; color: var(--accent); }
+.journey-event span { display: block; margin-top: 4px; color: var(--muted); font-size: .75rem; }
+.journey-map { margin-bottom: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: #f8fbfc; }
+.journey-map p { margin: 0 0 12px; color: var(--muted); font-size: .8rem; }
+.journey-map ol { display: flex; gap: 8px; margin: 0; padding: 0 0 5px; list-style: none; overflow-x: auto; }
+.journey-map li { flex: 1 0 120px; position: relative; }
+.journey-map li a { display: flex; flex-direction: column; gap: 7px; min-height: 66px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); background: white; font-size: .72rem; text-decoration: none; }
+.journey-map li.visited a { border-color: #9bd2c5; color: #174f48; background: #eef9f5; }
+.journey-map li span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #e9f0f4; color: var(--accent); font-weight: 750; }
+.journey-map li.visited span { background: #2e9b84; color: white; }
+.journey-map li a:hover, .journey-map li a:focus-visible { border-color: var(--accent); }
+.journey-step-actions button:not(.journey-secondary) { background: var(--accent); border-color: var(--accent); color: white; }
+.journey-step-actions button.journey-secondary { color: var(--accent); border-color: var(--border); }
+@media (max-width: 640px) { .workflow-chart { padding: 16px; } .workflow-bars { gap: 8px; padding: 0; } .workflow-bar-group { font-size: .67rem; } .workflow-chart-total { padding-left: 12px; } }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api/client'
+import { formatIst } from '../format'
 import type { AuditEventView, CaseDetail, DemoSession, EvidenceOverview } from '../types/api'
 
 type DemoTab = 'inbox' | 'faults' | 'providers' | 'resume'
@@ -56,7 +57,7 @@ export function CaseJourney({
   }[] = [
     {
       number: '01', title: 'Start the agent',
-      description: 'Let the reasoner propose the next tool. Manual controls remain available if reasoning is unavailable.',
+      description: 'Ask the case assistant to check the record and suggest the next safe action. You can also use the controls below yourself.',
       types: ['agent.run_started'],
       actions: [{ label: 'Run agent / resume', run: () => api.startRun(token, caseId), disabled: !canAct || closed }],
       links: [{ label: 'See agent runs', href: '#actions-h' }],
@@ -79,7 +80,7 @@ export function CaseJourney({
     },
     {
       number: '04', title: 'Ask for human review',
-      description: 'Escalate a decision when proof is contradictory or the agent cannot safely continue. A reviewer records the final choice.',
+      description: 'Ask a person to decide when documents disagree or the next step is uncertain.',
       types: ['review.requested'],
       actions: [{ label: 'Request review', run: () => api.action(token, caseId, 'request_human_review', { reason: 'owner_request', question: 'Please review the evidence and decide the next safe step.' }), disabled: !canAct || closed }],
       links: [{ label: session.user.role === 'reviewer' ? 'Reviewer decisions' : 'Switch to reviewer above', href: session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity' }, { label: 'View findings', href: '#findings-h' }],
@@ -93,14 +94,14 @@ export function CaseJourney({
     },
     {
       number: '06', title: 'Submit the defense',
-      description: 'The policy gate checks the current pack, role, deadline, and case state before any simulator write.',
+      description: 'Send the reviewed response. The app checks the pack, your role, and the deadline first.',
       types: ['submission.requested'],
       actions: [{ label: 'Submit defense', run: () => api.action(token, caseId, 'submit_defense'), disabled: !canAct || closed || !packReady || !hasPack, hint: !packReady ? 'Complete evidence checks first' : !hasPack ? 'Build an evidence pack first' : undefined }],
       links: [{ label: 'See submission', href: '#pack-h' }],
     },
     {
       number: '07', title: 'Verify the receipt and outcome',
-      description: 'Read the simulator independently. A verified submission means the response arrived; the dispute outcome may still be pending.',
+      description: 'Check that the response arrived. The final dispute decision may come later.',
       types: ['submission.verified'],
       actions: [{ label: 'Check provider status', run: () => api.action(token, caseId, 'get_submission_status'), disabled: !canAct || (!hasSubmitted && !closed), hint: !hasSubmitted && !closed ? 'Submit a response first' : undefined }],
       links: [{ label: 'View audit timeline', href: '#steps-h' }, { label: 'See receipt', href: '#pack-h' }],
@@ -108,21 +109,28 @@ export function CaseJourney({
     },
   ]
 
+  const recordedSteps = steps.filter((step) => latest(events, step.types)).length
+
   return (
     <section className="journey-panel" aria-labelledby="journey-title">
       <div className="journey-heading">
-        <div><p className="eyebrow">Live case journey</p><h2 id="journey-title">What happens next?</h2><p>Related activity comes from this case’s audit events. Buttons use the existing backend policy gate.</p></div>
+        <div><p className="eyebrow">Your case, step by step</p><h2 id="journey-title">What happens next?</h2><p>These steps follow recorded case activity. Open any step to see its source and available action.</p></div>
         <span className="journey-mode">{session.user.role} view</span>
       </div>
       {!canAct && <p className="journey-role-note">Agent and manual tool buttons require the owner or operator identity. Use the demo identity selector above to switch roles.</p>}
+      <nav className="journey-map" aria-label="Case process map">
+        <p>{recordedSteps} of {steps.length} stages have related activity. Human review may be skipped when it is not needed.</p>
+        <ol>{steps.map((step) => <li key={step.number} className={latest(events, step.types) ? 'visited' : ''}><a href={`#journey-step-${step.number}`}><span>{step.number}</span>{step.title}</a></li>)}</ol>
+      </nav>
       <div className="journey-grid">
         {steps.map((step) => {
           const recorded = latest(events, step.types)
           return (
-            <article className="journey-step" key={step.number}>
-              <div className="journey-step-top"><span className="journey-number">{step.number}</span><span className={recorded ? 'journey-record recorded' : 'journey-record'}>{recorded ? `Activity · event #${recorded.seq}` : 'No related event yet'}</span></div>
+            <article className="journey-step" key={step.number} id={`journey-step-${step.number}`}>
+              <div className="journey-step-top"><span className="journey-number">{step.number}</span><span className={recorded ? 'journey-record recorded' : 'journey-record'}>{recorded ? 'Activity recorded' : 'Waiting for this step'}</span></div>
               <h3>{step.title}</h3>
               <p>{step.description}</p>
+              {recorded && <p className="journey-event"><strong>What happened:</strong> {recorded.summary} <a href="#steps-h">Open timeline (event #{recorded.seq})</a><span>{formatIst(recorded.created_at)}</span></p>}
               <div className="journey-step-actions">
                 {step.actions.map((action) => <span className="journey-action" key={action.label}><button type="button" disabled={busy || action.disabled} onClick={() => void execute(action)}>{action.label}</button>{action.hint && <small>{action.hint}</small>}</span>)}
                 {step.demo && <button key={step.demo.label} type="button" className="journey-secondary" onClick={() => openDemo(step.demo!.tab)}>{step.demo.label}</button>}

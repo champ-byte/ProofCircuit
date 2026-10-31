@@ -56,7 +56,8 @@ describe('navigation and case workflow', () => {
     } as EvidenceOverview
     const events: AuditEventView[] = [{ seq: 7, event_type: 'evidence.requested', summary: 'Proof asked for', actor_type: 'agent', data: {}, created_at: '2030-01-01T00:00:00Z' }]
     render(<CaseJourney caseId="case-1" token="test-token" session={session} detail={detail} evidence={evidence} events={events} onChanged={onChanged} openDemo={vi.fn()} />)
-    expect(screen.getByText('Activity · event #7')).toBeTruthy()
+    expect(screen.getByText('Activity recorded')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Open timeline \(event #7\)/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Submit defense' }).hasAttribute('disabled')).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Request missing proof' }))
     await waitFor(() => expect(action).toHaveBeenCalledWith('test-token', 'case-1', 'request_evidence', { requirement_id: 'delivery_record' }))

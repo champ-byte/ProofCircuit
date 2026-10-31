@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { formatIst } from '../format'
-import type { DemoSession, PackView, RunView, SubmissionView } from '../types/api'
+import type { AuditEventView, DemoSession, PackView, RunView, SubmissionView } from '../types/api'
 
 const ACTIONS: { tool: string; label: string; args?: Record<string, unknown> }[] = [
   { tool: 'request_evidence', label: 'Request delivery proof from staff', args: { requirement_id: 'delivery_record' } },
@@ -16,6 +16,15 @@ const ACTIONS: { tool: string; label: string; args?: Record<string, unknown> }[]
   },
 ]
 
+const TOOL_EXPLANATIONS: Record<string, string> = {
+  request_evidence: 'Asked a staff member for the missing document.',
+  validate_evidence: 'Checked the available records for gaps and contradictions.',
+  build_evidence_pack: 'Prepared a response pack linked to its source documents.',
+  submit_defense: 'Sent the approved response to the provider simulator.',
+  get_submission_status: 'Checked whether the provider received the response.',
+  request_human_review: 'Paused for a person to review the case.',
+}
+
 /** Manual operation through the same tools and policy gate the agent will use (M3). */
 export function ActionsPanel({
   caseId,
@@ -23,12 +32,14 @@ export function ActionsPanel({
   session,
   version,
   onChanged,
+  events,
 }: {
   caseId: string
   token: string
   session: DemoSession
   version: number
   onChanged: () => Promise<void>
+  events: AuditEventView[]
 }) {
   const [busy, setBusy] = useState(false)
   const [runs, setRuns] = useState<RunView[]>([])
@@ -80,7 +91,8 @@ export function ActionsPanel({
       )}
       {agentRuns.length > 0 && (
         <div className="agent-runs">
-          <h3>Agent runs</h3>
+          <h3>What the case assistant did</h3>
+          <p className="sub">Each entry is a recorded run. A denied step means the safety checks stopped that action.</p>
           <ol className="timeline">
             {agentRuns.map((r) => (
               <li key={r.id}>
@@ -91,9 +103,10 @@ export function ActionsPanel({
                   {r.tool_calls.map((c) => (
                     <li key={c.step} className={`tool-${c.status}`}>
                       <strong>
-                        {c.step}. {c.tool}
+                        {c.step}. {ACTIONS.find((action) => action.tool === c.tool)?.label ?? c.tool}
                       </strong>{' '}
                       → {c.status}
+                      <div className="sub">{TOOL_EXPLANATIONS[c.tool] ?? 'This action was recorded on the case.'}</div>
                       {c.rationale && <div className="sub">“{c.rationale}”</div>}
                     </li>
                   ))}
@@ -103,6 +116,7 @@ export function ActionsPanel({
           </ol>
         </div>
       )}
+      {agentRuns.length === 0 && <p className="sub">{events.some((event) => event.event_type === 'agent.run_started') ? 'A run was recorded in the case timeline. Its detailed tool log is not available in this view yet.' : 'No assistant run has been recorded yet. Start one above, or use a case action directly.'}</p>}
       {last && (
         <div className={`tool-result tool-${last.status}`} role="status">
           <strong>

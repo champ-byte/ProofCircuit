@@ -5,6 +5,7 @@ import { useSession } from '../session'
 import { STATE_LABELS, formatCountdown, formatIst } from '../format'
 import { secondsUntil, useNow } from '../hooks'
 import type { CaseSummary } from '../types/api'
+import { WorkflowChart } from '../components/WorkflowChart'
 
 type QueueView = 'all' | 'review' | 'action' | 'waiting' | 'closed'
 const isClosed = (c: CaseSummary) => c.workflow_state === 'CLOSED'
@@ -125,6 +126,7 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
         </div>
       </section>}
 
+      {showOverview && <WorkflowChart cases={cases} />}
       {showOverview && <section className="dashboard-flow" aria-labelledby="dashboard-flow-title">
         <div className="dashboard-flow-head">
           <div><p className="eyebrow">Behind every case</p><h2 id="dashboard-flow-title">The full response flow, in view.</h2><p>Open a dispute for the live stage, source evidence, staff messages, tool actions, and recorded result.</p></div>

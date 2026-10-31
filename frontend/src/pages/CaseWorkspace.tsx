@@ -132,6 +132,7 @@ export function CaseWorkspace() {
           session={session}
           version={detail.version + evidence.findings.length + reloadKey}
           onChanged={refresh}
+          events={events}
         />
         <PackPanel caseId={id} token={token} version={reloadKey} />
         <EvidencePanel
