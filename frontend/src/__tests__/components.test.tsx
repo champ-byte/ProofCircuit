@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
-import { Tabs } from '../components/DemoDrawer'
+import { Tabs } from '../components/DemoControls'
 import { HighlightedPage } from '../components/Evidence'
 import { ConcessionModal } from '../components/Reviewer'
 
@@ -63,10 +63,10 @@ describe('ConcessionModal', () => {
       explanation: 'Customer proof is credible.',
     })
     expect(step2).toHaveProperty('disabled', true)
-    const confirm = screen.getByLabelText(/Type CONCEDE/)
-    fireEvent.change(confirm, { target: { value: 'concede' } })
+    const confirm = screen.getByLabelText(/Type ACCEPT/)
+    fireEvent.change(confirm, { target: { value: 'accept' } })
     expect(step2).toHaveProperty('disabled', true) // case-sensitive exact word
-    fireEvent.change(confirm, { target: { value: 'CONCEDE' } })
+    fireEvent.change(confirm, { target: { value: 'ACCEPT' } })
     expect(step2).toHaveProperty('disabled', false)
     expect(concede).not.toHaveBeenCalled()
     fireEvent.click(step2)
@@ -89,7 +89,7 @@ describe('Tabs', () => {
     const onChange = vi.fn()
     render(<Tabs active="inbox" onChange={onChange} />)
     const tabs = screen.getAllByRole('tab')
-    expect(tabs).toHaveLength(6)
+    expect(tabs).toHaveLength(5)
     expect(tabs[0].getAttribute('aria-selected')).toBe('true')
     expect(tabs[1].tabIndex).toBe(-1)
     fireEvent.keyDown(tabs[0], { key: 'ArrowRight' })

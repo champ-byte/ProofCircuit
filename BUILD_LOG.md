@@ -1017,7 +1017,66 @@ cd ../frontend && npm test && npm run build && npm run lint && E2E_ALLOW_LIVE=1 
   - `/staff` in Marathi as Sanjay showed the Marathi delivery-record request after a demo reset plus an owner request.
 - Also added `PROJECT_CONTEXT.md` (one-file project overview, at the user's request).
 
+## Role-based sign-in, Phase A (2026-10-31)
+
+From NEXT_PLAN.md Phase A. Phases 1–2 were already committed (`4e17782`), so nothing needed committing first.
+
+- **Sign-in `/signin`:** three cards (Shop owner, Staff member, Reviewer) with one button per person: Asha, Sanjay, Meera, Ravi. No passwords; signing in calls `api.createSession`. Only MID-DEMO-001 people with those four handles are offered (`src/roles.ts`); Eval…, Other Owner and Demo Operator never appear. A saved operator or test identity is ignored, so the visitor signs in again.
+- **First visit:** the welcome modal is now language-only. Continue goes to `/signin`. The modal shows on `/` and `/signin` until dismissed once.
+- **Header:** the "Viewing as" dropdown and "Change role" are gone. It shows "Asha · Shop owner" and a **Switch user** link to `/signin`, or **Sign in** when nobody is signed in. "Guide me" shows only on pages that have a tour.
+- **Role guards (`RoleRoute` in `App.tsx`):** signed out → `/signin`; wrong role → that role's home. Owner: `/dashboard`, `/cases`, `/cases/:id`. Staff: `/staff`. Reviewer: `/review`, `/review/:id`. Nav links change per role. The server still enforces every permission.
+- **Owner case page:** no reviewer panel and no demo drawer. A small "Demo controls" link opens `/operator` for this case. The journey's demo shortcuts (staff inbox, faults, providers) open `/operator` on the right tab. The next-step card no longer has "Open staff inbox". "Switch to reviewer" links now go to `/signin`.
+- **Reviewer:** `/review` lists only cases in `NEEDS_HUMAN_REVIEW` or with an open review task (one inbox read per open case). `/review/:id` shows the reviewer panel first, then checklist, problems, evidence and voice notes. No assistant or owner actions.
+- **Operator page `/operator`** (footer link "Demo controls"): case picker (defaults to DSP-DEMO-001), then the former drawer tabs: staff inbox for any staff member, fault injector, seed/reset, providers, resume. The Identity tab was removed. The evaluation link moved here (also removed from the cases sidebar and footer). It uses its own operator session, so whoever is signed in stays signed in; a reset re-issues the main session too. Tools stay in English.
+- **Code:** `DemoDrawer.tsx` → `DemoControls.tsx` (page component, not a drawer). New `roles.ts`, `pages/SignInPage.tsx`, `pages/ReviewPage.tsx`, `pages/OperatorPage.tsx`. The 1.5 s event-feed follow moved into `useEventFeed` (`hooks.ts`), shared by the owner and reviewer case views (no new polling).
+- **Strings:** new keys `nav.*`, `signin.*`, `review.*`, `operator.*` in `en.json` only. English values changed: `journey.s4LinkSwitch`, `journey.b3Switch`, `journey.roleNote`, `panels.switchRole`. The other 9 locales are untouched and now all listed in `PARTIAL` in `locales.test.ts` (no unknown keys, matching placeholders; missing keys fall back to English). Obsolete keys (`app.viewingAs`, `app.changeRole`, `guide.openStaff`, `welcome.back`…) are left in place because the other locales still have them.
+- **E2E decision:** no hidden drawer kept for the E2E. It signs in through `/signin` and acts as each role: Asha requests and submits, Sanjay uploads and sends the voice note on `/staff`, the presenter resets and injects the 504 fault on `/operator`. The reviewer part: after a reset, Asha presses "Request human review", then Ravi signs in, finds the case on `/review` and concedes. It also checks the sign-in list (no test accounts), the per-role nav, the header name, and the redirects (staff from the case URL to `/staff`, reviewer from `/cases` to `/review`).
+
+Commands and results:
+
+```bash
+cd frontend
+npx tsc -b --noEmit                   # clean
+npm run lint                          # clean
+npx vitest run                        # 52 passed (42 + 10 new in roles.test.tsx; welcome and Tabs tests updated)
+npm run build                         # OK (same >500 kB chunk warning as before)
+E2E_ALLOW_LIVE=1 npm run e2e          # E2E passed (backend :8000 live Gemini, reminders off; Vite :5173)
+```
+
+- **Real browser (built-in browser, Vite :5173 + backend :8000):** sign-in page showed the three cards and four people. Asha → `/cases`, nav "Dashboard / Disputes", header "Asha · Shop owner"; `/staff` redirected to `/cases`. Sanjay → `/staff` ("Requests for you", nav "My requests"); `/cases` redirected to `/staff`. Ravi → `/review` ("Nothing needs your decision right now" after the E2E concession closed the case); `/staff` redirected to `/review`. `/operator` showed the case picker and the five tabs.
+
+## Plain language and less text, Phase B (2026-10-31)
+
+From NEXT_PLAN.md Phase B. English values only; the other 9 locales are untouched (they keep their old wording for renamed labels and fall back to English for new keys).
+
+- **Simple / Detailed view:** a header switch (two pressed-state buttons), saved in `localStorage` as `proofsaathi.view`; Simple is the default (`view.ts`, `components/ViewToggle.tsx`). Simple view hides:
+  - hashes, code points, rule IDs, model and provider names, the "Paytm simulator" badge (the Synthetic data badge stays; the reasoning badge reads "Assistant: on/off");
+  - transaction ID, raw workflow state, raw Paytm status, UTR and flags in the case header;
+  - tool names, raw tool results, the reconciliation trail, submission attempts, pack hash/orderStatus/file roles and the manifest/index downloads (only "Download the response (PDF)" stays);
+  - the 7-step journey (`CaseJourney`, Detailed view only), the full audit log and event numbers;
+  - extracted-facts tables, the Extraction column, voice-note provenance (hash, file, STT method, versions) and reminder failure details.
+- **One next-step card** (`components/NextStep.tsx`) replaces `StatusBanner` + `CaseGuide` on the owner's case page: status title, one sentence, one primary button. The button acts (ask staff, ask staff for the right document, prepare response file, send response, check with Paytm) or opens the right tab (see what is needed, see the problem, see the receipt/result). It keeps `data-testid="status-banner"`. `CaseGuide.tsx` was deleted; the reviewer page still uses `StatusBanner` (blockers only in Detailed view).
+- **Renames (English):** Submit defense → Send response; Build evidence pack → Prepare response file; Evidence pack → Response file; Validation findings → Problems found; Concede → Accept customer's claim (typed confirmation word is now `ACCEPT`, frontend only); Testimony → Staff voice note; Reasoning: Gemini — model → Assistant: on; other actions: Ask staff for delivery proof, Check the proof again, Check with Paytm, Ask a reviewer; Open source → See in document.
+- **Shorter, plain status text:** e.g. "Blocked: a document doesn't match the order", "Paytm received your response — Paytm decides later. This is not a win yet.", "Dispute closed — you lost". Workflow labels have no internal names. Key-step labels are plain ("Missing proof found", "Response sent", "Paytm receipt checked").
+- **Server-written English in simple view:** `plainSummary()` keeps the first sentence and drops trailing technical brackets and locale codes; jargon-only summaries (pack built, DEFEND requested, receipt verified, Paytm status change) use fixed plain sentences (`steps.simple.*`, `paytmStatus.*`). Detailed view shows the server text unchanged. No backend change.
+- **E2E:** new labels and banner titles; it switches to Detailed view for the provenance and reconciliation checks; and `assertPlain()` reads all four case tabs in simple view (blocked and verified states) and fails on snake_case/CONSTANT_CASE words, sha256, code point, gemini, reconcil-, simulator, pack, testimony, concede (real file names excepted). It caught `pack`, `(mr-IN, round 1)`, `trigger: evidence_uploaded` and `POD_UPLOAD` before they were fixed.
+
+Commands and results:
+
+```bash
+cd frontend
+npx tsc -b --noEmit                   # clean
+npm run lint                          # clean
+npx vitest run                        # 61 passed (52 + nextstep.test.tsx 4, status plainSummary/paytm/simple steps 3, reminder simple 1, voice-note simple 1)
+npm run build                         # OK (same >500 kB chunk warning)
+E2E_ALLOW_LIVE=1 npm run e2e          # E2E passed, including "simple view is plain: blocked" and "…: verified"
+```
+
+- **Real browser (built-in browser):** the owner case page in simple view, all four tabs, switched through all 10 languages from the header: no technical words matched on any tab (blocked-state text was also read by hand before the fixes). Screenshot check: one next-step card with one button; the header shows the Simple/Detailed switch. Limit: the automated check looks for Latin technical words only; old native-script translations of renamed labels still read like the old labels until a translation pass.
+
 ## Open issues / next
+
+- **Phase A follow-ups:** new English strings (sign-in, review, operator) need a translation pass for the 9 other languages (optional, per NEXT_PLAN). After a demo reset the reviewer queue is empty until the owner or the agent asks for review. Phase B done (see above); its renamed labels are English-only. Next: Phase C (activity drawer, needs Docker Desktop for the n8n run).
 
 - **i18n gaps:**
   - Tamil and Telugu lack the Phase 2 strings (paused; English shown).

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { formatIst } from '../format'
 import i18n from '../i18n'
 import type { TaskReminderView } from '../types/api'
+import { useView } from '../view'
 
 const reason = (code: string | null) =>
   !code
@@ -13,6 +14,7 @@ const reason = (code: string | null) =>
 /** One line per state. n8n only schedules: "sent" always means the local in-app inbox, never WhatsApp. */
 export function ReminderStatus({ reminder, onRetry }: { reminder: TaskReminderView | null; onRetry?: () => void }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   if (!reminder) return null
   const trig = reminder.trigger
   return (
@@ -30,7 +32,7 @@ export function ReminderStatus({ reminder, onRetry }: { reminder: TaskReminderVi
               {t('reminder.retry')}
             </button>
           )}
-          <details><summary>{t('reminder.technical')}</summary>{trig.label ?? 'Reminder scheduling unavailable'}: {trig.error ?? 'unknown error'} ({trig.attempts} attempts)</details>
+          {detailed && <details><summary>{t('reminder.technical')}</summary>{trig.label ?? 'Reminder scheduling unavailable'}: {trig.error ?? 'unknown error'} ({trig.attempts} attempts)</details>}
         </li>
       )}
       {reminder.reminders.map((r) => (

@@ -2,9 +2,10 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import i18n from '../i18n'
-import { codePointSlice, formatIst } from '../format'
+import { codePointSlice, formatIst, plainSummary } from '../format'
 import { factIndex, resolveSource, type SourceRef } from '../sources'
 import type { DocumentDetail, EvidenceDocumentSummary, EvidenceOverview, Fact, Finding } from '../types/api'
+import { useView } from '../view'
 
 export type { SourceRef }
 
@@ -105,15 +106,16 @@ export function CompareView({ finding, evidence }: { finding: Finding; evidence:
 
 export function FindingsPanel({ evidence, onOpen }: { evidence: EvidenceOverview; onOpen: (s: SourceRef) => void }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const open = evidence.findings.filter((f) => f.status === 'open')
   const resolved = evidence.findings.filter((f) => f.status === 'resolved')
   const render = (f: Finding) => (
     <li key={f.id} className={`finding finding-${f.severity} finding-${f.status}`}>
       <div>
-        <span className="tag">{label('severity', f.severity)}</span> <code>{f.rule_id}</code>{' '}
+        <span className="tag">{label('severity', f.severity)}</span> {detailed && <code>{f.rule_id}</code>}{' '}
         {f.status === 'resolved' && <span className="tag">{t('evidence.resolvedTag')}</span>}
       </div>
-      <p>{f.explanation}</p>
+      <p>{detailed ? f.explanation : plainSummary(f.explanation)}</p>
       {f.status === 'open' && <CompareView finding={f} evidence={evidence} />}
       <SourceLinks ids={f.source_ids.slice(0, 4)} evidence={evidence} onOpen={onOpen} />
     </li>
@@ -148,6 +150,7 @@ export function EvidencePanel({
   onChanged: () => Promise<void>
 }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const upload = async (file: File) => {
@@ -189,7 +192,7 @@ export function EvidencePanel({
             <tr>
               <th scope="col">{t('evidence.colDocument')}</th>
               <th scope="col">{t('evidence.colType')}</th>
-              <th scope="col">{t('evidence.colExtraction')}</th>
+              {detailed && <th scope="col">{t('evidence.colExtraction')}</th>}
               <th scope="col">{t('evidence.colStatus')}</th>
               <th scope="col">{t('evidence.colUploaded')}</th>
             </tr>
@@ -201,16 +204,16 @@ export function EvidencePanel({
                   <button type="button" className="link" onClick={() => onOpen({ docId: d.id })}>
                     {d.original_filename}
                   </button>
-                  <div className="sub mono">sha256 {d.sha256.slice(0, 12)}…</div>
+                  {detailed && <div className="sub mono">sha256 {d.sha256.slice(0, 12)}…</div>}
                 </td>
                 <td>{label('docType', d.doc_type)}</td>
-                <td>
+                {detailed && <td>
                   {d.extraction_status === 'extracted'
                     ? label('method', d.extraction_method ?? '')
                     : d.extraction_status === 'ocr_required'
                       ? t('evidence.ocrRequired')
                       : t('evidence.extractFailed', { error: d.extraction_error })}
-                </td>
+                </td>}
                 <td>{d.active ? t('evidence.active') : <span className="warn">{t('evidence.excluded', { reason: d.exclusion_reason })}</span>}</td>
                 <td className="sub">
                   {d.uploaded_by ?? t('evidence.systemSeed')}
@@ -291,6 +294,7 @@ function OriginalPreview({ token, doc }: { token: string; doc: DocumentDetail })
 
 export function SourceViewer({ token, source }: { token: string; source: SourceRef }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
   useEffect(() => {
     api.document(token, source.docId).then(setDoc).catch(() => setDoc(null))
@@ -302,7 +306,10 @@ export function SourceViewer({ token, source }: { token: string; source: SourceR
       <h3>
         {t('evidence.source', { file: doc.original_filename })} {!doc.active && <span className="tag">{t('evidence.excludedTag')}</span>}
       </h3>
-      {focusFact && (
+      {focusFact && !detailed && (
+        <p className="sub" role="status">{t('evidence.showingField', { field: focusFact.field.replaceAll('_', ' '), page: focusFact.page })}</p>
+      )}
+      {focusFact && detailed && (
         <p className="sub" role="status">
           Showing cited {focusFact.field.replaceAll('_', ' ')} on page {focusFact.page}, code points [
           {focusFact.source?.start}, {focusFact.source?.end}){focusFact.source?.recheck_ok ? ' — rechecked against stored text' : ''}
@@ -316,7 +323,7 @@ export function SourceViewer({ token, source }: { token: string; source: SourceR
             doc.pages.map((p) => (
               <div key={p.page}>
                 <div className="sub">
-                  Extracted text · page {p.page} · sha256 {p.text_sha256.slice(0, 12)}…
+                  {detailed ? `Extracted text · page ${p.page} · sha256 ${p.text_sha256.slice(0, 12)}…` : t('evidence.page', { page: p.page })}
                 </div>
                 <HighlightedPage
                   text={p.text}
@@ -330,11 +337,11 @@ export function SourceViewer({ token, source }: { token: string; source: SourceR
           )}
         </div>
         <div>
-          <div className="sub">Original bytes (sha256 {doc.sha256.slice(0, 12)}…)</div>
+          <div className="sub">{detailed ? `Original bytes (sha256 ${doc.sha256.slice(0, 12)}…)` : t('evidence.originalFile')}</div>
           <OriginalPreview key={doc.id} token={token} doc={doc} />
         </div>
       </div>
-      {doc.facts.length > 0 && (
+      {detailed && doc.facts.length > 0 && (
         <details>
           <summary>{t('evidence.facts', { count: doc.facts.length })}</summary>
           <table className="cases">

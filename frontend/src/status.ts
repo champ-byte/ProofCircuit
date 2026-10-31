@@ -56,6 +56,14 @@ export interface KeyStep {
   summary: string
   created_at: string
   actor: string
+  /** Plain wording for simple view when the server summary carries raw codes. */
+  simple?: string
+}
+
+/** Paytm's raw dispute status in plain words ("POD_UPLOAD" → "response received"). */
+export function paytmStatus(raw: unknown): string {
+  const code = String(raw ?? '').trim().replace('POD UPLOADED', 'POD_UPLOAD')
+  return i18n.t(`paytmStatus.${code}`, { defaultValue: i18n.t('paytmStatus.other') })
 }
 
 /** Concise steps from persisted audit events (PRD 13.2). Every step links to a stored event. */
@@ -118,7 +126,11 @@ export function keySteps(events: AuditEventView[]): KeyStep[] {
         label = 'agent'
         break
     }
-    if (label) steps.push({ seq: e.seq, label: i18n.t(`steps.${label}`), summary: e.summary, created_at: e.created_at, actor: e.actor_type })
+    if (!label) continue
+    const simple = e.event_type === 'provider.status_changed'
+      ? i18n.t('steps.providerTo', { status: paytmStatus(e.data.to) })
+      : i18n.exists(`steps.simple.${label}`) ? i18n.t(`steps.simple.${label}`) : undefined
+    steps.push({ seq: e.seq, label: i18n.t(`steps.${label}`), summary: e.summary, created_at: e.created_at, actor: e.actor_type, simple })
   }
   return steps
 }

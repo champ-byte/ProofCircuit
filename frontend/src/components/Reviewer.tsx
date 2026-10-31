@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import type { CaseDetail, EvidenceOverview, InboxView } from '../types/api'
 
-const CONFIRM_WORD = 'CONCEDE'
+const CONFIRM_WORD = 'ACCEPT'
 
 /**
  * "Accept the customer's dispute (concede)" — a human-only action, distinct from submitting

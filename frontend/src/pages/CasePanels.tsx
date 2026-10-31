@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import { formatIst } from '../format'
 import type { AuditEventView, DemoSession, PackView, RunView, SubmissionView } from '../types/api'
+import { useView } from '../view'
 
 const ACTIONS: { tool: string; args?: Record<string, unknown> }[] = [
   { tool: 'request_evidence', args: { requirement_id: 'delivery_record' } },
@@ -33,7 +34,9 @@ export function ActionsPanel({
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [runs, setRuns] = useState<RunView[]>([])
+  const { detailed } = useView()
   const toolLabel = (tool: string) => (KNOWN_TOOLS.has(tool) ? t(`panels.action.${tool}`) : tool)
+  const result = (status: string) => t(`panels.result.${status}`, { defaultValue: status })
   const canAct = session.user.role === 'owner' || session.user.role === 'operator'
 
   useEffect(() => {
@@ -82,15 +85,15 @@ export function ActionsPanel({
             {agentRuns.map((r) => (
               <li key={r.id}>
                 <span className="tag">{r.mode === 'fixture_replay' ? t('panels.fixtureReplay') : t('panels.liveModel')}</span>{' '}
-                {r.provider}
-                {r.model ? ` — ${r.model}` : ''} · {r.status.replaceAll('_', ' ')} · {formatIst(r.started_at)}
+                {detailed && <>{r.provider}{r.model ? ` — ${r.model}` : ''} · </>}
+                {t(`assistant.status.${r.status}`, { defaultValue: r.status.replaceAll('_', ' ') })} · {formatIst(r.started_at)}
                 <ul>
                   {r.tool_calls.map((c) => (
                     <li key={c.step} className={`tool-${c.status}`}>
                       <strong>
                         {c.step}. {toolLabel(c.tool)}
                       </strong>{' '}
-                      → {c.status}
+                      → {result(c.status)}
                       <div className="sub">{KNOWN_TOOLS.has(c.tool) ? t(`panels.explain.${c.tool}`) : t('panels.explainDefault')}</div>
                       {c.rationale && <div className="sub">“{c.rationale}”</div>}
                     </li>
@@ -105,9 +108,9 @@ export function ActionsPanel({
       {last && (
         <div className={`tool-result tool-${last.status}`} role="status">
           <strong>
-            {last.tool} → {last.status}
+            {detailed ? last.tool : toolLabel(last.tool)} → {result(last.status)}
           </strong>
-          <details><summary>{t('panels.technical')}</summary><pre>{JSON.stringify(last.result, null, 2)}</pre></details>
+          {detailed && <details><summary>{t('panels.technical')}</summary><pre>{JSON.stringify(last.result, null, 2)}</pre></details>}
         </div>
       )}
     </section>
@@ -116,6 +119,7 @@ export function ActionsPanel({
 
 export function PackPanel({ caseId, token, version }: { caseId: string; token: string; version: number }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const [packs, setPacks] = useState<PackView[]>([])
   const [subs, setSubs] = useState<SubmissionView[]>([])
   useEffect(() => {
@@ -154,24 +158,24 @@ export function PackPanel({ caseId, token, version }: { caseId: string; token: s
                 <strong>{t('panels.pack', { version: p.version })}</strong> {p.is_latest && <span className="tag">{t('panels.latest')}</span>}{' '}
                 {p.stale && <span className="tag">{t('panels.stale')}</span>}
               </div>
-              <div className="sub">
+              {detailed && <div className="sub">
                 orderStatus <code>{p.order_status}</code> · case version {p.case_version} · hash{' '}
                 <code>{p.pack_hash.slice(0, 16)}…</code>
-              </div>
+              </div>}
               <p>
-                <span className="sub">{t('panels.comments')}</span> {p.comments}
+                <span className="sub">{t(detailed ? 'panels.comments' : 'panels.message')}</span> {p.comments}
               </p>
-              <ol className="sub">
+              {detailed && <ol className="sub">
                 {p.upload_files.map((f) => (
                   <li key={f.position}>
                     {t('panels.file', { position: f.position, name: f.name, role: f.role })}
                   </li>
                 ))}
-              </ol>
+              </ol>}
               <div className="fixture-buttons">
-                {['manifest.json', 'evidence-index.html', 'cover.pdf'].map((n) => (
+                {(detailed ? ['manifest.json', 'evidence-index.html', 'cover.pdf'] : ['cover.pdf']).map((n) => (
                   <button key={n} type="button" onClick={() => download(p.version, n)}>
-                    {t('panels.download', { name: n })}
+                    {detailed ? t('panels.download', { name: n }) : t('panels.coverLetter')}
                   </button>
                 ))}
               </div>
@@ -183,26 +187,26 @@ export function PackPanel({ caseId, token, version }: { caseId: string; token: s
           <caption>{t('panels.subsCaption')}</caption>
           <thead>
             <tr>
-              <th scope="col">{t('panels.colAction')}</th>
+              {detailed && <th scope="col">{t('panels.colAction')}</th>}
               <th scope="col">{t('panels.colPack')}</th>
               <th scope="col">{t('panels.colState')}</th>
-              <th scope="col">{t('panels.colAttempts')}</th>
+              {detailed && <th scope="col">{t('panels.colAttempts')}</th>}
               <th scope="col">{t('panels.colReceipt')}</th>
-              <th scope="col">{t('panels.colTrail')}</th>
+              {detailed && <th scope="col">{t('panels.colTrail')}</th>}
             </tr>
           </thead>
           <tbody>
             {subs.map((s) => (
               <tr key={s.id}>
-                <td>{s.action}</td>
+                {detailed && <td>{s.action}</td>}
                 <td>{s.pack_version ? `v${s.pack_version}` : '—'}</td>
-                <td>{s.state}</td>
-                <td>{s.attempts}</td>
+                <td>{detailed ? s.state : t(`panels.subState.${s.state}`, { defaultValue: s.state.replaceAll('_', ' ') })}</td>
+                {detailed && <td>{s.attempts}</td>}
                 <td>{s.provider_reference ?? '—'}</td>
-                <td className="sub">
+                {detailed && <td className="sub">
                   {s.reconciliation.map((r) => String(r.step) + (r.kind ? `:${String(r.kind)}` : '')).join(' → ')}
                   {s.last_error && <div className="warn">{s.last_error}</div>}
-                </td>
+                </td>}
               </tr>
             ))}
           </tbody>

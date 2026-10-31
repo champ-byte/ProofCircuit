@@ -31,3 +31,14 @@ export function reasonLabel(reason: string): string {
 export function codePointSlice(text: string, start: number, end?: number): string {
   return Array.from(text).slice(start, end).join('')
 }
+
+/**
+ * Server-written summaries are English and can end in technical detail ("… (mr-IN, round 1).",
+ * "… (live model; trigger: evidence_uploaded)."). Simple view keeps the first sentence without
+ * a trailing bracket; detailed view shows the full text.
+ */
+export function plainSummary(text: string): string {
+  const first = (text.split(/(?<=\.)\s+/)[0] ?? text).replace(/\s*\([^()]*\)\.?$/, '')
+  const trimmed = first.replace(/\s*\([a-z]{2}-[A-Z]{2}\)/g, '').split(';')[0].replace(/\.$/, '')
+  return trimmed ? `${trimmed}.` : text
+}

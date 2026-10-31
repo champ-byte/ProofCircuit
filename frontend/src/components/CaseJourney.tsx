@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { formatIst } from '../format'
 import type { AuditEventView, CaseDetail, DemoSession, EvidenceOverview } from '../types/api'
@@ -85,7 +86,7 @@ export function CaseJourney({
       description: t('journey.s4Text'),
       types: ['review.requested'],
       actions: [{ label: t('journey.s4Action'), run: () => api.action(token, caseId, 'request_human_review', { reason: 'owner_request', question: 'Please review the evidence and decide the next safe step.' }), disabled: !canAct || closed }],
-      links: [{ label: session.user.role === 'reviewer' ? t('journey.s4LinkReviewer') : t('journey.s4LinkSwitch'), href: session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity' }, { label: t('journey.s3Link1'), href: '#findings-h' }],
+      links: [{ label: t('journey.s4LinkSwitch'), href: '/signin' }, { label: t('journey.s3Link1'), href: '#findings-h' }],
     },
     {
       number: '05', title: t('journey.s5Title'),
@@ -137,7 +138,9 @@ export function CaseJourney({
                 {step.actions.map((action) => <span className="journey-action" key={action.label}><button type="button" disabled={busy || action.disabled} onClick={() => void execute(action)}>{action.label}</button>{action.hint && <small>{action.hint}</small>}</span>)}
                 {step.demo && <button key={step.demo.label} type="button" className="journey-secondary" onClick={() => openDemo(step.demo!.tab)}>{step.demo.label}</button>}
               </div>
-              <div className="journey-links">{step.links.map((link) => <a key={link.label} href={link.href}>{link.label} <span aria-hidden="true">↗</span></a>)}</div>
+              <div className="journey-links">{step.links.map((link) => link.href.startsWith('/')
+                ? <Link key={link.label} to={link.href}>{link.label} <span aria-hidden="true">↗</span></Link>
+                : <a key={link.label} href={link.href}>{link.label} <span aria-hidden="true">↗</span></a>)}</div>
             </article>
           )
         })}
@@ -147,7 +150,7 @@ export function CaseJourney({
         <div>
           <section><strong>{t('journey.b1Title')}</strong><p>{t('journey.b1Text')}</p><button type="button" onClick={() => openDemo('inbox')}>{t('journey.b1Action')}</button></section>
           <section><strong>{t('journey.b2Title')}</strong><p>{t('journey.b2Text')}</p><button type="button" onClick={() => openDemo('faults')}>{t('journey.b2Action')}</button></section>
-          <section><strong>{t('journey.b3Title')}</strong><p>{t('journey.b3Text')}</p><a href={session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity'}>{session.user.role === 'reviewer' ? t('journey.b3Reviewer') : t('journey.b3Switch')} →</a></section>
+          <section><strong>{t('journey.b3Title')}</strong><p>{t('journey.b3Text')}</p><Link to="/signin">{t('journey.b3Switch')} →</Link></section>
         </div>
       </div>
       {message && <p role="status" className="journey-message">{message}</p>}

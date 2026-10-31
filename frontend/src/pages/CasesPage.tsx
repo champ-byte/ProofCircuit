@@ -86,8 +86,6 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
         <p>{t('cases.workspace')}</p>
         <NavLink to="/dashboard">◫ <span>{t('app.dashboard')}</span></NavLink>
         <NavLink to="/cases">▤ <span>{t('app.disputes')}</span></NavLink>
-        <p>{t('cases.insights')}</p>
-        <NavLink to="/evaluation">▥ <span>{t('cases.evaluation')}</span></NavLink>
         <div className="operations-sidebar-note">{t('cases.sidebarNote')}</div>
       </aside>
       <div className="dashboard">

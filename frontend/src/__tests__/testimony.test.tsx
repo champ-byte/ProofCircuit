@@ -1,3 +1,4 @@
+import type { ReactElement, ReactNode } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
@@ -5,6 +6,12 @@ import { VoiceNoteCard } from '../components/Testimony'
 import { confirmationLabel, formatMs, methodLabel } from '../testimony'
 import { keySteps } from '../status'
 import type { AuditEventView, DemoSession, TranscriptView, VoiceNoteView } from '../types/api'
+import { ViewContext } from '../view'
+
+const Detailed = ({ children }: { children: ReactNode }) => (
+  <ViewContext.Provider value={{ detailed: true, setDetailed: () => undefined }}>{children}</ViewContext.Provider>
+)
+const renderDetailed = (ui: ReactElement) => render(ui, { wrapper: Detailed })
 
 afterEach(() => {
   cleanup()
@@ -109,10 +116,18 @@ describe('testimony labels', () => {
 })
 
 describe('VoiceNoteCard', () => {
+  it('in simple view says it is not proof and hides the hash, file and method details', () => {
+    vi.spyOn(api, 'voiceAudio').mockResolvedValue(new Blob())
+    render(<VoiceNoteCard note={note(transcript())} token="tok" />)
+    expect(screen.getByText(/It is not proof/)).toBeTruthy()
+    expect(screen.getByText('Unconfirmed — waiting for Sanjay (Delivery) to check it')).toBeTruthy()
+    expect(screen.queryByText(/SHA-256|faster_whisper|Transcript v1/)).toBeNull()
+  })
+
   it('shows provenance, the testimony caveat and seekable segments; controls only for the speaker', () => {
     vi.spyOn(api, 'voiceAudio').mockResolvedValue(new Blob())
     const run = vi.fn(async () => {})
-    const { rerender } = render(<VoiceNoteCard note={note(transcript())} token="tok" speaker={meera} run={run} />)
+    const { rerender } = renderDetailed(<VoiceNoteCard note={note(transcript())} token="tok" speaker={meera} run={run} />)
     expect(screen.getByText(/not a delivery document/)).toBeTruthy()
     expect(screen.getByText(/answers delivery record request round 2/)).toBeTruthy()
     expect(screen.getByText('Unconfirmed — waiting for Sanjay (Delivery) to check it')).toBeTruthy()
@@ -129,7 +144,7 @@ describe('VoiceNoteCard', () => {
   it('offers labelled human transcription when speech-to-text is unavailable, without timestamps', () => {
     vi.spyOn(api, 'voiceAudio').mockResolvedValue(new Blob())
     const run = vi.fn(async () => {})
-    render(<VoiceNoteCard note={note(null)} token="tok" speaker={sanjay} run={run} />)
+    renderDetailed(<VoiceNoteCard note={note(null)} token="tok" speaker={sanjay} run={run} />)
     expect(screen.getByText('Speech-to-text unavailable')).toBeTruthy()
     expect(
       screen.getByRole('button', {
@@ -144,7 +159,7 @@ describe('VoiceNoteCard', () => {
       segments: [],
       timestamps_available: false,
     })
-    render(<VoiceNoteCard note={note(typed)} token="tok" />)
+    renderDetailed(<VoiceNoteCard note={note(typed)} token="tok" />)
     expect(screen.getByText(/No audio timestamps for this version/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Play from/ })).toBeNull()
   })
@@ -162,7 +177,7 @@ describe('provider timestamps', () => {
       recheck_ok: true,
       timestamp_in_range: false,
     }
-    render(<VoiceNoteCard note={note(transcript({ text: 'abc', segments: [seg] }))} token="tok" />)
+    renderDetailed(<VoiceNoteCard note={note(transcript({ text: 'abc', segments: [seg] }))} token="tok" />)
     expect(screen.getByRole('button', { name: 'Play from 0:00.0' }).textContent).toBe('0:00.0–0:27.1')
     expect(screen.getByText(/beyond the audio length/)).toBeTruthy()
   })
@@ -185,6 +200,6 @@ describe('key steps', () => {
       ev(2, 'testimony.transcribed'),
       ev(3, 'testimony.confirmed'),
     ]).map((s) => s.label)
-    expect(labels).toEqual(['Staff voice note', 'Testimony confirmed'])
+    expect(labels).toEqual(['Staff voice note', 'Voice note confirmed'])
   })
 })

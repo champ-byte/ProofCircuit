@@ -12,7 +12,7 @@ import type { CaseSummary } from '../types/api'
  */
 export function StaffPage() {
   const { t } = useTranslation()
-  const { session, token, users, setIdentity } = useSession()
+  const { session, token } = useSession()
   const [cases, setCases] = useState<CaseSummary[] | null>(null)
   const [version, setVersion] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
@@ -49,22 +49,7 @@ export function StaffPage() {
 
   if (!session) return <p aria-live="polite">{t('staff.loading')}</p>
 
-  if (!isStaff) {
-    const staffUsers = users.filter((u) => u.mid === session.merchant.mid && u.role === 'staff')
-    return (
-      <section className="staff-page panel" aria-labelledby="staff-choose-h">
-        <h1 id="staff-choose-h">{t('staff.chooseTitle')}</h1>
-        <p className="sub">{t('staff.chooseBody')}</p>
-        <div className="welcome-role-actions">
-          {staffUsers.map((u) => (
-            <button key={u.handle} type="button" className="button-primary" onClick={() => setIdentity(`${u.mid}/${u.handle}`)}>
-              {u.display_name}
-            </button>
-          ))}
-        </div>
-      </section>
-    )
-  }
+  if (!isStaff) return null
 
   const open = (cases ?? []).filter((c) => c.workflow_state !== 'CLOSED')
   return (

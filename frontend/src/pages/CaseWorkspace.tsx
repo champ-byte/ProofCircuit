@@ -4,19 +4,18 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { AssistantCard } from '../components/Assistant'
 import { CaseHeader } from '../components/CaseHeader'
-import { CaseGuide } from '../components/CaseGuide'
 import { CaseJourney } from '../components/CaseJourney'
 import { CaseProgress } from '../components/CaseProgress'
-import { DemoDrawer } from '../components/DemoDrawer'
-import type { TabId } from '../components/DemoDrawer'
+import type { TabId } from '../components/DemoControls'
 import { ChecklistPanel, EvidencePanel, FindingsPanel, type SourceRef } from '../components/Evidence'
 import { KeySteps } from '../components/KeySteps'
-import { ReviewerPanel } from '../components/Reviewer'
 import { StatusBadges } from '../components/StatusBadges'
-import { StatusBanner } from '../components/StatusBanner'
+import { NextStep } from '../components/NextStep'
 import { TestimonyPanel } from '../components/Testimony'
+import { useEventFeed } from '../hooks'
 import { useSession } from '../session'
-import type { AuditEventView, CaseDetail, EvidenceOverview, InboxView, ReasoningMode } from '../types/api'
+import { useView } from '../view'
+import type { AuditEventView, CaseDetail, EvidenceOverview, ReasoningMode } from '../types/api'
 import { ActionsPanel, PackPanel } from './CasePanels'
 
 type CaseTab = 'next' | 'proof' | 'respond' | 'history'
@@ -24,7 +23,7 @@ const CASE_TABS: CaseTab[] = ['next', 'proof', 'respond', 'history']
 
 /** Which tab holds an in-page anchor, so existing "#…" links keep working across tabs. */
 function tabFor(anchor: string): CaseTab | null {
-  if (['case-guide-title', 'checklist-h', 'findings-h', 'reviewer-h', 'assistant-card-title'].includes(anchor)) return 'next'
+  if (['next-step-title', 'checklist-h', 'findings-h', 'assistant-card-title'].includes(anchor)) return 'next'
   if (['evidence-h', 'testimony-h'].includes(anchor)) return 'proof'
   if (['actions-h', 'pack-h', 'do-it-yourself'].includes(anchor)) return 'respond'
   if (anchor === 'steps-h' || anchor === 'journey-title' || anchor.startsWith('journey-step-') || anchor.startsWith('event-')) return 'history'
@@ -70,23 +69,22 @@ export function CaseWorkspace() {
   const { t } = useTranslation()
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const { token, session, relogin } = useSession()
+  const { token, session } = useSession()
+  const { detailed } = useView()
   const [detail, setDetail] = useState<CaseDetail | null>(null)
   const [evidence, setEvidence] = useState<EvidenceOverview | null>(null)
   const [events, setEvents] = useState<AuditEventView[]>([])
-  const [inbox, setInbox] = useState<InboxView | null>(null)
   const [mode, setMode] = useState<ReasoningMode | null>(null)
   const [source, setSource] = useState<SourceRef | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [tab, setTab] = useState<CaseTab>('next')
-  const [requestedTab, setRequestedTab] = useState<{ tab: TabId; nonce: number } | null>(null)
   const [pendingAnchor, setPendingAnchor] = useState<string | null>(null)
   const refresh = useCallback(async () => setReloadKey((k) => k + 1), [])
-  const openDemo = useCallback((demoTab: TabId) => {
-    setRequestedTab((current) => ({ tab: demoTab, nonce: (current?.nonce ?? 0) + 1 }))
-    window.requestAnimationFrame(() => document.getElementById('demo-drawer')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
-  }, [])
+  const advance = useCallback(() => setReloadKey((k) => k + 1), [])
+  useEventFeed(token, id, advance)
+  // Presenter shortcuts (staff inbox, faults, providers) live on the separate operator page.
+  const openDemo = useCallback((demoTab: TabId) => navigate(`/operator?case=${id}&tab=${demoTab}`), [navigate, id])
 
   /** Switch to the tab that holds an anchor, then scroll to it once it is rendered. */
   const goTo = useCallback((anchor: string) => {
@@ -110,42 +108,15 @@ export function CaseWorkspace() {
 
   useEffect(() => {
     if (!token) return
-    Promise.all([api.caseDetail(token, id), api.evidence(token, id), api.events(token, id, 0), api.inbox(token, id)])
-      .then(([d, e, ev, ib]) => {
+    Promise.all([api.caseDetail(token, id), api.evidence(token, id), api.events(token, id, 0)])
+      .then(([d, e, ev]) => {
         setDetail(d)
         setEvidence(e)
         setEvents(ev.events)
-        setInbox(ib)
         setError(null)
       })
       .catch((err: Error) => setError(err.message))
   }, [token, id, reloadKey])
-
-  // Background work (runner, agent, simulator webhooks) finishes after HTTP responses return.
-  // Follow the persisted event feed and refresh when it advances; the backend never polls.
-  useEffect(() => {
-    if (!token) return
-    let cursor = -1
-    let stopped = false
-    const tick = async () => {
-      try {
-        const res = await api.events(token, id, Math.max(cursor, 0))
-        if (cursor === -1) cursor = res.cursor
-        else if (res.cursor !== cursor) {
-          cursor = res.cursor
-          setReloadKey((k) => k + 1)
-        }
-      } catch {
-        /* transient; next tick retries */
-      }
-      if (!stopped) timer = window.setTimeout(tick, 1500)
-    }
-    let timer = window.setTimeout(tick, 0)
-    return () => {
-      stopped = true
-      window.clearTimeout(timer)
-    }
-  }, [token, id])
 
   const openSource = useCallback((s: SourceRef) => {
     setSource(s)
@@ -176,16 +147,18 @@ export function CaseWorkspace() {
       <div className="workspace" onClickCapture={onClickCapture}>
         <div className="workspace-top">
           <Link to="/cases">{t('workspace.back')}</Link>
-          <StatusBadges mode={mode} />
+          <span className="workspace-top-right">
+            <StatusBadges mode={mode} />
+            <Link to={`/operator?case=${id}`} className="demo-link">{t('operator.link')}</Link>
+          </span>
         </div>
         <CaseHeader detail={detail} />
         <CaseProgress workflowState={detail.workflow_state} />
-        <StatusBanner detail={detail} assessment={evidence.assessment} />
+        <NextStep caseId={id} token={token} detail={detail} evidence={evidence} version={reloadKey} onChanged={refresh} goTo={goTo} />
         <CaseTabs active={tab} onChange={setTab} />
         <div role="tabpanel" id="case-tabpanel" aria-labelledby={`case-tab-${tab}`} className="case-tabpanel">
           {tab === 'next' && (
             <>
-              <CaseGuide detail={detail} evidence={evidence} onOpenStaff={() => openDemo('inbox')} />
               <AssistantCard
                 caseId={id}
                 token={token}
@@ -196,9 +169,6 @@ export function CaseWorkspace() {
                 onChanged={refresh}
                 onDoItMyself={() => goTo('do-it-yourself')}
               />
-              {session.user.role === 'reviewer' && (
-                <ReviewerPanel caseId={id} token={token} detail={detail} evidence={evidence} inbox={inbox} onChanged={refresh} />
-              )}
               <div className="grid">
                 <ChecklistPanel evidence={evidence} onOpen={openSource} />
                 <FindingsPanel evidence={evidence} onOpen={openSource} />
@@ -226,25 +196,12 @@ export function CaseWorkspace() {
           )}
           {tab === 'history' && (
             <>
-              <CaseJourney caseId={id} token={token} session={session} detail={detail} evidence={evidence} events={events} onChanged={refresh} openDemo={openDemo} />
+              {detailed && <CaseJourney caseId={id} token={token} session={session} detail={detail} evidence={evidence} events={events} onChanged={refresh} openDemo={openDemo} />}
               <KeySteps events={events} />
             </>
           )}
         </div>
       </div>
-      <DemoDrawer
-        key={requestedTab?.nonce ?? 0}
-        caseId={id}
-        disputeId={detail.external_dispute_id}
-        mid={detail.mid}
-        version={reloadKey}
-        requestedTab={requestedTab}
-        onChanged={refresh}
-        onReset={(newCaseId) => {
-          relogin()
-          navigate(`/cases/${newCaseId}`)
-        }}
-      />
     </div>
   )
 }

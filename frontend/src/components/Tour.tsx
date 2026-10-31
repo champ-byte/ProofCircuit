@@ -6,7 +6,7 @@ import { speak, stopSpeaking, tourPage, type TourPage } from '../guide'
 const TARGETS: Record<TourPage, string[]> = {
   landing: ['.landing-hero', '.mainnav', '.landing-actions'],
   cases: ['.queue-panel', '.queue-heading-actions', '.queue-table-wrap'],
-  case: ['.case-progress', '.case-guide', '.assistant-card', '.case-tabs', '[data-testid=status-banner]'],
+  case: ['.case-progress', '.next-step', '.assistant-card', '.case-tabs', '[data-testid=status-banner]'],
   staff: ['.staff-page-head', '.reply', '.staff-voice'],
 }
 

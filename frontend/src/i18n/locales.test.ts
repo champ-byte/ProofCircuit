@@ -21,8 +21,8 @@ const placeholders = (value: unknown) =>
 
 const english = flatten(resources.en as Tree)
 
-/** Languages whose Phase 2 strings are not written yet (user paused them); missing keys show English. */
-const PARTIAL = new Set<string>(['ta', 'te'])
+/** Every language but English is partial: new strings are English-only until a translation pass; missing keys show English. */
+const PARTIAL = new Set<string>(['hi', 'mr', 'bn', 'gu', 'kn', 'ml', 'pa', 'ta', 'te'])
 
 describe('locale files', () => {
   it('registers ten languages', () => {

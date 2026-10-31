@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import type { DemoSession, ReasoningMode, RunView } from '../types/api'
+import { useView } from '../view'
 
 /**
  * Says plainly whether the AI assistant is working, waiting or off, and offers the two paths:
@@ -20,6 +21,7 @@ export function AssistantCard({
   onDoItMyself: () => void
 }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const [runs, setRuns] = useState<RunView[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +53,7 @@ export function AssistantCard({
   return (
     <section className={`assistant-card assistant-${state}`} aria-labelledby="assistant-card-title">
       <div>
-        <p className="eyebrow">{t('assistant.eyebrow')}{mode ? ` · ${mode.label}` : ''}</p>
+        <p className="eyebrow">{t('assistant.eyebrow')}{detailed && mode ? ` · ${mode.label}` : ''}</p>
         <h2 id="assistant-card-title">{state === 'working' && <span className="assistant-pulse" aria-hidden="true" />}{t(`assistant.${state}`)}</h2>
         <p>{t(`assistant.${state}Text`)}</p>
         {last && <p className="sub">{t('assistant.lastRun', { status: t(`assistant.status.${last.status}`, { defaultValue: last.status.replaceAll('_', ' ') }) })}</p>}

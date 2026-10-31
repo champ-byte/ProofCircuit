@@ -1,14 +1,12 @@
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { StaffInbox } from './StaffInbox'
-import { useSession } from '../session'
 import type { DemoSession, ProviderReport, SimulatorState } from '../types/api'
 
-export type TabId = 'inbox' | 'faults' | 'identity' | 'data' | 'providers' | 'resume'
+export type TabId = 'inbox' | 'faults' | 'data' | 'providers' | 'resume'
 const TABS: { id: TabId; label: string }[] = [
   { id: 'inbox', label: 'Staff inbox' },
   { id: 'faults', label: 'Fault injector' },
-  { id: 'identity', label: 'Identity' },
   { id: 'data', label: 'Seed / reset' },
   { id: 'providers', label: 'Providers' },
   { id: 'resume', label: 'Resume' },
@@ -69,12 +67,18 @@ function useDemoSession(mid: string, handle: string, key: number): DemoSession |
   return s
 }
 
-export function DemoDrawer({
+/**
+ * The presenter's controls for one case (the /operator page): staff inbox for any staff member,
+ * simulator faults, seed/reset, providers and resume. Each tab uses its own demo session, so the
+ * person signed in to the main screens never changes.
+ */
+export function DemoControls({
   caseId,
   disputeId,
   mid,
   version,
-  requestedTab,
+  tab,
+  onTab,
   onChanged,
   onReset,
 }: {
@@ -82,13 +86,11 @@ export function DemoDrawer({
   disputeId: string
   mid: string
   version: number
-  requestedTab?: { tab: TabId; nonce: number } | null
+  tab: TabId
+  onTab: (tab: TabId) => void
   onChanged: () => Promise<void>
   onReset: (newCaseId: string) => void
 }) {
-  const { users, identity, setIdentity } = useSession()
-  const [open, setOpen] = useState(Boolean(requestedTab))
-  const [tab, setTab] = useState<TabId>(requestedTab?.tab ?? 'inbox')
   const [loginKey, setLoginKey] = useState(0)
   const [staffHandle, setStaffHandle] = useState('staff-delivery')
   const staff = useDemoSession(mid, staffHandle, loginKey)
@@ -110,93 +112,67 @@ export function DemoDrawer({
   )
 
   return (
-    <aside id="demo-drawer" className={`drawer ${open ? 'drawer-open' : 'drawer-closed'}`} aria-label="Demo drawer">
-      <button type="button" className="drawer-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        {open ? 'Hide demo drawer' : 'Show demo drawer'}
-      </button>
-      {open && (
-        <div className="drawer-body">
-          <p className="sub drawer-note">
-            Synthetic demo controls. Every action still goes through server-side role and merchant checks; this is not a
-            permission bypass.
-          </p>
-          <Tabs active={tab} onChange={setTab} />
-          <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tabpanel">
-            {tab === 'inbox' && staff && (
-              <StaffInbox
-                caseId={caseId}
-                staff={staff}
-                staffHandle={staffHandle}
-                setStaffHandle={setStaffHandle}
-                version={version}
-                run={run}
-                operator={operator}
-              />
-            )}
-            {tab === 'faults' && operator && (
-              <FaultInjector disputeId={disputeId} operator={operator} version={version} run={run} />
-            )}
-            {tab === 'identity' && (
-              <div>
-                <p className="sub">Switch the identity used for the main workspace.</p>
-                <ul className="identity-list">
-                  {users
-                    .filter((u) => u.mid === mid)
-                    .map((u) => {
-                      const id = `${u.mid}/${u.handle}`
-                      return (
-                        <li key={id}>
-                          <button type="button" aria-pressed={identity === id} onClick={() => setIdentity(id)}>
-                            {u.display_name} <span className="sub">({u.role}, {u.locale})</span>
-                          </button>
-                        </li>
-                      )
-                    })}
-                </ul>
-              </div>
-            )}
-            {tab === 'data' && operator && (
-              <SeedReset
-                operator={operator}
-                onReset={(newCaseId) => {
-                  setLoginKey((k) => k + 1)
-                  onReset(newCaseId)
-                }}
-              />
-            )}
-            {tab === 'providers' && operator && (
-              <Providers caseId={caseId} operator={operator} version={version} run={run} />
-            )}
-            {tab === 'resume' && operator && (
-              <div>
-                <p className="sub">
-                  Explicit recovery: reconcile in-flight submissions and drain pending work. There is no background
-                  polling worker.
-                </p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    run(async () => {
-                      const r = await api.resume(operator.token)
-                      return `Resume: ${Object.entries(r)
-                        .map(([k, v]) => `${k.replaceAll('_', ' ')} ${v}`)
-                        .join(', ')}`
-                    }, 'Resumed.')
-                  }
-                >
-                  Resume pending work
-                </button>
-              </div>
-            )}
-          </div>
-          {message && (
-            <p role="status" className="sub drawer-message">
-              {message}
+    <div id="demo-controls" className="demo-controls">
+      <p className="sub drawer-note">
+        Synthetic demo controls. Every action still goes through server-side role and merchant checks; this is not a
+        permission bypass.
+      </p>
+      <Tabs active={tab} onChange={onTab} />
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tabpanel">
+        {tab === 'inbox' && staff && (
+          <StaffInbox
+            caseId={caseId}
+            staff={staff}
+            staffHandle={staffHandle}
+            setStaffHandle={setStaffHandle}
+            version={version}
+            run={run}
+            operator={operator}
+          />
+        )}
+        {tab === 'faults' && operator && (
+          <FaultInjector disputeId={disputeId} operator={operator} version={version} run={run} />
+        )}
+        {tab === 'data' && operator && (
+          <SeedReset
+            operator={operator}
+            onReset={(newCaseId) => {
+              setLoginKey((k) => k + 1)
+              onReset(newCaseId)
+            }}
+          />
+        )}
+        {tab === 'providers' && operator && (
+          <Providers caseId={caseId} operator={operator} version={version} run={run} />
+        )}
+        {tab === 'resume' && operator && (
+          <div>
+            <p className="sub">
+              Explicit recovery: reconcile in-flight submissions and drain pending work. There is no background
+              polling worker.
             </p>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() =>
+                run(async () => {
+                  const r = await api.resume(operator.token)
+                  return `Resume: ${Object.entries(r)
+                    .map(([k, v]) => `${k.replaceAll('_', ' ')} ${v}`)
+                    .join(', ')}`
+                }, 'Resumed.')
+              }
+            >
+              Resume pending work
+            </button>
+          </div>
+        )}
+      </div>
+      {message && (
+        <p role="status" className="sub drawer-message">
+          {message}
+        </p>
       )}
-    </aside>
+    </div>
   )
 }
 

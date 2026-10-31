@@ -2921,3 +2921,38 @@ table, input, select, textarea, button { font-family: var(--font-body); }
   .case-progress { grid-template-columns: 1fr; }
   .header-chip { padding: 4px 8px; font-size: 0.7rem; }
 }
+
+/* ---- Phase A: sign-in, role screens, operator page ---- */
+a.header-chip { display: inline-flex; align-items: center; text-decoration: none; }
+.header-user { color: #12324a; font-size: 0.8rem; font-weight: 650; white-space: nowrap; }
+.signin { max-width: 980px; margin: 0 auto; }
+.signin h1 { margin: 0 0 4px; }
+.signin .welcome-role h2 { margin: 0; font-size: 1.1rem; }
+.signin .welcome-role-actions [aria-pressed=true] { box-shadow: 0 0 0 3px #145b9144; }
+.workspace-top-right { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.demo-link, .footer-quiet { color: #607888; font-size: 0.75rem; }
+.review-queue { max-width: 860px; margin: 0 auto; }
+.review-queue h1 { margin: 4px 0; }
+.review-list { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; padding: 0; list-style: none; }
+.review-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.review-item h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.review-item p { margin: 2px 0; }
+.review-case { display: flex; flex-direction: column; gap: 16px; }
+.operator-page { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.operator-head h1 { margin: 4px 0; }
+.operator-case select { max-width: 360px; }
+.operator-reset { padding: 10px 12px; border-radius: 10px; background: #e3f4ee; color: #1f5f50; }
+.operator-links { display: flex; flex-wrap: wrap; gap: 16px; }
+.demo-controls .tabs { flex-wrap: wrap; }
+
+/* ---- Phase B: view toggle, next-step card ---- */
+.view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: #fff; }
+.view-toggle button { min-height: 33px; padding: 4px 10px; border: 0; border-radius: 0; background: none; color: #145b91; font-size: 0.74rem; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.view-toggle button[aria-pressed=true] { background: #145b91; color: #fff; }
+.next-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 14px 0 0; padding: 16px 20px; border-radius: 14px; }
+.next-step-main { flex: 1 1 320px; min-width: 0; }
+.next-step h2 { margin: 2px 0 4px; font-size: 1.15rem; }
+.next-step p { margin: 0; }
+.next-step .eyebrow { margin: 0; }
+.next-step-action { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.next-step-action .button-primary { min-height: 44px; padding: 10px 18px; }

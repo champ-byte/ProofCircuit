@@ -1,25 +1,16 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CaseProgress } from '../components/CaseProgress'
 import { Welcome } from '../components/Welcome'
 import { stageIndex, tourPage } from '../guide'
 import i18n from '../i18n'
-import { SessionContext } from '../session'
-import type { DemoUser } from '../types/api'
 
 afterEach(async () => {
   cleanup()
   await i18n.changeLanguage('en')
   localStorage.clear()
 })
-
-const users: DemoUser[] = [
-  { mid: 'MID-DEMO-001', merchant_name: 'Metro', handle: 'owner', display_name: 'Asha (Owner)', role: 'owner', locale: 'en-IN' },
-  { mid: 'MID-DEMO-001', merchant_name: 'Metro', handle: 'staff-delivery', display_name: 'Sanjay (Delivery)', role: 'staff', locale: 'mr-IN' },
-  { mid: 'MID-DEMO-001', merchant_name: 'Metro', handle: 'staff-billing', display_name: 'Meera (Billing)', role: 'staff', locale: 'hi-IN' },
-  { mid: 'MID-DEMO-001', merchant_name: 'Metro', handle: 'reviewer', display_name: 'Ravi (Reviewer)', role: 'reviewer', locale: 'en-IN' },
-]
 
 describe('case progress', () => {
   it('maps nine workflow states onto three stages', () => {
@@ -48,22 +39,21 @@ describe('case progress', () => {
 })
 
 describe('welcome chooser', () => {
-  it('switches language first, then signs in as the chosen staff member', async () => {
-    const setIdentity = vi.fn()
+  it('switches language, then sends the visitor to sign in', async () => {
     const onClose = vi.fn()
     render(
-      <MemoryRouter>
-        <SessionContext.Provider value={{ session: null, token: null, identity: '', users, setIdentity, relogin: () => undefined }}>
-          <Welcome onClose={onClose} />
-        </SessionContext.Provider>
+      <MemoryRouter initialEntries={['/']}>
+        <Welcome onClose={onClose} />
+        <Routes>
+          <Route path="/" element={<p>home</p>} />
+          <Route path="/signin" element={<p>sign-in page</p>} />
+        </Routes>
       </MemoryRouter>,
     )
     fireEvent.click(screen.getByRole('button', { name: /मराठी/ }))
     expect(await screen.findByText('तुमची भाषा निवडा')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /पुढे/ }))
-    expect(screen.getByText(/Paytm इथे व्यक्ती नाही/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Sanjay (Delivery)' }))
-    expect(setIdentity).toHaveBeenCalledWith('MID-DEMO-001/staff-delivery')
+    expect(screen.getByText('sign-in page')).toBeTruthy()
     expect(onClose).toHaveBeenCalled()
     expect(localStorage.getItem('proofsaathi.onboarded')).toBe('1')
   })

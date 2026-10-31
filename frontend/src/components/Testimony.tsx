@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { formatIst } from '../format'
 import { confirmationLabel, formatMs, methodLabel } from '../testimony'
 import type { DemoSession, VoiceNoteView, VoiceNotesResponse } from '../types/api'
+import { useView } from '../view'
 
 type Runner = (fn: () => Promise<unknown>, ok: string) => Promise<void>
 
@@ -42,6 +43,7 @@ export function VoiceNoteCard({
   run?: Runner
 }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const audioUrl = useAudioUrl(token, note.id)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [draft, setDraft] = useState('')
@@ -58,7 +60,7 @@ export function VoiceNoteCard({
   return (
     <article className="voice-note" aria-label={t('testimony.noteFrom', { name: note.staff })}>
       <div className="sub">
-        <Trans i18nKey="testimony.from" values={{ name: note.staff }} components={{ b: <strong /> }} /> · {note.locale} · {formatIst(note.created_at)}
+        <Trans i18nKey="testimony.from" values={{ name: note.staff }} components={{ b: <strong /> }} /> · {detailed && <>{note.locale} · </>}{formatIst(note.created_at)}
         {note.staff_task && (
           <>
             {' '}
@@ -67,14 +69,15 @@ export function VoiceNoteCard({
         )}
       </div>
       <p className="testimony-note">
-        <span className="tag">{t('testimony.tag')}</span> {note.note}
+        <span className="tag">{t('testimony.tag')}</span> {detailed ? note.note : t('testimony.notProof')}
       </p>
       {audioUrl ? (
         <audio ref={audioRef} controls src={audioUrl} preload="metadata" aria-label={t('testimony.audioLabel')} />
       ) : (
         <p className="sub">{t('testimony.audioLoading')}</p>
       )}
-      <dl className="kv">
+      {!detailed && <p className="sub">{t(`testimony.stt.${note.stt_status}`)}</p>}
+      {detailed && <dl className="kv">
         <dt>Audio SHA-256</dt>
         <dd className="mono">{note.sha256.slice(0, 16)}…</dd>
         <dt>{t('testimony.file')}</dt>
@@ -87,12 +90,12 @@ export function VoiceNoteCard({
           {t(`testimony.stt.${note.stt_status}`)}
           {note.stt_detail && <span className="sub"> — {note.stt_detail}</span>}
         </dd>
-      </dl>
+      </dl>}
       {cur ? (
         <div className="transcript">
           <div className="sub">
-            {t('testimony.transcript', { version: cur.version })} · {methodLabel(cur)}
-            {cur.language && cur.method === 'stt' && <> · {t('testimony.language', { lang: cur.language })}</>} ·{' '}
+            {detailed && <>{t('testimony.transcript', { version: cur.version })} · {methodLabel(cur)}
+            {cur.language && cur.method === 'stt' && <> · {t('testimony.language', { lang: cur.language })}</>} ·{' '}</>}
             <strong>{confirmationLabel(cur, note.staff)}</strong>
             {!cur.text_recheck_ok && <span className="warn"> · {t('testimony.hashMismatch')}</span>}
           </div>
@@ -118,10 +121,10 @@ export function VoiceNoteCard({
           ) : (
             <>
               <blockquote lang={lang}>{cur.text}</blockquote>
-              <p className="sub">{t('testimony.noTimestamps')}</p>
+              {detailed && <p className="sub">{t('testimony.noTimestamps')}</p>}
             </>
           )}
-          {note.versions.length > 1 && (
+          {detailed && note.versions.length > 1 && (
             <details>
               <summary>{t('testimony.history', { count: note.versions.length })}</summary>
               <ol className="timeline">
@@ -200,6 +203,7 @@ export function VoiceNoteCard({
 /** Workspace panel: every voice note with its provenance; read-only. */
 export function TestimonyPanel({ caseId, token, version }: { caseId: string; token: string; version: number }) {
   const { t } = useTranslation()
+  const { detailed } = useView()
   const [data, setData] = useState<VoiceNotesResponse | null>(null)
   useEffect(() => {
     api
@@ -212,7 +216,7 @@ export function TestimonyPanel({ caseId, token, version }: { caseId: string; tok
     <section aria-labelledby="testimony-h" className="panel">
       <div className="panel-head">
         <h2 id="testimony-h">{t('testimony.panelTitle')}</h2>
-        <span className="sub">{t('testimony.sttStatus', { status: data.speech.available ? data.speech.provider : t('testimony.unavailable') })}</span>
+        {detailed && <span className="sub">{t('testimony.sttStatus', { status: data.speech.available ? data.speech.provider : t('testimony.unavailable') })}</span>}
       </div>
       <p className="sub">{t('testimony.panelNote')}</p>
       {data.voice_notes.length === 0 ? (

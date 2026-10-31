@@ -20,7 +20,9 @@
     "synthetic": "Synthetic data",
     "simulator": "Paytm simulator",
     "reasoning": "Reasoning: {{label}}",
-    "checking": "checking…"
+    "checking": "checking…",
+    "assistantOn": "Assistant: on",
+    "assistantOff": "Assistant: off"
   },
   "landing": {
     "kicker": "Made for busy shop owners",
@@ -61,13 +63,13 @@
   },
   "states": {
     "NEW": "New",
-    "COLLECTING": "Collecting evidence",
-    "WAITING_FOR_EVIDENCE": "Waiting for evidence",
-    "NEEDS_HUMAN_REVIEW": "Needs human review",
-    "READY_TO_SUBMIT": "Ready to submit",
-    "SUBMITTING": "Submitting",
-    "SUBMISSION_UNCERTAIN": "Submission uncertain",
-    "MONITORING": "Submission verified — outcome pending",
+    "COLLECTING": "Collecting proof",
+    "WAITING_FOR_EVIDENCE": "Waiting for staff",
+    "NEEDS_HUMAN_REVIEW": "Needs a reviewer",
+    "READY_TO_SUBMIT": "Ready to send",
+    "SUBMITTING": "Sending",
+    "SUBMISSION_UNCERTAIN": "Checking with Paytm",
+    "MONITORING": "Sent — waiting for Paytm's decision",
     "CLOSED": "Closed"
   },
   "reasons": {
@@ -170,8 +172,8 @@
     "transaction": "Transaction",
     "amountAtRisk": "Amount at risk",
     "deadline": "Response deadline",
-    "workflow": "Workflow",
-    "providerUpdate": "Provider update",
+    "workflow": "Status",
+    "providerUpdate": "Paytm update",
     "noResponse": "No response sent yet",
     "reportedDebit": "Reported debit",
     "providerReported": "(provider-reported)",
@@ -180,55 +182,55 @@
   },
   "banner": {
     "lost": {
-      "title": "Dispute closed — provider reports LOST",
-      "detail": "Reported debit {{debit}} (simulated provider data)."
+      "title": "Dispute closed — you lost",
+      "detail": "Paytm reported a debit of {{debit}} (simulated)."
     },
     "lostNoDebit": {
-      "title": "Dispute closed — provider reports LOST",
-      "detail": "Any debit appears on a later settlement; none reported yet."
+      "title": "Dispute closed — you lost",
+      "detail": "Any debit shows on a later settlement."
     },
     "won": {
-      "title": "Dispute closed — provider reports WON (simulated outcome)",
-      "detail": "No debit."
+      "title": "Dispute closed — you won (simulated)",
+      "detail": "No money is taken."
     },
     "closed": {
       "title": "Case closed",
       "detail": ""
     },
     "monitoring": {
-      "title": "Submission verified — dispute outcome pending",
-      "detail": "Verified by an independent simulator receipt and a status read. This is not a win."
+      "title": "Paytm received your response",
+      "detail": "Paytm decides later. This is not a win yet."
     },
     "uncertain": {
-      "title": "Submission uncertain — reconciling with the provider",
-      "detail": "The provider effect is unknown; status and receipts are read before any retry."
+      "title": "Checking whether Paytm got your response",
+      "detail": "Nothing is sent again until Paytm's status is read."
     },
     "submitting": {
-      "title": "Submitting to the Paytm simulator…",
-      "detail": "Policy checks passed for this pack."
+      "title": "Sending your response to Paytm…",
+      "detail": "All checks passed."
     },
     "deadline": {
-      "title": "Deadline passed — submissions are blocked",
-      "detail": "A person must decide next steps."
+      "title": "Deadline passed — you can't respond now",
+      "detail": "A person must decide what to do next."
     },
     "contradiction": {
-      "title": "Submission blocked: contradiction found",
-      "detail": "Corrected evidence or a source-backed exclusion is required."
+      "title": "Blocked: a document doesn't match the order",
+      "detail": "Ask staff for the right document, or a reviewer can remove the wrong one."
     },
     "review": {
-      "title": "Needs human review",
+      "title": "A reviewer needs to decide",
       "detail": "A reviewer must decide before the case continues."
     },
     "waiting": {
-      "title": "Waiting for staff evidence",
-      "detail": "The case resumes when staff reply or upload."
+      "title": "Waiting for staff to send proof",
+      "detail": "The case continues when staff reply or upload."
     },
     "ready": {
-      "title": "Evidence complete — ready to submit",
-      "detail": "Required evidence passes all checks."
+      "title": "All proof is in — ready to send",
+      "detail": "Every check passed."
     },
     "collecting": {
-      "title": "Collecting evidence",
+      "title": "Collecting proof",
       "detail": ""
     }
   },
@@ -263,7 +265,7 @@
     "title": "What happens next?",
     "intro": "These steps follow recorded case activity. Open any step to see its source and available action.",
     "roleView": "{{role}} view",
-    "roleNote": "Agent and manual tool buttons require the owner or operator identity. Use the demo identity selector above to switch roles.",
+    "roleNote": "Only the shop owner can run these actions.",
     "mapLabel": "Case process map",
     "progress": "{{done}} of {{total}} stages have related activity. Human review may be skipped when it is not needed.",
     "recorded": "Activity recorded",
@@ -296,7 +298,7 @@
     "s4Text": "Ask a person to decide when documents disagree or the next step is uncertain.",
     "s4Action": "Request review",
     "s4LinkReviewer": "Reviewer decisions",
-    "s4LinkSwitch": "Switch to reviewer above",
+    "s4LinkSwitch": "Sign in as the reviewer",
     "s5Title": "Build a source-linked pack",
     "s5Text": "Freeze the validated documents and citations into a versioned evidence pack.",
     "s5Action": "Build evidence pack",
@@ -325,7 +327,7 @@
     "b3Title": "Reviewer decision or concession",
     "b3Text": "A reviewer records the reason and confirms any concession through the protected two-step flow.",
     "b3Reviewer": "Open reviewer decisions",
-    "b3Switch": "Switch to reviewer identity"
+    "b3Switch": "Sign in as the reviewer"
   },
   "roles": {
     "owner": "Shop owner",
@@ -334,25 +336,35 @@
     "operator": "Demo operator"
   },
   "steps": {
-    "title": "Key steps",
-    "showLog": "Show full audit log ({{count}} events)",
-    "hideLog": "Hide full audit log",
+    "title": "What happened",
+    "showLog": "Show the full log ({{count}} entries)",
+    "hideLog": "Hide the full log",
     "event": "event #{{seq}}",
-    "fullLog": "Full audit log",
-    "gap": "Observed gap",
-    "requested": "Evidence requested",
-    "staff": "Staff response",
-    "contradiction": "Contradiction detected",
-    "superseded": "Wrong evidence superseded",
+    "fullLog": "Full log",
+    "gap": "Missing proof found",
+    "requested": "Proof requested",
+    "staff": "Staff replied",
+    "contradiction": "Mismatch found",
+    "superseded": "Wrong document replaced",
     "voice": "Staff voice note",
-    "testimony": "Testimony confirmed",
-    "review": "Review requested",
-    "pack": "Pack built",
-    "submission": "Submission requested",
-    "verified": "Receipt verified",
-    "provider": "Provider status changed",
-    "concession": "Concession requested (human)",
-    "agent": "Agent run"
+    "testimony": "Voice note confirmed",
+    "review": "Reviewer asked",
+    "pack": "Response file prepared",
+    "submission": "Response sent",
+    "verified": "Paytm receipt checked",
+    "provider": "Paytm status changed",
+    "concession": "Customer's claim accepted (by a person)",
+    "agent": "Assistant run",
+    "providerTo": "Paytm status: {{status}}.",
+    "simple": {
+      "superseded": "The wrong document was set aside; the new one is used.",
+      "review": "A reviewer was asked to decide.",
+      "pack": "The response file was prepared.",
+      "submission": "The response was sent to Paytm.",
+      "verified": "Paytm's receipt matches the response file.",
+      "concession": "A reviewer accepted the customer's claim.",
+      "agent": "The assistant started checking the case."
+    }
   },
   "reminder": {
     "label": "Staff reminder",
@@ -407,7 +419,7 @@
     "s1": "Collect proof",
     "s1Hint": "Gather the documents the response needs",
     "s2": "Check and send",
-    "s2Hint": "Review the pack and send it to Paytm",
+    "s2Hint": "Check the response file and send it to Paytm",
     "s3": "Result",
     "s3Hint": "Paytm confirms receipt, then decides",
     "done": "Done",
@@ -530,8 +542,8 @@
     }
   },
   "evidence": {
-    "checklistTitle": "Evidence checklist",
-    "checklistNote": "Demo policy for goods-not-received disputes, not a bank guarantee.",
+    "checklistTitle": "Proof checklist",
+    "checklistNote": "What a goods-not-received response needs (demo rules).",
     "check": {
       "supported": "Supported",
       "missing": "Missing",
@@ -539,20 +551,20 @@
       "review_required": "Needs review"
     },
     "assignee": "Assignee: {{name}}",
-    "openSource": "Open source: {{label}}",
-    "disputeRecord": "Dispute record",
-    "citedDocument": "Cited document",
-    "findingsTitle": "Validation findings",
-    "noFindings": "No open findings.",
-    "resolvedCount": "Resolved ({{count}})",
-    "resolvedTag": "resolved",
+    "openSource": "See in document: {{label}}",
+    "disputeRecord": "The dispute says",
+    "citedDocument": "The document says",
+    "findingsTitle": "Problems found",
+    "noFindings": "No problems found.",
+    "resolvedCount": "Fixed ({{count}})",
+    "resolvedTag": "fixed",
     "severity": {
-      "blocking": "blocking",
-      "info": "info",
-      "review": "review"
+      "blocking": "blocks sending",
+      "info": "note",
+      "review": "needs a reviewer"
     },
-    "title": "Evidence",
-    "upload": "Upload evidence (TXT, JSON, PDF; images need OCR)",
+    "title": "Documents",
+    "upload": "Add a document (text, JSON or PDF)",
     "uploadedFile": "Uploaded {{file}}.",
     "alreadyUploaded": "{{file}} was already uploaded.",
     "rejected": "Upload rejected: {{error}}",
@@ -577,63 +589,80 @@
     "extractFailed": "Failed: {{error}}",
     "active": "Active",
     "excluded": "Excluded — {{reason}}",
-    "systemSeed": "System seed",
+    "systemSeed": "Added by the system",
     "loadingSource": "Loading source…",
     "source": "Source: {{file}}",
     "excludedTag": "excluded",
     "showOriginal": "Show original file ({{type}})",
     "downloadOriginal": "Download original",
     "noText": "No extractable text ({{error}}). The original file is preserved.",
-    "facts": "Extracted facts ({{count}})"
+    "facts": "Extracted facts ({{count}})",
+    "showingField": "Showing the {{field}} on page {{page}}.",
+    "page": "Page {{page}}",
+    "originalFile": "Original file"
   },
   "panels": {
-    "actionsTitle": "Case assistant and actions",
-    "actionsIntro": "See what the assistant tried and why. You can also choose an action yourself; the case checks whether it is safe to proceed.",
-    "reasonerUnavailable": "Reasoner unavailable: {{error}}. Manual operation still works.",
-    "checkWithAssistant": "Check case with assistant",
+    "actionsTitle": "Assistant and actions",
+    "actionsIntro": "Let the assistant work, or press a button yourself. Every step is checked first.",
+    "reasonerUnavailable": "The assistant is unavailable ({{error}}). The buttons still work.",
+    "checkWithAssistant": "Let the assistant check",
     "doItYourself": "Do it yourself",
     "action": {
-      "request_evidence": "Request delivery proof from staff",
-      "validate_evidence": "Re-run validation",
-      "build_evidence_pack": "Build evidence pack",
-      "submit_defense": "Submit defense (simulator)",
-      "get_submission_status": "Check status / retry reconciliation",
-      "request_human_review": "Request human review"
+      "request_evidence": "Ask staff for delivery proof",
+      "validate_evidence": "Check the proof again",
+      "build_evidence_pack": "Prepare response file",
+      "submit_defense": "Send response",
+      "get_submission_status": "Check with Paytm",
+      "request_human_review": "Ask a reviewer"
     },
     "explain": {
       "request_evidence": "Asked a staff member for the missing document.",
       "validate_evidence": "Checked the available records for gaps and contradictions.",
-      "build_evidence_pack": "Prepared a response pack linked to its source documents.",
-      "submit_defense": "Sent the approved response to the provider simulator.",
-      "get_submission_status": "Checked whether the provider received the response.",
-      "request_human_review": "Paused for a person to review the case."
+      "build_evidence_pack": "Prepared the response file, linked to its documents.",
+      "submit_defense": "Sent the response to Paytm (simulated).",
+      "get_submission_status": "Checked whether Paytm received the response.",
+      "request_human_review": "Asked a reviewer to decide."
     },
     "explainDefault": "This action was recorded on the case.",
-    "switchRole": "Switch to the owner or operator identity to run actions.",
-    "runsTitle": "What the case assistant did",
-    "runsIntro": "Each entry is a recorded run. A denied step means the safety checks stopped that action.",
+    "switchRole": "Only the shop owner can run actions.",
+    "runsTitle": "What the assistant did",
+    "runsIntro": "Each entry is one run. \"Blocked\" means a safety check stopped that step.",
     "fixtureReplay": "Fixture replay (not AI)",
-    "liveModel": "Live model",
+    "liveModel": "Assistant",
     "runNoLog": "A run was recorded in the case timeline. Its detailed tool log is not available in this view yet.",
-    "noRuns": "No assistant run has been recorded yet. Start one above, or use a case action directly.",
+    "noRuns": "The assistant has not run yet.",
     "technical": "Technical response details",
-    "packTitle": "Evidence pack and submission",
-    "verified": "Submission verified — dispute outcome pending.",
-    "verifiedDetail": "Receipt {{receipt}} matches pack v{{version}} (independent simulator receipt plus status read).",
-    "noPack": "No pack built yet.",
-    "pack": "Pack v{{version}}",
+    "packTitle": "Response file",
+    "verified": "Paytm received your response.",
+    "verifiedDetail": "Receipt {{receipt}} matches response file v{{version}}.",
+    "noPack": "No response file yet.",
+    "pack": "Response file v{{version}}",
     "latest": "latest",
-    "stale": "stale — case changed",
+    "stale": "out of date — the case changed",
     "comments": "comments:",
     "file": "File {{position}}: {{name}} ({{role}})",
     "download": "Download {{name}}",
-    "subsCaption": "Submissions (simulator only)",
+    "subsCaption": "Sent responses",
     "colAction": "Action",
-    "colPack": "Pack",
+    "colPack": "File",
     "colState": "State",
     "colAttempts": "Attempts",
     "colReceipt": "Receipt",
-    "colTrail": "Reconciliation trail"
+    "colTrail": "Reconciliation trail",
+    "result": {
+      "ok": "done",
+      "denied": "blocked by a safety check",
+      "error": "failed"
+    },
+    "message": "Message to Paytm:",
+    "coverLetter": "Download the response (PDF)",
+    "subState": {
+      "verified": "Received by Paytm",
+      "uncertain": "Checking with Paytm",
+      "submitted": "Sent",
+      "pending": "Sending",
+      "failed": "Not sent"
+    }
   },
   "testimony": {
     "stt": {
@@ -645,7 +674,7 @@
     "noteFrom": "Voice note from {{name}}",
     "from": "Voice note from <b>{{name}}</b>",
     "answers": "answers {{what}} request round {{round}}",
-    "tag": "Staff testimony",
+    "tag": "Staff voice note",
     "audioLabel": "Original voice-note audio",
     "audioLoading": "Original audio is stored; loading the player…",
     "file": "File",
@@ -668,10 +697,10 @@
     "whatYouSaid": "What you said",
     "save": "Save",
     "cancel": "Cancel",
-    "panelTitle": "Staff testimony (voice notes)",
+    "panelTitle": "Staff voice notes",
     "sttStatus": "Speech-to-text: {{status}}",
     "unavailable": "unavailable",
-    "panelNote": "Testimony can explain what happened. It never satisfies a checklist item; the matching delivery document is still required.",
+    "panelNote": "A voice note explains what happened. It is not proof; the delivery document is still needed.",
     "none": "No voice notes on this case.",
     "voiceNotes": "Voice notes",
     "sttLocal": "{{provider}} (local)",
@@ -692,7 +721,8 @@
     },
     "unknown": "unknown",
     "unknownModel": "unknown model",
-    "staffFallback": "staff"
+    "staffFallback": "staff",
+    "notProof": "A voice note explains what happened. It is not proof."
   },
   "reviewer": {
     "title": "Reviewer decisions",
@@ -711,20 +741,73 @@
     "reasonLabel": "Exclusion reason",
     "excludeBtn": "Exclude",
     "excludedDone": "Document excluded; original kept.",
-    "concede": "Accept customer's dispute (concede)…",
+    "concede": "Accept customer's claim…",
     "notDone": "Not done: {{error}}",
-    "modalTitle": "Accept the customer's dispute (concede)",
-    "modalBody": "This gives up the defense. The simulated dispute becomes <b>LOST</b> and <b>{{amount}}</b> (synthetic) may be debited from a later settlement. It is separate from submitting evidence and cannot be undone here.",
+    "modalTitle": "Accept the customer's claim",
+    "modalBody": "This gives up your defense. The dispute becomes <b>LOST</b> and <b>{{amount}}</b> (synthetic) may be taken from a later settlement. It cannot be undone here.",
     "modalExplain": "Reviewer explanation (required)",
     "cancel": "Cancel",
-    "step1": "Step 1: approve concession",
+    "step1": "Step 1: approve accepting the claim",
     "approval": "Approval recorded (single use, bound to this case version, expires {{expires}}).",
     "typeConfirm": "Type {{word}} to confirm",
-    "step2": "Step 2: accept customer's dispute (concede)"
+    "step2": "Step 2: accept customer's claim"
   },
   "requirements": {
     "delivery_record": "delivery record",
     "invoice": "invoice",
     "order_linkage": "order linkage"
+  },
+  "nav": {
+    "myRequests": "My requests",
+    "toReview": "Cases to review"
+  },
+  "signin": {
+    "body": "Pick who you are. No password is needed in this demo.",
+    "as": "Sign in as {{name}}",
+    "signIn": "Sign in",
+    "switchUser": "Switch user",
+    "none": "No demo people found. Reset the demo data from Demo controls."
+  },
+  "review": {
+    "eyebrow": "Reviewer",
+    "title": "Cases waiting for your decision",
+    "intro": "Only cases that need a reviewer appear here.",
+    "none": "Nothing needs your decision right now.",
+    "open": "Open case",
+    "back": "← Back to cases to review"
+  },
+  "operator": {
+    "link": "Demo controls",
+    "eyebrow": "For the presenter",
+    "title": "Demo controls",
+    "intro": "Reset data, act as staff, add simulator faults and check providers. These tools use their own operator sign-in, so nobody is signed out.",
+    "caseLabel": "Case",
+    "resetDone": "Demo data reset. Everyone was signed in again."
+  },
+  "view": {
+    "label": "How much detail to show",
+    "simple": "Simple view",
+    "detailed": "Detailed view"
+  },
+  "next": {
+    "seeResult": "See the result",
+    "seeReceipt": "See the receipt",
+    "checkStatus": "Check with Paytm",
+    "seeHistory": "See what happened",
+    "askAgain": "Ask staff for the right document",
+    "seeProblem": "See the problem",
+    "seeChecklist": "See what is needed",
+    "waitingText": "{{who}} was asked for the {{what}}. The case continues when it arrives.",
+    "readyBuildText": "All proof is in. Prepare the response file next.",
+    "readySendText": "The response file is ready. Send it to Paytm.",
+    "missingText": "The {{what}} is missing. Ask staff to send it."
+  },
+  "paytmStatus": {
+    "NEW": "no response yet",
+    "POD_UPLOAD": "response received",
+    "POD_REJECT": "proof rejected",
+    "WON": "you won",
+    "LOST": "you lost",
+    "other": "updated"
   }
 }

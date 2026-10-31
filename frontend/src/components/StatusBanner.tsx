@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { statusBanner } from '../status'
 import type { Assessment, CaseDetail } from '../types/api'
+import { useView } from '../view'
 
 export function StatusBanner({ detail, assessment }: { detail: CaseDetail; assessment: Assessment }) {
   useTranslation()
+  const { detailed } = useView()
   const debit =
     detail.debit_amount_paise !== null
       ? `₹${(detail.debit_amount_paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
@@ -16,7 +18,7 @@ export function StatusBanner({ detail, assessment }: { detail: CaseDetail; asses
     blocking_contradiction: assessment.blocking_contradiction,
     debit_display: debit,
   })
-  const showBlockers = !['MONITORING', 'CLOSED', 'SUBMITTING', 'SUBMISSION_UNCERTAIN'].includes(detail.workflow_state)
+  const showBlockers = detailed && !['MONITORING', 'CLOSED', 'SUBMITTING', 'SUBMISSION_UNCERTAIN'].includes(detail.workflow_state)
   return (
     <div className={`banner banner-${b.tone}`} role="status" aria-live="polite" data-testid="status-banner">
       <strong>{b.title}</strong>
