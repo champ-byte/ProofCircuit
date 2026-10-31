@@ -1,66 +1,64 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { BrandMark } from '../components/BrandMark'
 
-const benefits = [
-  { number: '01', title: 'See what needs attention', body: 'A simple case list shows the amount, deadline, missing proof, and next step for every dispute.' },
-  { number: '02', title: 'Bring your proof together', body: 'Keep invoices, order details, delivery records, and staff replies linked to the right case.' },
-  { number: '03', title: 'Respond with confidence', body: 'Review the evidence, approve the response, and follow the submission through to its receipt.' },
-]
+const benefits = ['b1', 'b2', 'b3'] as const
 
 export function LandingPage() {
+  const { t } = useTranslation()
   return (
     <div className="landing">
       <section className="landing-hero" aria-labelledby="landing-title">
         <div className="landing-copy">
-          <span className="landing-kicker"><span aria-hidden="true" /> Made for busy shop owners</span>
-          <h1 id="landing-title">A payment dispute? <em>Know your next step.</em></h1>
-          <p>ProofSaathi keeps your proof, deadlines, and response in one clear place, so you can get back to running your shop.</p>
+          <span className="landing-kicker"><span aria-hidden="true" /> {t('landing.kicker')}</span>
+          <h1 id="landing-title">{t('landing.titleA')} <em>{t('landing.titleB')}</em></h1>
+          <p>{t('landing.body')}</p>
           <div className="landing-actions">
-            <Link className="button-primary" to="/cases">View disputes <span aria-hidden="true">→</span></Link>
-            <Link className="button-secondary" to="/dashboard">Explore dashboard</Link>
+            <Link className="button-primary" to="/cases">{t('app.viewDisputes')} <span aria-hidden="true">→</span></Link>
+            <Link className="button-secondary" to="/dashboard">{t('landing.exploreDashboard')}</Link>
           </div>
-          <div className="landing-assurance"><span aria-hidden="true">✓</span> One case at a time. Every step clearly explained.</div>
+          <div className="landing-assurance"><span aria-hidden="true">✓</span> {t('landing.assurance')}</div>
         </div>
 
-        <div className="landing-preview" aria-label="Example dispute summary">
+        <div className="landing-preview" aria-label={t('landing.previewLabel')}>
           <div className="preview-window">
-            <div className="preview-top"><BrandMark className="preview-brand-mark" /><span>ProofSaathi</span><span className="preview-top-right">CASE OVERVIEW</span></div>
+            <div className="preview-top"><BrandMark className="preview-brand-mark" /><span>ProofSaathi</span><span className="preview-top-right">{t('landing.caseOverview')}</span></div>
             <div className="preview-case">
-              <span className="preview-overline">EXAMPLE DISPUTE</span>
-              <div className="preview-case-title"><strong>Order payment disputed</strong><span className="preview-pill">Needs attention</span></div>
+              <span className="preview-overline">{t('landing.exampleDispute')}</span>
+              <div className="preview-case-title"><strong>{t('landing.orderDisputed')}</strong><span className="preview-pill">{t('landing.needsAttention')}</span></div>
               <p>Metro Furniture Demo · Order ORD-DEMO-18500</p>
-              <div className="preview-facts"><div><small>Amount at risk</small><strong>₹18,500</strong></div><div><small>Next step</small><strong>Collect delivery proof</strong></div></div>
+              <div className="preview-facts"><div><small>{t('landing.amountAtRisk')}</small><strong>₹18,500</strong></div><div><small>{t('landing.nextStep')}</small><strong>{t('landing.collectProof')}</strong></div></div>
             </div>
             <div className="preview-steps">
-              <div><span className="preview-step-dot complete">✓</span><span><strong>Invoice linked</strong><small>Proof is available in the case</small></span></div>
-              <div><span className="preview-step-dot active">2</span><span><strong>Delivery record needed</strong><small>Ask the right staff member for help</small></span></div>
-              <div><span className="preview-step-dot">3</span><span><strong>Review and respond</strong><small>Check the evidence before submission</small></span></div>
+              <div><span className="preview-step-dot complete">✓</span><span><strong>{t('landing.invoiceLinked')}</strong><small>{t('landing.invoiceLinkedSub')}</small></span></div>
+              <div><span className="preview-step-dot active">2</span><span><strong>{t('landing.deliveryNeeded')}</strong><small>{t('landing.deliveryNeededSub')}</small></span></div>
+              <div><span className="preview-step-dot">3</span><span><strong>{t('landing.reviewRespond')}</strong><small>{t('landing.reviewRespondSub')}</small></span></div>
             </div>
           </div>
-          <div className="preview-floating"><span aria-hidden="true">✓</span><div><strong>Your next step is clear</strong><small>Open the case to see what to do</small></div></div>
+          <div className="preview-floating"><span aria-hidden="true">✓</span><div><strong>{t('landing.clearTitle')}</strong><small>{t('landing.clearSub')}</small></div></div>
         </div>
       </section>
 
       <section id="how-it-works" className="landing-process" aria-labelledby="process-title">
         <div className="landing-section-head">
-          <p className="eyebrow">How ProofSaathi helps</p>
-          <h2 id="process-title">From a new dispute to a clear response.</h2>
-          <p>No complicated reports to decode. Start with the dispute, see what is missing, and move through each step.</p>
+          <p className="eyebrow">{t('landing.howEyebrow')}</p>
+          <h2 id="process-title">{t('landing.howTitle')}</h2>
+          <p>{t('landing.howBody')}</p>
         </div>
         <div className="landing-stage-grid">
-          {benefits.map((benefit) => (
-            <article className="landing-stage" key={benefit.number}>
-              <span>{benefit.number}</span>
-              <h3>{benefit.title}</h3>
-              <p>{benefit.body}</p>
+          {benefits.map((key, index) => (
+            <article className="landing-stage" key={key}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{t(`landing.${key}Title`)}</h3>
+              <p>{t(`landing.${key}Body`)}</p>
             </article>
           ))}
         </div>
       </section>
 
       <section className="landing-final">
-        <div><p className="eyebrow">Your workspace</p><h2>See every dispute in one place.</h2><p>Open a case to view its checklist, evidence, staff replies, and next action.</p></div>
-        <Link className="button-primary" to="/cases">Open disputes <span aria-hidden="true">→</span></Link>
+        <div><p className="eyebrow">{t('landing.finalEyebrow')}</p><h2>{t('landing.finalTitle')}</h2><p>{t('landing.finalBody')}</p></div>
+        <Link className="button-primary" to="/cases">{t('landing.openDisputes')} <span aria-hidden="true">→</span></Link>
       </section>
     </div>
   )

@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import type { CaseDetail, EvidenceOverview, InboxView } from '../types/api'
 
@@ -22,6 +23,7 @@ export function ConcessionModal({
   onClose: () => void
   onDone: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [explanation, setExplanation] = useState('')
   const [approval, setApproval] = useState<{ id: string; expires: string; consequence: string } | null>(null)
   const [typed, setTyped] = useState('')
@@ -60,21 +62,19 @@ export function ConcessionModal({
         ref={dialog}
         onKeyDown={onKeyDown}
       >
-        <h2 id="concede-title">Accept the customer's dispute (concede)</h2>
+        <h2 id="concede-title">{t('reviewer.modalTitle')}</h2>
         <p>
-          This gives up the defense. The simulated dispute becomes <strong>LOST</strong> and{' '}
-          <strong>{amount}</strong> (synthetic) may be debited from a later settlement. It is separate from submitting
-          evidence and cannot be undone here.
+          <Trans i18nKey="reviewer.modalBody" values={{ amount }} components={{ b: <strong /> }} />
         </p>
         {!approval ? (
           <>
             <label className="field">
-              Reviewer explanation (required)
+              {t('reviewer.modalExplain')}
               <textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} rows={3} />
             </label>
             <div className="modal-actions">
               <button type="button" onClick={onClose}>
-                Cancel
+                {t('reviewer.cancel')}
               </button>
               <button
                 type="button"
@@ -93,22 +93,22 @@ export function ConcessionModal({
                   }
                 }}
               >
-                Step 1: approve concession
+                {t('reviewer.step1')}
               </button>
             </div>
           </>
         ) : (
           <>
             <p className="sub">
-              Approval recorded (single use, bound to this case version, expires {approval.expires}). {approval.consequence}
+              {t('reviewer.approval', { expires: approval.expires })} {approval.consequence}
             </p>
             <label className="field">
-              Type {CONFIRM_WORD} to confirm
+              {t('reviewer.typeConfirm', { word: CONFIRM_WORD })}
               <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
             </label>
             <div className="modal-actions">
               <button type="button" onClick={onClose}>
-                Cancel
+                {t('reviewer.cancel')}
               </button>
               <button
                 type="button"
@@ -128,7 +128,7 @@ export function ConcessionModal({
                   }
                 }}
               >
-                Step 2: accept customer's dispute (concede)
+                {t('reviewer.step2')}
               </button>
             </div>
           </>
@@ -158,6 +158,7 @@ export function ReviewerPanel({
   inbox: InboxView | null
   onChanged: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [concede, setConcede] = useState(false)
   const [note, setNote] = useState('')
   const [excludeDoc, setExcludeDoc] = useState('')
@@ -174,37 +175,37 @@ export function ReviewerPanel({
       setMessage(ok)
       await onChanged()
     } catch (err) {
-      setMessage(`Not done: ${(err as Error).message}`)
+      setMessage(t('reviewer.notDone', { error: (err as Error).message }))
     }
   }
 
   return (
     <section aria-labelledby="reviewer-h" className="panel reviewer">
-      <h2 id="reviewer-h">Reviewer decisions</h2>
-      <p className="sub">Decisions are recorded with your identity, the case version and your explanation.</p>
+      <h2 id="reviewer-h">{t('reviewer.title')}</h2>
+      <p className="sub">{t('reviewer.intro')}</p>
       <label className="field">
-        Explanation for the decisions below
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why you decided this" />
+        {t('reviewer.explanation')}
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('reviewer.placeholder')} />
       </label>
       {reviews.length === 0 ? (
-        <p className="sub">No open review requests.</p>
+        <p className="sub">{t('reviewer.none')}</p>
       ) : (
         <ul className="findings">
-          {reviews.map((t) => (
-            <li key={t.id} className="finding finding-review finding-open">
-              <strong>{t.requirement_id.replace('review:', '').replaceAll('_', ' ')}</strong>
-              {t.question && <p>{t.question}</p>}
+          {reviews.map((task) => (
+            <li key={task.id} className="finding finding-review finding-open">
+              <strong>{task.requirement_id.replace('review:', '').replaceAll('_', ' ')}</strong>
+              {task.question && <p>{task.question}</p>}
               <button
                 type="button"
                 disabled={note.trim().length < 5}
                 onClick={() =>
                   run(
-                    () => api.review(token, caseId, { decision: 'resolve_review', task_id: t.id, explanation: note }),
-                    'Review resolved.',
+                    () => api.review(token, caseId, { decision: 'resolve_review', task_id: task.id, explanation: note }),
+                    t('reviewer.resolved'),
                   )
                 }
               >
-                Resolve this review
+                {t('reviewer.resolve')}
               </button>
             </li>
           ))}
@@ -216,16 +217,16 @@ export function ReviewerPanel({
             type="button"
             disabled={note.trim().length < 5}
             onClick={() =>
-              run(() => api.review(token, caseId, { decision: 'confirm_reason', explanation: note }), 'Reason confirmed.')
+              run(() => api.review(token, caseId, { decision: 'confirm_reason', explanation: note }), t('reviewer.reasonConfirmed'))
             }
           >
-            Confirm goods-not-received reason
+            {t('reviewer.confirmReason')}
           </button>
         )}
         <fieldset className="inline">
-          <legend>Exclude a document</legend>
-          <select value={excludeDoc} onChange={(e) => setExcludeDoc(e.target.value)} aria-label="Document to exclude">
-            <option value="">Choose a document…</option>
+          <legend>{t('reviewer.exclude')}</legend>
+          <select value={excludeDoc} onChange={(e) => setExcludeDoc(e.target.value)} aria-label={t('reviewer.docLabel')}>
+            <option value="">{t('reviewer.chooseDoc')}</option>
             {active.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.original_filename}
@@ -235,19 +236,19 @@ export function ReviewerPanel({
           <input
             value={excludeReason}
             onChange={(e) => setExcludeReason(e.target.value)}
-            placeholder="Source-backed reason (10+ characters)"
-            aria-label="Exclusion reason"
+            placeholder={t('reviewer.reasonPlaceholder')}
+            aria-label={t('reviewer.reasonLabel')}
           />
           <button
             type="button"
             disabled={!excludeDoc || excludeReason.trim().length < 10}
-            onClick={() => run(() => api.exclude(token, excludeDoc, excludeReason), 'Document excluded; original kept.')}
+            onClick={() => run(() => api.exclude(token, excludeDoc, excludeReason), t('reviewer.excludedDone'))}
           >
-            Exclude
+            {t('reviewer.excludeBtn')}
           </button>
         </fieldset>
         <button type="button" className="danger" disabled={closed} onClick={() => setConcede(true)}>
-          Accept customer's dispute (concede)…
+          {t('reviewer.concede')}
         </button>
       </div>
       {message && (

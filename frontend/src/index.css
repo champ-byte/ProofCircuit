@@ -10,7 +10,7 @@
   --warn-soft: #fff3dc;
   --danger: #b42318;
   font-family:
-    system-ui, -apple-system, 'Segoe UI', 'Noto Sans', 'Noto Sans Devanagari', 'Mangal', sans-serif;
+    system-ui, -apple-system, 'Segoe UI', 'Noto Sans', 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Mangal', sans-serif;
   color: var(--text);
   background: var(--bg);
   line-height: 1.5;
@@ -456,7 +456,7 @@ mark {
   border-radius: 8px;
   margin: 6px 0;
   background: var(--surface);
-  font-family: system-ui, 'Noto Sans Devanagari', 'Mangal', sans-serif;
+  font-family: system-ui, 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Mangal', sans-serif;
 }
 
 .msg-inbound {
@@ -2539,7 +2539,7 @@ table.queue-table td {
   --border: #dce6ed;
   --accent: #145b91;
   --accent-soft: #e8f3fb;
-  font-family: 'Inter Variable', Inter, 'Noto Sans Devanagari', 'Mangal', sans-serif;
+  font-family: 'Inter Variable', Inter, 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Mangal', sans-serif;
   font-size: 14px;
   color: var(--text);
   font-synthesis: none;
@@ -2549,7 +2549,7 @@ table.queue-table td {
 }
 
 body, button, input, select, textarea, pre {
-  font-family: 'Inter Variable', Inter, 'Noto Sans Devanagari', 'Mangal', sans-serif;
+  font-family: 'Inter Variable', Inter, 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Mangal', sans-serif;
 }
 
 body { background: var(--bg); }
@@ -2741,7 +2741,7 @@ main { max-width: 1560px; padding: 28px clamp(20px, 4vw, 64px) 40px; }
 
 /* Operational pages share a restrained, row-based layout. */
 :root { --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px; --space-5: 32px; }
-:root { --font-display: 'Poppins', 'Inter Variable', sans-serif; --font-body: 'Inter Variable', Inter, sans-serif; }
+:root { --font-display: 'Poppins', 'Inter Variable', 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Mangal', sans-serif; --font-body: 'Inter Variable', Inter, 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Mangal', sans-serif; }
 h1, h2, h3, .brand-name { font-family: var(--font-display); }
 table, input, select, textarea, button { font-family: var(--font-body); }
 .workspace-layout { display: flex; flex-direction: column; gap: var(--space-4); }
@@ -2843,3 +2843,81 @@ table, input, select, textarea, button { font-family: var(--font-body); }
 .advanced-actions summary, .tool-result summary { color: var(--accent); cursor: pointer; font-weight: 650; }
 .advanced-actions .fixture-buttons { margin-top: 16px; }
 .tool-result details { margin-top: 12px; }
+
+/* Language switcher: compact select with a script glyph, fits beside the identity picker. */
+.language-switcher { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.language-switcher .language-icon { color: #145b91; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+.language-switcher select { max-width: 160px; min-height: 35px; padding: 5px 8px; font-size: 0.76rem; }
+@media (max-width: 720px) { .language-switcher select { max-width: 120px; } }
+
+/* ---- Phase 2: welcome chooser, case progress, tabs, assistant card, staff screen, tour ---- */
+.header-chip { min-height: 35px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: #145b91; font-size: 0.76rem; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.header-chip:hover { background: #eef6fb; }
+@media (max-width: 1600px) {
+  .topbar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; }
+  .mainnav { justify-content: flex-end; }
+  .header-actions { grid-column: 1 / -1; flex-wrap: wrap; gap: 8px 12px; }
+}
+@media (max-width: 640px) {
+  .topbar { grid-template-columns: minmax(0, 1fr); }
+  .mainnav { grid-column: 1; justify-content: flex-start; }
+  .header-actions { display: flex; grid-column: 1; justify-content: flex-start; }
+  .nav-cta { position: static; }
+  .identity { order: 1; }
+}
+.welcome-backdrop { z-index: 60; }
+.modal.welcome { width: min(920px, calc(100vw - 32px)); max-width: 920px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.welcome h2 { margin: 4px 0; }
+.welcome-langs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 16px 0; }
+.welcome-lang { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; text-align: left; cursor: pointer; }
+.welcome-lang strong { font-size: 1.05rem; }
+.welcome-lang span { color: var(--muted); font-size: 0.75rem; }
+.welcome-lang.active { border-color: #145b91; background: #e8f3fb; box-shadow: 0 0 0 2px #145b9133; }
+.welcome-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 16px 0; }
+.welcome-role { display: flex; flex-direction: column; gap: 6px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
+.welcome-role h3 { margin: 0; }
+.welcome-role p { margin: 0; }
+.welcome-who { color: #145b91; font-weight: 650; font-size: 0.85rem; }
+.welcome-role-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
+.welcome-note { padding: 10px 12px; border-radius: 10px; background: #fff3dc; color: #81500c; font-size: 0.85rem; }
+.case-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; padding: 0; list-style: none; }
+.progress-stage { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.progress-stage strong, .progress-stage small, .progress-stage em { display: block; }
+.progress-stage small { color: var(--muted); font-size: 0.75rem; }
+.progress-stage em { margin-top: 4px; font-style: normal; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.progress-dot { display: inline-grid; flex: 0 0 28px; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #eef0f6; font-weight: 700; }
+.progress-done .progress-dot { background: #2e9b84; color: #fff; }
+.progress-done em { color: #2e7d6b; }
+.progress-current { border-color: #145b91; background: #f2f8fc; box-shadow: 0 0 0 2px #145b9122; }
+.progress-current .progress-dot { background: #145b91; color: #fff; }
+.progress-current em { color: #145b91; }
+.workspace-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.workspace-top .badges { margin: 0; }
+.case-tabs { display: flex; gap: 4px; margin: 18px 0 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.case-tabs [role=tab] { padding: 10px 16px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--muted); font-weight: 650; white-space: nowrap; cursor: pointer; }
+.case-tabs [role=tab][aria-selected=true] { border-bottom-color: #145b91; color: #145b91; }
+.case-tabpanel { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
+.assistant-card { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 18px 20px; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
+.assistant-card h2 { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 1.1rem; }
+.assistant-card p { margin: 4px 0; }
+.assistant-working { border-color: #145b91; background: #f2f8fc; }
+.assistant-off, .assistant-paused { background: #fafafa; }
+.assistant-actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.assistant-limits { font-size: 0.75rem; }
+.assistant-pulse { width: 10px; height: 10px; border-radius: 50%; background: #145b91; animation: assistant-pulse 1.2s ease-in-out infinite; }
+@keyframes assistant-pulse { 50% { opacity: .3; transform: scale(.7); } }
+@media (prefers-reduced-motion: reduce) { .assistant-pulse { animation: none; } }
+.staff-page { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.staff-page-head h1 { margin: 4px 0; }
+.staff-message { padding: 10px 12px; border-radius: 10px; background: #e8f3fb; }
+.staff-case h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.tour { position: fixed; right: 16px; bottom: 16px; z-index: 70; width: min(380px, calc(100vw - 32px)); padding: 16px 18px; border: 1px solid var(--border); border-radius: 14px; background: #fff; box-shadow: 0 18px 50px #0f2a4033; }
+.tour h2 { margin: 6px 0; font-size: 1.05rem; }
+.tour-head { display: flex; justify-content: space-between; align-items: center; }
+.tour-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.tour-nav { display: flex; gap: 6px; }
+.tour-highlight { outline: 3px solid #d99b3b !important; outline-offset: 4px; border-radius: 10px; transition: outline-color .2s; }
+@media (max-width: 720px) {
+  .case-progress { grid-template-columns: 1fr; }
+  .header-chip { padding: 4px 8px; font-size: 0.7rem; }
+}

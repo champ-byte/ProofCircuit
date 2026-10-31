@@ -1,5 +1,6 @@
 // Browser E2E for the hero journey and the reviewer concession, driven only through the UI and
-// demo drawer (PRD 15.1: one browser E2E for the main journey).
+// demo drawer (PRD 15.1: one browser E2E for the main journey). The case page uses tabs
+// (Next step / Proof / Response / History); the drawer starts closed.
 //
 // Prerequisites: backend on :8000 and Vite on :5173 (see README). The run is deterministic manual
 // mode; it refuses to run when the live agent is active (it would spend model quota and change
@@ -38,16 +39,22 @@ async function waitBanner(text, timeout = 30000) {
 }
 const tab = (name) => page.click(`[role=tab]:has-text("${name}")`)
 const click = (label) => page.click(`button:has-text("${label}")`)
+// The demo drawer starts closed on every case page (it is operator tooling, not the owner flow).
+async function openDrawer() {
+  if (await page.isVisible('button:has-text("Show demo drawer")')) await click('Show demo drawer')
+}
 
 // A reset reseeds the hero case under a new ID. Wait for the workspace to move to it: the old case
 // may already read "Collecting evidence", so the banner alone does not prove the reset finished.
 async function resetDemo() {
   const before = new URL(page.url()).pathname
+  await openDrawer()
   await tab('Seed / reset')
   await page.check('text=I understand this deletes all demo data')
   await click('Reset demo data')
   await page.waitForURL((u) => u.pathname.startsWith('/cases/') && u.pathname !== before)
   await waitBanner('Collecting evidence')
+  await openDrawer()
 }
 
 try {
@@ -64,6 +71,8 @@ try {
   assert((await page.innerText('.case-header')).includes('₹18,500.00'), 'amount at risk in header')
 
   // --- Hero: missing -> wrong -> correct -> verified --------------------------------------
+  assert((await page.innerText('.case-progress')).includes('Collect proof'), 'three-stage progress')
+  await tab('Response')
   await click('Request delivery proof from staff')
   await waitBanner('Waiting for staff evidence')
   await tab('Staff inbox')
@@ -71,6 +80,7 @@ try {
   assert((await page.innerText('.msg[lang=mr]')).includes('पावती'), 'Marathi request in staff inbox')
   await click('Upload delivery receipt wrong order')
   await waitBanner('Submission blocked: contradiction found')
+  await tab('Next step')
   const compare = await page.innerText('.compare')
   assert(compare.includes('ORD-DEMO-18500') && compare.includes('ORD-DEMO-OTHER'), 'side-by-side order IDs')
   await page.click('.finding-blocking button:has-text("Open source")')
@@ -78,6 +88,7 @@ try {
   assert((await page.innerText('mark.focus')) === 'ORD-DEMO-OTHER', 'source opens at the cited span')
   await page.screenshot({ path: `${SHOTS}m4-blocked.png`, fullPage: true })
 
+  await tab('Response')
   await click('Request delivery proof from staff')
   await waitBanner('Waiting for staff evidence')
   await tab('Staff inbox')
@@ -90,6 +101,7 @@ try {
   await click('Type what I said (human transcription)')
   await page.fill('.drawer .voice-actions textarea', 'मी आधी चुकीची पावती पाठवली होती. आता योग्य पावती पाठवत आहे.')
   await page.click('.drawer .voice-actions button:has-text("Save")')
+  await tab('Proof')
   await page.waitForSelector('section[aria-labelledby=testimony-h] .voice-note >> text=Human transcription typed by Sanjay (Delivery)')
   const testimony = await page.innerText('section[aria-labelledby=testimony-h] .voice-note')
   assert(testimony.includes('Confirmed by Sanjay (Delivery)') && testimony.includes('not a delivery document'),
@@ -100,6 +112,7 @@ try {
 
   await click('Upload delivery receipt correct')
   await waitBanner('Evidence complete — ready to submit')
+  await tab('Response')
   await click('Build evidence pack')
   await page.waitForSelector('text=Pack v1')
   await tab('Fault injector')
@@ -107,9 +120,11 @@ try {
   await page.waitForSelector('text=action:drop_response_after')
   await click('Submit defense (simulator)')
   await waitBanner('Submission verified — dispute outcome pending')
+  await tab('History')
   const steps = await page.innerText('.steps')
   for (const s of ['Observed gap', 'Evidence requested', 'Staff response', 'Contradiction detected', 'Staff voice note',
     'Testimony confirmed', 'Pack built', 'Submission requested', 'Receipt verified']) assert(steps.includes(s), `key step "${s}"`)
+  await tab('Response')
   const trail = await page.innerText('#pack-h ~ table')
   assert(trail.includes('action_response:unknown → reconcile') && trail.includes('verified'), 'lost response reconciled')
   await page.screenshot({ path: `${SHOTS}m4-verified.png`, fullPage: true })

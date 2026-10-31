@@ -1,44 +1,43 @@
+import { useTranslation } from 'react-i18next'
 import { formatIst } from '../format'
+import i18n from '../i18n'
 import type { TaskReminderView } from '../types/api'
 
-const REASONS: Record<string, string> = {
-  not_due: 'not due yet',
-  task_responded: 'staff already responded',
-  staff_replied: 'staff already replied',
-  superseded: 'a newer request replaced this one',
-  round_changed: 'the request round changed',
-  deadline_passed: 'the response deadline has passed',
-}
-
-const reason = (code: string | null) => (code ? (REASONS[code] ?? code.replaceAll('_', ' ')) : 'no reason given')
+const reason = (code: string | null) =>
+  !code
+    ? i18n.t('reminder.reasons.none')
+    : i18n.exists(`reminder.reasons.${code}`)
+      ? i18n.t(`reminder.reasons.${code}`)
+      : code.replaceAll('_', ' ')
 
 /** One line per state. n8n only schedules: "sent" always means the local in-app inbox, never WhatsApp. */
 export function ReminderStatus({ reminder, onRetry }: { reminder: TaskReminderView | null; onRetry?: () => void }) {
+  const { t } = useTranslation()
   if (!reminder) return null
-  const t = reminder.trigger
+  const trig = reminder.trigger
   return (
-    <ul className="reminder-status" aria-label="Staff reminder">
-      {t?.status === 'pending' && <li>Scheduling a staff reminder…</li>}
-      {t?.status === 'delivered' && (
-        <li>Staff reminder scheduled for {t.remind_at ? formatIst(t.remind_at) : 'the next reminder time'}</li>
+    <ul className="reminder-status" aria-label={t('reminder.label')}>
+      {trig?.status === 'pending' && <li>{t('reminder.pending')}</li>}
+      {trig?.status === 'delivered' && (
+        <li>{t('reminder.scheduled', { time: trig.remind_at ? formatIst(trig.remind_at) : t('reminder.nextTime') })}</li>
       )}
-      {t?.status === 'skipped' && <li>Reminder not scheduled: {reason(t.error)}</li>}
-      {(t?.status === 'failed' || t?.status === 'paused') && (
+      {trig?.status === 'skipped' && <li>{t('reminder.notScheduled', { reason: reason(trig.error) })}</li>}
+      {(trig?.status === 'failed' || trig?.status === 'paused') && (
         <li className="warn">
-          Reminder could not be scheduled. Staff can still reply in the inbox.{' '}
+          {t('reminder.failed')}{' '}
           {onRetry && (
             <button type="button" onClick={onRetry}>
-              Try reminder again
+              {t('reminder.retry')}
             </button>
           )}
-          <details><summary>Technical details</summary>{t.label ?? 'Reminder scheduling unavailable'}: {t.error ?? 'unknown error'} ({t.attempts} attempts)</details>
+          <details><summary>{t('reminder.technical')}</summary>{trig.label ?? 'Reminder scheduling unavailable'}: {trig.error ?? 'unknown error'} ({trig.attempts} attempts)</details>
         </li>
       )}
       {reminder.reminders.map((r) => (
         <li key={r.reminder_id}>
-          {r.status === 'sent' && 'Reminder sent to the staff inbox'}
-          {r.status === 'queued' && 'Checking the reminder before sending'}
-          {r.status === 'skipped' && `Reminder skipped: ${reason(r.reason)}`}
+          {r.status === 'sent' && t('reminder.sent')}
+          {r.status === 'queued' && t('reminder.queued')}
+          {r.status === 'skipped' && t('reminder.skipped', { reason: reason(r.reason) })}
         </li>
       ))}
     </ul>

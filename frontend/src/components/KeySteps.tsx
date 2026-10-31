@@ -1,18 +1,20 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatIst } from '../format'
 import { keySteps } from '../status'
 import type { AuditEventView } from '../types/api'
 
 /** Concise case story; every step links to the stored audit event in the full log. */
 export function KeySteps({ events }: { events: AuditEventView[] }) {
+  const { t } = useTranslation()
   const [full, setFull] = useState(false)
   const steps = keySteps(events)
   return (
     <section aria-labelledby="steps-h" className="panel">
       <div className="panel-head">
-        <h2 id="steps-h">Key steps</h2>
+        <h2 id="steps-h">{t('steps.title')}</h2>
         <button type="button" className="link" aria-expanded={full} onClick={() => setFull((f) => !f)}>
-          {full ? 'Hide full audit log' : `Show full audit log (${events.length} events)`}
+          {full ? t('steps.hideLog') : t('steps.showLog', { count: events.length })}
         </button>
       </div>
       <ol className="steps">
@@ -20,7 +22,7 @@ export function KeySteps({ events }: { events: AuditEventView[] }) {
           <li key={s.seq}>
             <span className="step-label">{s.label}</span>{' '}
             <a href={`#event-${s.seq}`} onClick={() => setFull(true)} className="sub">
-              event #{s.seq}
+              {t('steps.event', { seq: s.seq })}
             </a>
             <div>{s.summary}</div>
             <div className="sub">
@@ -30,7 +32,7 @@ export function KeySteps({ events }: { events: AuditEventView[] }) {
         ))}
       </ol>
       {full && (
-        <ol className="timeline" aria-label="Full audit log">
+        <ol className="timeline" aria-label={t('steps.fullLog')}>
           {events.map((e) => (
             <li key={e.seq} id={`event-${e.seq}`}>
               <span className="sub">

@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
+import i18n from '../i18n'
 import { codePointSlice, formatIst } from '../format'
 import { factIndex, resolveSource, type SourceRef } from '../sources'
 import type { DocumentDetail, EvidenceDocumentSummary, EvidenceOverview, Fact, Finding } from '../types/api'
@@ -7,36 +9,21 @@ import type { DocumentDetail, EvidenceDocumentSummary, EvidenceOverview, Fact, F
 export type { SourceRef }
 
 
-const CHECK_LABEL: Record<string, string> = {
-  supported: 'Supported',
-  missing: 'Missing',
-  conflicting: 'Conflicting',
-  review_required: 'Needs review',
-}
-const DOC_TYPE: Record<string, string> = {
-  invoice: 'Invoice',
-  delivery_record: 'Delivery record',
-  dispatch_record: 'Dispatch record',
-  other: 'Other',
-  unknown: 'Unknown',
-}
-const METHOD: Record<string, string> = {
-  utf8_text: 'Automatic (text file)',
-  json_text: 'Automatic (JSON)',
-  pdf_text: 'Automatic (PDF text layer)',
-}
+/** Translated label for a known code, or the raw code when the locale has no entry. */
+const label = (group: string, code: string) => i18n.t(`evidence.${group}.${code}`, { defaultValue: code })
 
 function SourceLinks({ ids, evidence, onOpen }: { ids: string[]; evidence: EvidenceOverview; onOpen: (s: SourceRef) => void }) {
   const all = ids.map((id) => resolveSource(id, evidence)).filter((r): r is SourceRef & { label: string } => r !== null)
   // Prefer exact citations: drop a bare document link when a cited fact in that document exists.
   const refs = all.filter((r) => r.factId || !all.some((o) => o.factId && o.docId === r.docId))
+  const { t } = useTranslation()
   if (refs.length === 0) return null
   return (
     <ul className="source-links">
       {refs.map((r, i) => (
         <li key={`${r.docId}-${r.factId ?? i}`}>
           <button type="button" className="link" onClick={() => onOpen(r)}>
-            Open source: {r.label}
+            {t('evidence.openSource', { label: r.label })}
           </button>
         </li>
       ))}
@@ -45,18 +32,19 @@ function SourceLinks({ ids, evidence, onOpen }: { ids: string[]; evidence: Evide
 }
 
 export function ChecklistPanel({ evidence, onOpen }: { evidence: EvidenceOverview; onOpen: (s: SourceRef) => void }) {
+  const { t } = useTranslation()
   return (
     <section aria-labelledby="checklist-h" className="panel">
-      <h2 id="checklist-h">Evidence checklist</h2>
-      <p className="sub">Demo policy for goods-not-received disputes, not a bank guarantee.</p>
+      <h2 id="checklist-h">{t('evidence.checklistTitle')}</h2>
+      <p className="sub">{t('evidence.checklistNote')}</p>
       <ul className="checklist">
         {evidence.checklist.map((c) => (
           <li key={c.requirement_id} className={`check check-${c.status}`}>
-            <span className="check-status">{CHECK_LABEL[c.status]}</span>
+            <span className="check-status">{label('check', c.status)}</span>
             <div>
-              <strong>{c.label}</strong>
+              <strong>{t(`checklist.${c.requirement_id}`, { defaultValue: c.label })}</strong>
               <div className="sub">{c.explanation}</div>
-              {c.assignee && <div className="sub">Assignee: {c.assignee}</div>}
+              {c.assignee && <div className="sub">{t('evidence.assignee', { name: c.assignee })}</div>}
               <SourceLinks ids={c.source_ids.slice(0, 3)} evidence={evidence} onOpen={onOpen} />
             </div>
           </li>
@@ -68,6 +56,7 @@ export function ChecklistPanel({ evidence, onOpen }: { evidence: EvidenceOvervie
 
 /** Side-by-side values for a contradiction: what the dispute says vs what the cited document says. */
 export function CompareView({ finding, evidence }: { finding: Finding; evidence: EvidenceOverview }) {
+  const { t } = useTranslation()
   const facts = factIndex(evidence)
   const cited = finding.source_ids.map((id) => facts.get(id)).filter((f): f is Fact & { filename: string } => !!f)
   const d = finding.details
@@ -78,7 +67,7 @@ export function CompareView({ finding, evidence }: { finding: Finding; evidence:
   return (
     <div className="compare" role="group" aria-label={`${finding.rule_id} comparison`}>
       <div>
-        <div className="compare-head">Dispute record</div>
+        <div className="compare-head">{t('evidence.disputeRecord')}</div>
         {caseSide.map(([k, v]) => (
           <div key={k}>
             <span className="sub">{k.replaceAll('_', ' ')}</span> <code>{show(v)}</code>
@@ -87,7 +76,7 @@ export function CompareView({ finding, evidence }: { finding: Finding; evidence:
         {caseSide.length === 0 && <div className="sub">—</div>}
       </div>
       <div>
-        <div className="compare-head">Cited document</div>
+        <div className="compare-head">{t('evidence.citedDocument')}</div>
         {docSide
           .filter(([k]) => k !== 'document_id')
           .map(([k, v]) => (
@@ -115,13 +104,14 @@ export function CompareView({ finding, evidence }: { finding: Finding; evidence:
 }
 
 export function FindingsPanel({ evidence, onOpen }: { evidence: EvidenceOverview; onOpen: (s: SourceRef) => void }) {
+  const { t } = useTranslation()
   const open = evidence.findings.filter((f) => f.status === 'open')
   const resolved = evidence.findings.filter((f) => f.status === 'resolved')
   const render = (f: Finding) => (
     <li key={f.id} className={`finding finding-${f.severity} finding-${f.status}`}>
       <div>
-        <span className="tag">{f.severity}</span> <code>{f.rule_id}</code>{' '}
-        {f.status === 'resolved' && <span className="tag">resolved</span>}
+        <span className="tag">{label('severity', f.severity)}</span> <code>{f.rule_id}</code>{' '}
+        {f.status === 'resolved' && <span className="tag">{t('evidence.resolvedTag')}</span>}
       </div>
       <p>{f.explanation}</p>
       {f.status === 'open' && <CompareView finding={f} evidence={evidence} />}
@@ -130,11 +120,11 @@ export function FindingsPanel({ evidence, onOpen }: { evidence: EvidenceOverview
   )
   return (
     <section aria-labelledby="findings-h" className="panel">
-      <h2 id="findings-h">Validation findings</h2>
-      {open.length === 0 ? <p className="sub">No open findings.</p> : <ul className="findings">{open.map(render)}</ul>}
+      <h2 id="findings-h">{t('evidence.findingsTitle')}</h2>
+      {open.length === 0 ? <p className="sub">{t('evidence.noFindings')}</p> : <ul className="findings">{open.map(render)}</ul>}
       {resolved.length > 0 && (
         <details>
-          <summary>Resolved ({resolved.length})</summary>
+          <summary>{t('evidence.resolvedCount', { count: resolved.length })}</summary>
           <ul className="findings">{resolved.map(render)}</ul>
         </details>
       )}
@@ -157,25 +147,26 @@ export function EvidencePanel({
   onOpen: (s: SourceRef) => void
   onChanged: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const upload = async (file: File) => {
     setBusy(true)
     try {
       const res = await api.upload(token, caseId, file, file.name)
-      setMessage(res.created ? `Uploaded ${file.name}.` : `${file.name} was already uploaded.`)
+      setMessage(res.created ? t('evidence.uploadedFile', { file: file.name }) : t('evidence.alreadyUploaded', { file: file.name }))
       await onChanged()
     } catch (err) {
-      setMessage(`Upload rejected: ${(err as Error).message}`)
+      setMessage(t('evidence.rejected', { error: (err as Error).message }))
     } finally {
       setBusy(false)
     }
   }
   return (
     <section aria-labelledby="evidence-h" className="panel">
-      <h2 id="evidence-h">Evidence</h2>
+      <h2 id="evidence-h">{t('evidence.title')}</h2>
       <label className="upload">
-        Upload evidence (TXT, JSON, PDF; images need OCR)
+        {t('evidence.upload')}
         <input
           type="file"
           accept=".txt,.json,.pdf,.png,.jpg,.jpeg"
@@ -196,11 +187,11 @@ export function EvidencePanel({
         <table className="cases">
           <thead>
             <tr>
-              <th scope="col">Document</th>
-              <th scope="col">Type</th>
-              <th scope="col">Extraction</th>
-              <th scope="col">Status</th>
-              <th scope="col">Uploaded</th>
+              <th scope="col">{t('evidence.colDocument')}</th>
+              <th scope="col">{t('evidence.colType')}</th>
+              <th scope="col">{t('evidence.colExtraction')}</th>
+              <th scope="col">{t('evidence.colStatus')}</th>
+              <th scope="col">{t('evidence.colUploaded')}</th>
             </tr>
           </thead>
           <tbody>
@@ -212,17 +203,17 @@ export function EvidencePanel({
                   </button>
                   <div className="sub mono">sha256 {d.sha256.slice(0, 12)}…</div>
                 </td>
-                <td>{DOC_TYPE[d.doc_type] ?? d.doc_type}</td>
+                <td>{label('docType', d.doc_type)}</td>
                 <td>
                   {d.extraction_status === 'extracted'
-                    ? (METHOD[d.extraction_method ?? ''] ?? d.extraction_method)
+                    ? label('method', d.extraction_method ?? '')
                     : d.extraction_status === 'ocr_required'
-                      ? 'OCR required (not run)'
-                      : `Failed: ${d.extraction_error}`}
+                      ? t('evidence.ocrRequired')
+                      : t('evidence.extractFailed', { error: d.extraction_error })}
                 </td>
-                <td>{d.active ? 'Active' : <span className="warn">Excluded — {d.exclusion_reason}</span>}</td>
+                <td>{d.active ? t('evidence.active') : <span className="warn">{t('evidence.excluded', { reason: d.exclusion_reason })}</span>}</td>
                 <td className="sub">
-                  {d.uploaded_by ?? 'System seed'}
+                  {d.uploaded_by ?? t('evidence.systemSeed')}
                   <div>{formatIst(d.created_at)}</div>
                 </td>
               </tr>
@@ -276,6 +267,7 @@ export function HighlightedPage({ text, spans, focusId }: { text: string; spans:
 }
 
 function OriginalPreview({ token, doc }: { token: string; doc: DocumentDetail }) {
+  const { t } = useTranslation()
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => () => void (url && URL.revokeObjectURL(url)), [url])
   if (!url)
@@ -284,7 +276,7 @@ function OriginalPreview({ token, doc }: { token: string; doc: DocumentDetail })
         type="button"
         onClick={async () => setUrl(URL.createObjectURL(await api.evidenceContent(token, doc.id)))}
       >
-        Show original file ({doc.mime_type})
+        {t('evidence.showOriginal', { type: doc.mime_type })}
       </button>
     )
   if (doc.mime_type === 'application/pdf')
@@ -292,22 +284,23 @@ function OriginalPreview({ token, doc }: { token: string; doc: DocumentDetail })
   if (doc.mime_type.startsWith('image/')) return <img className="original" alt={`Original: ${doc.original_filename}`} src={url} />
   return (
     <a href={url} download={doc.original_filename}>
-      Download original
+      {t('evidence.downloadOriginal')}
     </a>
   )
 }
 
 export function SourceViewer({ token, source }: { token: string; source: SourceRef }) {
+  const { t } = useTranslation()
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
   useEffect(() => {
     api.document(token, source.docId).then(setDoc).catch(() => setDoc(null))
   }, [token, source.docId])
-  if (!doc || doc.id !== source.docId) return <p aria-live="polite">Loading source…</p>
+  if (!doc || doc.id !== source.docId) return <p aria-live="polite">{t('evidence.loadingSource')}</p>
   const focusFact = doc.facts.find((f) => f.id === source.factId)
   return (
     <div className="source-viewer" aria-label={`Source: ${doc.original_filename}`}>
       <h3>
-        Source: {doc.original_filename} {!doc.active && <span className="tag">excluded</span>}
+        {t('evidence.source', { file: doc.original_filename })} {!doc.active && <span className="tag">{t('evidence.excludedTag')}</span>}
       </h3>
       {focusFact && (
         <p className="sub" role="status">
@@ -318,7 +311,7 @@ export function SourceViewer({ token, source }: { token: string; source: SourceR
       <div className="source-grid">
         <div>
           {doc.pages.length === 0 ? (
-            <p className="sub">No extractable text ({doc.extraction_error}). The original file is preserved.</p>
+            <p className="sub">{t('evidence.noText', { error: doc.extraction_error })}</p>
           ) : (
             doc.pages.map((p) => (
               <div key={p.page}>
@@ -343,7 +336,7 @@ export function SourceViewer({ token, source }: { token: string; source: SourceR
       </div>
       {doc.facts.length > 0 && (
         <details>
-          <summary>Extracted facts ({doc.facts.length})</summary>
+          <summary>{t('evidence.facts', { count: doc.facts.length })}</summary>
           <table className="cases">
             <thead>
               <tr>

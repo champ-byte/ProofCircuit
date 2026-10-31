@@ -1,29 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import { formatIst } from '../format'
 import type { AuditEventView, DemoSession, PackView, RunView, SubmissionView } from '../types/api'
 
-const ACTIONS: { tool: string; label: string; args?: Record<string, unknown> }[] = [
-  { tool: 'request_evidence', label: 'Request delivery proof from staff', args: { requirement_id: 'delivery_record' } },
-  { tool: 'validate_evidence', label: 'Re-run validation' },
-  { tool: 'build_evidence_pack', label: 'Build evidence pack' },
-  { tool: 'submit_defense', label: 'Submit defense (simulator)' },
-  { tool: 'get_submission_status', label: 'Check status / retry reconciliation' },
-  {
-    tool: 'request_human_review',
-    label: 'Request human review',
-    args: { reason: 'owner_request', question: 'The owner asked a reviewer to look at this case.' },
-  },
+const ACTIONS: { tool: string; args?: Record<string, unknown> }[] = [
+  { tool: 'request_evidence', args: { requirement_id: 'delivery_record' } },
+  { tool: 'validate_evidence' },
+  { tool: 'build_evidence_pack' },
+  { tool: 'submit_defense' },
+  { tool: 'get_submission_status' },
+  { tool: 'request_human_review', args: { reason: 'owner_request', question: 'The owner asked a reviewer to look at this case.' } },
 ]
-
-const TOOL_EXPLANATIONS: Record<string, string> = {
-  request_evidence: 'Asked a staff member for the missing document.',
-  validate_evidence: 'Checked the available records for gaps and contradictions.',
-  build_evidence_pack: 'Prepared a response pack linked to its source documents.',
-  submit_defense: 'Sent the approved response to the provider simulator.',
-  get_submission_status: 'Checked whether the provider received the response.',
-  request_human_review: 'Paused for a person to review the case.',
-}
+const KNOWN_TOOLS = new Set(ACTIONS.map((a) => a.tool))
 
 /** Manual operation through the same tools and policy gate the agent will use (M3). */
 export function ActionsPanel({
@@ -41,8 +30,10 @@ export function ActionsPanel({
   onChanged: () => Promise<void>
   events: AuditEventView[]
 }) {
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [runs, setRuns] = useState<RunView[]>([])
+  const toolLabel = (tool: string) => (KNOWN_TOOLS.has(tool) ? t(`panels.action.${tool}`) : tool)
   const canAct = session.user.role === 'owner' || session.user.role === 'operator'
 
   useEffect(() => {
@@ -65,43 +56,42 @@ export function ActionsPanel({
 
   return (
     <section aria-labelledby="actions-h" className="panel">
-      <h2 id="actions-h">Case assistant and actions</h2>
-      <p className="sub">
-        See what the assistant tried and why. You can also choose an action yourself; the case checks whether it is safe to proceed.
-      </p>
+      <h2 id="actions-h">{t('panels.actionsTitle')}</h2>
+      <p className="sub">{t('panels.actionsIntro')}</p>
       {paused && agentRuns[0]?.id === paused.id && (
         <div className="banner banner-warn" role="status">
-          Reasoner unavailable: {paused.error}. Manual operation still works.
+          {t('panels.reasonerUnavailable', { error: paused.error })}
         </div>
       )}
       {canAct ? (
         <div className="assistant-actions">
-          <button type="button" disabled={busy} onClick={() => run(() => api.startRun(token, caseId))}>Check case with assistant</button>
-          <details className="advanced-actions"><summary>More case actions</summary><div className="fixture-buttons">
-            {ACTIONS.map((a) => <button key={a.tool} type="button" disabled={busy} onClick={() => run(() => api.action(token, caseId, a.tool, a.args))}>{a.label}</button>)}
-          </div></details>
+          <button type="button" disabled={busy} onClick={() => run(() => api.startRun(token, caseId))}>{t('panels.checkWithAssistant')}</button>
+          <h3 id="do-it-yourself">{t('panels.doItYourself')}</h3>
+          <div className="fixture-buttons">
+            {ACTIONS.map((a) => <button key={a.tool} type="button" disabled={busy} onClick={() => run(() => api.action(token, caseId, a.tool, a.args))}>{toolLabel(a.tool)}</button>)}
+          </div>
         </div>
       ) : (
-        <p className="sub">Switch to the owner or operator identity to run actions.</p>
+        <p className="sub">{t('panels.switchRole')}</p>
       )}
       {agentRuns.length > 0 && (
         <div className="agent-runs">
-          <h3>What the case assistant did</h3>
-          <p className="sub">Each entry is a recorded run. A denied step means the safety checks stopped that action.</p>
+          <h3>{t('panels.runsTitle')}</h3>
+          <p className="sub">{t('panels.runsIntro')}</p>
           <ol className="timeline">
             {agentRuns.map((r) => (
               <li key={r.id}>
-                <span className="tag">{r.mode === 'fixture_replay' ? 'Fixture replay (not AI)' : 'Live model'}</span>{' '}
+                <span className="tag">{r.mode === 'fixture_replay' ? t('panels.fixtureReplay') : t('panels.liveModel')}</span>{' '}
                 {r.provider}
                 {r.model ? ` — ${r.model}` : ''} · {r.status.replaceAll('_', ' ')} · {formatIst(r.started_at)}
                 <ul>
                   {r.tool_calls.map((c) => (
                     <li key={c.step} className={`tool-${c.status}`}>
                       <strong>
-                        {c.step}. {ACTIONS.find((action) => action.tool === c.tool)?.label ?? c.tool}
+                        {c.step}. {toolLabel(c.tool)}
                       </strong>{' '}
                       → {c.status}
-                      <div className="sub">{TOOL_EXPLANATIONS[c.tool] ?? 'This action was recorded on the case.'}</div>
+                      <div className="sub">{KNOWN_TOOLS.has(c.tool) ? t(`panels.explain.${c.tool}`) : t('panels.explainDefault')}</div>
                       {c.rationale && <div className="sub">“{c.rationale}”</div>}
                     </li>
                   ))}
@@ -111,13 +101,13 @@ export function ActionsPanel({
           </ol>
         </div>
       )}
-      {agentRuns.length === 0 && <p className="sub">{events.some((event) => event.event_type === 'agent.run_started') ? 'A run was recorded in the case timeline. Its detailed tool log is not available in this view yet.' : 'No assistant run has been recorded yet. Start one above, or use a case action directly.'}</p>}
+      {agentRuns.length === 0 && <p className="sub">{events.some((event) => event.event_type === 'agent.run_started') ? t('panels.runNoLog') : t('panels.noRuns')}</p>}
       {last && (
         <div className={`tool-result tool-${last.status}`} role="status">
           <strong>
             {last.tool} → {last.status}
           </strong>
-          <details><summary>Technical response details</summary><pre>{JSON.stringify(last.result, null, 2)}</pre></details>
+          <details><summary>{t('panels.technical')}</summary><pre>{JSON.stringify(last.result, null, 2)}</pre></details>
         </div>
       )}
     </section>
@@ -125,6 +115,7 @@ export function ActionsPanel({
 }
 
 export function PackPanel({ caseId, token, version }: { caseId: string; token: string; version: number }) {
+  const { t } = useTranslation()
   const [packs, setPacks] = useState<PackView[]>([])
   const [subs, setSubs] = useState<SubmissionView[]>([])
   useEffect(() => {
@@ -145,15 +136,14 @@ export function PackPanel({ caseId, token, version }: { caseId: string; token: s
 
   return (
     <section aria-labelledby="pack-h" className="panel">
-      <h2 id="pack-h">Evidence pack and submission</h2>
+      <h2 id="pack-h">{t('panels.packTitle')}</h2>
       {verified && (
         <div className="banner banner-ok" role="status">
-          <strong>Submission verified — dispute outcome pending.</strong> Receipt {verified.provider_reference} matches pack v
-          {verified.pack_version} (independent simulator receipt plus status read).
+          <strong>{t('panels.verified')}</strong> {t('panels.verifiedDetail', { receipt: verified.provider_reference, version: verified.pack_version })}
         </div>
       )}
       {packs.length === 0 ? (
-        <p className="sub">No pack built yet.</p>
+        <p className="sub">{t('panels.noPack')}</p>
       ) : (
         packs
           .slice()
@@ -161,27 +151,27 @@ export function PackPanel({ caseId, token, version }: { caseId: string; token: s
           .map((p) => (
             <div key={p.id} className="pack">
               <div>
-                <strong>Pack v{p.version}</strong> {p.is_latest && <span className="tag">latest</span>}{' '}
-                {p.stale && <span className="tag">stale — case changed</span>}
+                <strong>{t('panels.pack', { version: p.version })}</strong> {p.is_latest && <span className="tag">{t('panels.latest')}</span>}{' '}
+                {p.stale && <span className="tag">{t('panels.stale')}</span>}
               </div>
               <div className="sub">
                 orderStatus <code>{p.order_status}</code> · case version {p.case_version} · hash{' '}
                 <code>{p.pack_hash.slice(0, 16)}…</code>
               </div>
               <p>
-                <span className="sub">comments:</span> {p.comments}
+                <span className="sub">{t('panels.comments')}</span> {p.comments}
               </p>
               <ol className="sub">
                 {p.upload_files.map((f) => (
                   <li key={f.position}>
-                    File {f.position}: {f.name} ({f.role})
+                    {t('panels.file', { position: f.position, name: f.name, role: f.role })}
                   </li>
                 ))}
               </ol>
               <div className="fixture-buttons">
                 {['manifest.json', 'evidence-index.html', 'cover.pdf'].map((n) => (
                   <button key={n} type="button" onClick={() => download(p.version, n)}>
-                    Download {n}
+                    {t('panels.download', { name: n })}
                   </button>
                 ))}
               </div>
@@ -190,15 +180,15 @@ export function PackPanel({ caseId, token, version }: { caseId: string; token: s
       )}
       {subs.length > 0 && (
         <table className="cases">
-          <caption>Submissions (simulator only)</caption>
+          <caption>{t('panels.subsCaption')}</caption>
           <thead>
             <tr>
-              <th scope="col">Action</th>
-              <th scope="col">Pack</th>
-              <th scope="col">State</th>
-              <th scope="col">Attempts</th>
-              <th scope="col">Receipt</th>
-              <th scope="col">Reconciliation trail</th>
+              <th scope="col">{t('panels.colAction')}</th>
+              <th scope="col">{t('panels.colPack')}</th>
+              <th scope="col">{t('panels.colState')}</th>
+              <th scope="col">{t('panels.colAttempts')}</th>
+              <th scope="col">{t('panels.colReceipt')}</th>
+              <th scope="col">{t('panels.colTrail')}</th>
             </tr>
           </thead>
           <tbody>

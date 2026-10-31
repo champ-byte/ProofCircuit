@@ -1,10 +1,8 @@
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
-import { ReminderStatus } from './Reminder'
-import { StaffVoiceNotes } from './Testimony'
-import { formatIst } from '../format'
+import { StaffInbox } from './StaffInbox'
 import { useSession } from '../session'
-import type { DemoSession, FixtureInfo, InboxView, ProviderReport, SimulatorState } from '../types/api'
+import type { DemoSession, ProviderReport, SimulatorState } from '../types/api'
 
 export type TabId = 'inbox' | 'faults' | 'identity' | 'data' | 'providers' | 'resume'
 const TABS: { id: TabId; label: string }[] = [
@@ -203,114 +201,6 @@ export function DemoDrawer({
 }
 
 type Runner = (fn: () => Promise<unknown>, ok: string) => Promise<void>
-
-function StaffInbox({
-  caseId,
-  staff,
-  staffHandle,
-  setStaffHandle,
-  version,
-  run,
-  operator,
-}: {
-  caseId: string
-  staff: DemoSession
-  staffHandle: string
-  setStaffHandle: (h: string) => void
-  version: number
-  run: Runner
-  operator: DemoSession | null
-}) {
-  const [inbox, setInbox] = useState<InboxView | null>(null)
-  const [fixtures, setFixtures] = useState<FixtureInfo[]>([])
-  const [text, setText] = useState('')
-  useEffect(() => {
-    api.inbox(staff.token, caseId).then(setInbox).catch(() => setInbox(null))
-    api.fixtures(staff.token, caseId).then(setFixtures).catch(() => setFixtures([]))
-  }, [staff.token, caseId, version])
-  const mine = (inbox?.messages ?? []).filter((m) => m.to === staff.user.display_name || m.from === staff.user.display_name)
-  return (
-    <div>
-      <label className="field">
-        Acting as staff member
-        <select value={staffHandle} onChange={(e) => setStaffHandle(e.target.value)}>
-          <option value="staff-delivery">Sanjay (Delivery, mr-IN)</option>
-          <option value="staff-billing">Meera (Billing, hi-IN)</option>
-        </select>
-      </label>
-      <ul className="timeline">
-        {(inbox?.tasks ?? [])
-          .filter((t) => t.kind === 'evidence' && t.assignee === staff.user.display_name)
-          .map((t) => (
-            <li key={t.id}>
-              Task: {t.requirement_id.replaceAll('_', ' ')} · round {t.round} · <strong>{t.status}</strong>
-              <ReminderStatus
-                reminder={t.reminder}
-                onRetry={
-                  operator && t.reminder?.trigger
-                    ? () =>
-                        void run(
-                          () => api.retryReminderTrigger(operator.token, caseId, t.reminder!.trigger!.id),
-                          'Reminder scheduling retried with the same trigger identity.',
-                        )
-                    : undefined
-                }
-              />
-            </li>
-          ))}
-      </ul>
-      <ul className="messages" aria-label={`Messages for ${staff.user.display_name}`}>
-        {mine.length === 0 && <li className="sub">No messages for {staff.user.display_name} yet.</li>}
-        {mine.map((m) => (
-          <li key={m.id} className={`msg msg-${m.direction}`} lang={m.locale.split('-')[0]}>
-            <div className="sub">
-              {m.direction === 'outbound' ? 'From ProofSaathi' : `From ${m.from}`} · {formatIst(m.created_at)} ·{' '}
-              {m.delivery_state.replaceAll('_', ' ')}
-            </div>
-            {m.body}
-          </li>
-        ))}
-      </ul>
-      <form
-        className="reply"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (!text.trim()) return
-          void run(async () => {
-            await api.reply(staff.token, caseId, text.trim())
-            setText('')
-          }, 'Reply sent; the case resumes.')
-        }}
-      >
-        <label>
-          Reply as {staff.user.display_name}
-          <input value={text} onChange={(e) => setText(e.target.value)} />
-        </label>
-        <button type="submit">Send</button>
-      </form>
-      <div className="fixture-buttons">
-        <span className="sub">Upload a synthetic document as {staff.user.display_name}:</span>
-        {fixtures
-          .filter((f) => f.name !== 'invoice')
-          .map((f) => (
-            <button
-              key={f.name}
-              type="button"
-              onClick={() =>
-                run(async () => {
-                  const blob = await api.fixtureFile(staff.token, caseId, f.name)
-                  await api.upload(staff.token, caseId, blob, f.filename)
-                }, `Uploaded ${f.filename} as ${staff.user.display_name}.`)
-              }
-            >
-              Upload {f.name.replaceAll('_', ' ')}
-            </button>
-          ))}
-      </div>
-      <StaffVoiceNotes caseId={caseId} staff={staff} version={version} run={run} />
-    </div>
-  )
-}
 
 function FaultInjector({
   disputeId,

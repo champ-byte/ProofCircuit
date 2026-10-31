@@ -1,3 +1,4 @@
+import i18n from './i18n'
 import type { TranscriptView } from './types/api'
 
 export function formatMs(ms: number): string {
@@ -9,13 +10,15 @@ export function formatMs(ms: number): string {
 
 /** How the text was produced; human-written text is never presented as speech-to-text. */
 export function methodLabel(t: TranscriptView): string {
-  if (t.method === 'stt') return `Speech-to-text (${t.provider ?? 'unknown'} · ${t.model ?? 'unknown model'})`
-  if (t.method === 'staff_correction') return `Corrected by ${t.author ?? 'staff'} (not speech-to-text)`
-  return `Human transcription typed by ${t.author ?? 'staff'} (not speech-to-text)`
+  const author = t.author ?? i18n.t('testimony.staffFallback')
+  if (t.method === 'stt')
+    return i18n.t('testimony.method.stt', { provider: t.provider ?? i18n.t('testimony.unknown'), model: t.model ?? i18n.t('testimony.unknownModel') })
+  if (t.method === 'staff_correction') return i18n.t('testimony.method.staff_correction', { author })
+  return i18n.t('testimony.method.human', { author })
 }
 
 export function confirmationLabel(t: TranscriptView, speaker: string): string {
-  if (t.confirmation_state === 'confirmed') return `Confirmed by ${t.confirmed_by ?? speaker}`
-  if (t.confirmation_state === 'superseded') return 'Superseded by a later version'
-  return `Unconfirmed — waiting for ${speaker} to check it`
+  if (t.confirmation_state === 'confirmed') return i18n.t('testimony.confirmation.confirmed', { name: t.confirmed_by ?? speaker })
+  if (t.confirmation_state === 'superseded') return i18n.t('testimony.confirmation.superseded')
+  return i18n.t('testimony.confirmation.unconfirmed', { name: speaker })
 }

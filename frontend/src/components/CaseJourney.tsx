@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import { formatIst } from '../format'
 import type { AuditEventView, CaseDetail, DemoSession, EvidenceOverview } from '../types/api'
@@ -22,6 +23,7 @@ export function CaseJourney({
   onChanged: () => Promise<void>
   openDemo: (tab: DemoTab) => void
 }) {
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const canAct = session.user.role === 'owner' || session.user.role === 'operator'
@@ -37,10 +39,10 @@ export function CaseJourney({
     try {
       const result = await action.run()
       const runId = result && typeof result === 'object' && 'run_id' in result ? String(result.run_id) : null
-      setMessage(`${action.label} requested${runId ? ` · run ${runId}` : ''}. The case will refresh from recorded events.`)
+      setMessage(runId ? t('journey.requestedRun', { action: action.label, run: runId }) : t('journey.requested', { action: action.label }))
       await onChanged()
     } catch (error) {
-      setMessage(`${action.label} was not completed: ${(error as Error).message}`)
+      setMessage(t('journey.failed', { action: action.label, error: (error as Error).message }))
     } finally {
       setBusy(false)
     }
@@ -56,56 +58,56 @@ export function CaseJourney({
     demo?: { label: string; tab: DemoTab }
   }[] = [
     {
-      number: '01', title: 'Check the case',
-      description: 'Ask the case assistant to check the record and suggest the next safe action. You can also use the controls below yourself.',
+      number: '01', title: t('journey.s1Title'),
+      description: t('journey.s1Text'),
       types: ['agent.run_started'],
-      actions: [{ label: 'Check case with assistant', run: () => api.startRun(token, caseId), disabled: !canAct || closed }],
-      links: [{ label: 'See agent runs', href: '#actions-h' }],
-      demo: { label: 'View assistant setup', tab: 'providers' },
+      actions: [{ label: t('journey.s1Action'), run: () => api.startRun(token, caseId), disabled: !canAct || closed }],
+      links: [{ label: t('journey.s1Link'), href: '#actions-h' }],
+      demo: { label: t('journey.s1Demo'), tab: 'providers' },
     },
     {
-      number: '02', title: 'Collect missing evidence',
-      description: missing ? `The checklist still needs ${missing.label.toLowerCase()}.` : 'Inspect the checklist and ask staff for a document when a required item is missing.',
+      number: '02', title: t('journey.s2Title'),
+      description: missing ? t('journey.s2TextMissing', { what: t(`checklist.${missing.requirement_id}`, { defaultValue: missing.label }).toLowerCase() }) : t('journey.s2Text'),
       types: ['evidence.requested', 'staff.replied'],
-      actions: [{ label: 'Request missing proof', run: () => api.action(token, caseId, 'request_evidence', { requirement_id: missing?.requirement_id ?? 'delivery_record' }), disabled: !canAct || closed || !missing, hint: !missing ? 'No missing checklist item' : undefined }],
-      links: [{ label: 'Upload / inspect evidence', href: '#evidence-h' }, { label: 'View checklist', href: '#checklist-h' }],
-      demo: { label: 'Open staff inbox', tab: 'inbox' },
+      actions: [{ label: t('journey.s2Action'), run: () => api.action(token, caseId, 'request_evidence', { requirement_id: missing?.requirement_id ?? 'delivery_record' }), disabled: !canAct || closed || !missing, hint: !missing ? t('journey.s2Hint') : undefined }],
+      links: [{ label: t('journey.s2Link1'), href: '#evidence-h' }, { label: t('journey.s2Link2'), href: '#checklist-h' }],
+      demo: { label: t('journey.s2Demo'), tab: 'inbox' },
     },
     {
-      number: '03', title: 'Validate and resolve mismatches',
-      description: evidence.assessment.blocking_contradiction ? 'A blocking contradiction needs corrected proof or a reviewer decision.' : 'Check the order, invoice, and delivery record against each other.',
+      number: '03', title: t('journey.s3Title'),
+      description: evidence.assessment.blocking_contradiction ? t('journey.s3TextBlocked') : t('journey.s3Text'),
       types: ['validation.finding_opened', 'evidence.superseded'],
-      actions: [{ label: 'Re-run validation', run: () => api.action(token, caseId, 'validate_evidence'), disabled: !canAct || closed }],
-      links: [{ label: 'View findings', href: '#findings-h' }, { label: 'Compare sources', href: '#evidence-h' }],
+      actions: [{ label: t('journey.s3Action'), run: () => api.action(token, caseId, 'validate_evidence'), disabled: !canAct || closed }],
+      links: [{ label: t('journey.s3Link1'), href: '#findings-h' }, { label: t('journey.s3Link2'), href: '#evidence-h' }],
     },
     {
-      number: '04', title: 'Ask for human review',
-      description: 'Ask a person to decide when documents disagree or the next step is uncertain.',
+      number: '04', title: t('journey.s4Title'),
+      description: t('journey.s4Text'),
       types: ['review.requested'],
-      actions: [{ label: 'Request review', run: () => api.action(token, caseId, 'request_human_review', { reason: 'owner_request', question: 'Please review the evidence and decide the next safe step.' }), disabled: !canAct || closed }],
-      links: [{ label: session.user.role === 'reviewer' ? 'Reviewer decisions' : 'Switch to reviewer above', href: session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity' }, { label: 'View findings', href: '#findings-h' }],
+      actions: [{ label: t('journey.s4Action'), run: () => api.action(token, caseId, 'request_human_review', { reason: 'owner_request', question: 'Please review the evidence and decide the next safe step.' }), disabled: !canAct || closed }],
+      links: [{ label: session.user.role === 'reviewer' ? t('journey.s4LinkReviewer') : t('journey.s4LinkSwitch'), href: session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity' }, { label: t('journey.s3Link1'), href: '#findings-h' }],
     },
     {
-      number: '05', title: 'Build a source-linked pack',
-      description: 'Freeze the validated documents and citations into a versioned evidence pack.',
+      number: '05', title: t('journey.s5Title'),
+      description: t('journey.s5Text'),
       types: ['pack.built'],
-      actions: [{ label: 'Build evidence pack', run: () => api.action(token, caseId, 'build_evidence_pack'), disabled: !canAct || closed || !packReady, hint: !packReady ? 'Complete the evidence checks first' : undefined }],
-      links: [{ label: 'Inspect pack', href: '#pack-h' }],
+      actions: [{ label: t('journey.s5Action'), run: () => api.action(token, caseId, 'build_evidence_pack'), disabled: !canAct || closed || !packReady, hint: !packReady ? t('journey.s5Hint') : undefined }],
+      links: [{ label: t('journey.s5Link'), href: '#pack-h' }],
     },
     {
-      number: '06', title: 'Submit the defense',
-      description: 'Send the reviewed response. The app checks the pack, your role, and the deadline first.',
+      number: '06', title: t('journey.s6Title'),
+      description: t('journey.s6Text'),
       types: ['submission.requested'],
-      actions: [{ label: 'Submit defense', run: () => api.action(token, caseId, 'submit_defense'), disabled: !canAct || closed || !packReady || !hasPack, hint: !packReady ? 'Complete evidence checks first' : !hasPack ? 'Build an evidence pack first' : undefined }],
-      links: [{ label: 'See submission', href: '#pack-h' }],
+      actions: [{ label: t('journey.s6Action'), run: () => api.action(token, caseId, 'submit_defense'), disabled: !canAct || closed || !packReady || !hasPack, hint: !packReady ? t('journey.s6HintChecks') : !hasPack ? t('journey.s6HintPack') : undefined }],
+      links: [{ label: t('journey.s6Link'), href: '#pack-h' }],
     },
     {
-      number: '07', title: 'Verify the receipt and outcome',
-      description: 'Check that the response arrived. The final dispute decision may come later.',
+      number: '07', title: t('journey.s7Title'),
+      description: t('journey.s7Text'),
       types: ['submission.verified'],
-      actions: [{ label: 'Check provider status', run: () => api.action(token, caseId, 'get_submission_status'), disabled: !canAct || (!hasSubmitted && !closed), hint: !hasSubmitted && !closed ? 'Submit a response first' : undefined }],
-      links: [{ label: 'View audit timeline', href: '#steps-h' }, { label: 'See receipt', href: '#pack-h' }],
-      demo: { label: 'Simulate outcome', tab: 'faults' },
+      actions: [{ label: t('journey.s7Action'), run: () => api.action(token, caseId, 'get_submission_status'), disabled: !canAct || (!hasSubmitted && !closed), hint: !hasSubmitted && !closed ? t('journey.s7Hint') : undefined }],
+      links: [{ label: t('journey.s7Link1'), href: '#steps-h' }, { label: t('journey.s7Link2'), href: '#pack-h' }],
+      demo: { label: t('journey.s7Demo'), tab: 'faults' },
     },
   ]
 
@@ -114,12 +116,12 @@ export function CaseJourney({
   return (
     <section className="journey-panel" aria-labelledby="journey-title">
       <div className="journey-heading">
-        <div><p className="eyebrow">Your case, step by step</p><h2 id="journey-title">What happens next?</h2><p>These steps follow recorded case activity. Open any step to see its source and available action.</p></div>
-        <span className="journey-mode">{session.user.role} view</span>
+        <div><p className="eyebrow">{t('journey.eyebrow')}</p><h2 id="journey-title">{t('journey.title')}</h2><p>{t('journey.intro')}</p></div>
+        <span className="journey-mode">{t('journey.roleView', { role: t(`roles.${session.user.role}`, { defaultValue: session.user.role }) })}</span>
       </div>
-      {!canAct && <p className="journey-role-note">Agent and manual tool buttons require the owner or operator identity. Use the demo identity selector above to switch roles.</p>}
-      <nav className="journey-map" aria-label="Case process map">
-        <p>{recordedSteps} of {steps.length} stages have related activity. Human review may be skipped when it is not needed.</p>
+      {!canAct && <p className="journey-role-note">{t('journey.roleNote')}</p>}
+      <nav className="journey-map" aria-label={t('journey.mapLabel')}>
+        <p>{t('journey.progress', { done: recordedSteps, total: steps.length })}</p>
         <ol>{steps.map((step) => <li key={step.number} className={latest(events, step.types) ? 'visited' : ''}><a href={`#journey-step-${step.number}`}><span>{step.number}</span>{step.title}</a></li>)}</ol>
       </nav>
       <div className="journey-grid">
@@ -127,10 +129,10 @@ export function CaseJourney({
           const recorded = latest(events, step.types)
           return (
             <article className="journey-step" key={step.number} id={`journey-step-${step.number}`}>
-              <div className="journey-step-top"><span className="journey-number">{step.number}</span><span className={recorded ? 'journey-record recorded' : 'journey-record'}>{recorded ? 'Activity recorded' : 'Waiting for this step'}</span></div>
+              <div className="journey-step-top"><span className="journey-number">{step.number}</span><span className={recorded ? 'journey-record recorded' : 'journey-record'}>{recorded ? t('journey.recorded') : t('journey.waiting')}</span></div>
               <h3>{step.title}</h3>
               <p>{step.description}</p>
-              {recorded && <p className="journey-event"><strong>What happened:</strong> {recorded.summary} <a href="#steps-h">Open timeline (event #{recorded.seq})</a><span>{formatIst(recorded.created_at)}</span></p>}
+              {recorded && <p className="journey-event"><strong>{t('journey.happened')}</strong> {recorded.summary} <a href="#steps-h">{t('journey.openTimeline', { seq: recorded.seq })}</a><span>{formatIst(recorded.created_at)}</span></p>}
               <div className="journey-step-actions">
                 {step.actions.map((action) => <span className="journey-action" key={action.label}><button type="button" disabled={busy || action.disabled} onClick={() => void execute(action)}>{action.label}</button>{action.hint && <small>{action.hint}</small>}</span>)}
                 {step.demo && <button key={step.demo.label} type="button" className="journey-secondary" onClick={() => openDemo(step.demo!.tab)}>{step.demo.label}</button>}
@@ -141,11 +143,11 @@ export function CaseJourney({
         })}
       </div>
       <div className="journey-branches">
-        <h3>When the case takes another path</h3>
+        <h3>{t('journey.branches')}</h3>
         <div>
-          <section><strong>Staff reply, voice note or reminder</strong><p>Follow the request in the staff inbox. Testimony is labelled separately from documentary proof.</p><button type="button" onClick={() => openDemo('inbox')}>Open staff tools</button></section>
-          <section><strong>Provider rejection or uncertain response</strong><p>Inspect the simulator event, correct the document if needed, then reconcile the provider status.</p><button type="button" onClick={() => openDemo('faults')}>Open simulator controls</button></section>
-          <section><strong>Reviewer decision or concession</strong><p>A reviewer records the reason and confirms any concession through the protected two-step flow.</p><a href={session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity'}>{session.user.role === 'reviewer' ? 'Open reviewer decisions' : 'Switch to reviewer identity'} →</a></section>
+          <section><strong>{t('journey.b1Title')}</strong><p>{t('journey.b1Text')}</p><button type="button" onClick={() => openDemo('inbox')}>{t('journey.b1Action')}</button></section>
+          <section><strong>{t('journey.b2Title')}</strong><p>{t('journey.b2Text')}</p><button type="button" onClick={() => openDemo('faults')}>{t('journey.b2Action')}</button></section>
+          <section><strong>{t('journey.b3Title')}</strong><p>{t('journey.b3Text')}</p><a href={session.user.role === 'reviewer' ? '#reviewer-h' : '#demo-identity'}>{session.user.role === 'reviewer' ? t('journey.b3Reviewer') : t('journey.b3Switch')} →</a></section>
         </div>
       </div>
       {message && <p role="status" className="journey-message">{message}</p>}

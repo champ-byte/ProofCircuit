@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, NavLink } from 'react-router-dom'
 import { api } from '../api/client'
 import { useSession } from '../session'
-import { STATE_LABELS, formatCountdown, formatIst } from '../format'
+import { formatCountdown, formatIst, reasonLabel, stateLabel } from '../format'
 import { secondsUntil, useNow } from '../hooks'
 import type { CaseSummary } from '../types/api'
 import { WorkflowChart } from '../components/WorkflowChart'
@@ -29,7 +30,7 @@ function exportVisibleCases(cases: CaseSummary[], now: number) {
   }
   const rows = [
     ['Dispute', 'Merchant', 'Order', 'Reason', 'Amount at risk', 'Urgency', 'Owner', 'Deadline IST', 'Workflow', 'Provider status', 'Blocker', 'Next action'],
-    ...cases.map((c) => [c.external_dispute_id, c.merchant_name, c.order_id, c.reason.replaceAll('_', ' '), c.amount_display, urgency(c, now), c.owner ?? '', formatIst(c.deadline_utc), STATE_LABELS[c.workflow_state] ?? c.workflow_state, c.provider_status_raw ?? c.provider_status, c.blocker ?? '', c.next_action]),
+    ...cases.map((c) => [c.external_dispute_id, c.merchant_name, c.order_id, c.reason.replaceAll('_', ' '), c.amount_display, urgency(c, now), c.owner ?? '', formatIst(c.deadline_utc), stateLabel(c.workflow_state), c.provider_status_raw ?? c.provider_status, c.blocker ?? '', c.next_action]),
   ]
   const csv = rows.map((row) => row.map((value) => safeCell(String(value))).join(',')).join('\r\n')
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
@@ -47,6 +48,7 @@ function deadlineClass(seconds: number): string {
 }
 
 export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[]; showOverview?: boolean }) {
+  const { t } = useTranslation()
   const now = useNow(1000)
   const [view, setView] = useState<QueueView>('all')
   const [query, setQuery] = useState('')
@@ -81,85 +83,85 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
   return (
     <div className="operations-shell">
       <aside className="operations-sidebar" aria-label="Operations navigation">
-        <p>WORKSPACE</p>
-        <NavLink to="/dashboard">◫ <span>Dashboard</span></NavLink>
-        <NavLink to="/cases">▤ <span>Disputes</span></NavLink>
-        <p>INSIGHTS</p>
-        <NavLink to="/evaluation">▥ <span>Evaluation</span></NavLink>
-        <div className="operations-sidebar-note">Your dispute workspace<br />Every step in one place</div>
+        <p>{t('cases.workspace')}</p>
+        <NavLink to="/dashboard">◫ <span>{t('app.dashboard')}</span></NavLink>
+        <NavLink to="/cases">▤ <span>{t('app.disputes')}</span></NavLink>
+        <p>{t('cases.insights')}</p>
+        <NavLink to="/evaluation">▥ <span>{t('cases.evaluation')}</span></NavLink>
+        <div className="operations-sidebar-note">{t('cases.sidebarNote')}</div>
       </aside>
       <div className="dashboard">
       {showOverview && <section className="dashboard-hero" aria-labelledby="dashboard-title">
         <div className="dashboard-hero-copy">
-          <p className="eyebrow">ProofSaathi / dispute operations</p>
-          <h1 id="dashboard-title">Every dispute, clearly in hand.</h1>
-          <p>See what needs attention, follow the evidence, and track each response to a verified submission.</p>
+          <p className="eyebrow">{t('cases.heroEyebrow')}</p>
+          <h1 id="dashboard-title">{t('cases.heroTitle')}</h1>
+          <p>{t('cases.heroBody')}</p>
         </div>
         <div className="dashboard-hero-guide" aria-hidden="true">
-          <span>YOUR RESPONSE PATH</span>
-          <strong><b>1</b> Find the missing proof</strong>
-          <strong><b>2</b> Review the response</strong>
-          <strong><b>3</b> Track the receipt</strong>
+          <span>{t('cases.pathTitle')}</span>
+          <strong><b>1</b> {t('cases.path1')}</strong>
+          <strong><b>2</b> {t('cases.path2')}</strong>
+          <strong><b>3</b> {t('cases.path3')}</strong>
         </div>
       </section>}
 
-      {showOverview && <section className="dashboard-overview" aria-label="Case overview">
+      {showOverview && <section className="dashboard-overview" aria-label={t('cases.overviewEyebrow')}>
         <div className="overview-card overview-card-primary">
-          <span className="overview-label">Total disputes</span>
+          <span className="overview-label">{t('cases.total')}</span>
           <strong>{counts.all}</strong>
-          <span>In this merchant workspace</span>
+          <span>{t('cases.totalSub')}</span>
         </div>
         <div className="overview-card">
-          <span className="overview-label">In review</span>
+          <span className="overview-label">{t('cases.inReview')}</span>
           <strong>{counts.review}</strong>
-          <span>Human decision requested</span>
+          <span>{t('cases.inReviewSub')}</span>
         </div>
         <div className="overview-card">
-          <span className="overview-label">Waiting for evidence</span>
+          <span className="overview-label">{t('cases.waitingEvidence')}</span>
           <strong>{counts.waiting}</strong>
-          <span>Staff response or document pending</span>
+          <span>{t('cases.waitingEvidenceSub')}</span>
         </div>
         <div className="overview-card">
-          <span className="overview-label">Open blockers</span>
+          <span className="overview-label">{t('cases.blockers')}</span>
           <strong>{counts.blocked}</strong>
-          <span>Cases with a reported blocker</span>
+          <span>{t('cases.blockersSub')}</span>
         </div>
       </section>}
 
       {showOverview && <WorkflowChart cases={cases} />}
       {showOverview && <section className="dashboard-flow" aria-labelledby="dashboard-flow-title">
         <div className="dashboard-flow-head">
-          <div><p className="eyebrow">Behind every case</p><h2 id="dashboard-flow-title">The full response flow, in view.</h2><p>Open a dispute for the live stage, source evidence, staff messages, tool actions, and recorded result.</p></div>
-          {nextCase && <Link className="button-primary" to={`/cases/${nextCase.id}`}>Open next case <span aria-hidden="true">→</span></Link>}
+          <div><p className="eyebrow">{t('cases.flowEyebrow')}</p><h2 id="dashboard-flow-title">{t('cases.flowTitle')}</h2><p>{t('cases.flowBody')}</p></div>
+          {nextCase && <Link className="button-primary" to={`/cases/${nextCase.id}`}>{t('cases.openNext')} <span aria-hidden="true">→</span></Link>}
         </div>
         <ol className="dashboard-flow-steps">
-          {['Intake', 'Collect proof', 'Validate', 'Human review', 'Build pack', 'Submit', 'Verify'].map((label, index) => <li key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</li>)}
+          {(t('cases.flowSteps', { returnObjects: true }) as string[]).map((label, index) => <li key={label}><span>{String(index + 1).padStart(2, '0')}</span>{label}</li>)}
         </ol>
       </section>}
 
       <section className="queue-panel" aria-labelledby="queue-title">
         <div className="queue-heading">
           <div>
-            <p className="eyebrow">{showOverview ? 'Case overview' : 'Operations / disputes'}</p>
-            {showOverview ? <h2 id="queue-title">Disputes</h2> : <h1 id="queue-title">Disputes</h1>}
-            <p>Search and open a case to follow its evidence, decisions, and submission.</p>
+            <p className="eyebrow">{showOverview ? t('cases.overviewEyebrow') : t('cases.listEyebrow')}</p>
+            {showOverview ? <h2 id="queue-title">{t('cases.title')}</h2> : <h1 id="queue-title">{t('cases.title')}</h1>}
+            <p>{t('cases.intro')}</p>
           </div>
           <div className="queue-heading-actions">
             <label className="queue-search">
-              <span>Search disputes</span>
-              <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Dispute, order, merchant…" type="search" />
+              <span>{t('cases.search')}</span>
+              <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder={t('cases.searchPlaceholder')} type="search" />
             </label>
-            <button type="button" className={urgentOnly ? 'queue-toolbar active' : 'queue-toolbar'} aria-pressed={urgentOnly} onClick={() => { setUrgentOnly((u) => !u); setPage(1) }}>Urgent only</button>
-            <button type="button" className="queue-toolbar" disabled={visible.length === 0} onClick={() => exportVisibleCases(visible, now)}>Export CSV</button>
+            <button type="button" className={urgentOnly ? 'queue-toolbar active' : 'queue-toolbar'} aria-pressed={urgentOnly} onClick={() => { setUrgentOnly((u) => !u); setPage(1) }}>{t('cases.urgentOnly')}</button>
+            <button type="button" className="queue-toolbar" disabled={visible.length === 0} onClick={() => exportVisibleCases(visible, now)}>{t('cases.export')}</button>
           </div>
         </div>
-        <div className="queue-filters" role="group" aria-label="Filter cases">
+        <div className="queue-filters" role="group" aria-label={t('cases.filterLabel')}>
           {([
-            ['all', 'All cases', counts.all],
-            ['review', 'In review', counts.review],
-            ['action', 'In progress', counts.action],
-            ['waiting', 'Waiting', counts.waiting],
-            ['closed', 'Done', counts.closed],
+            ['all', t('cases.filterAll'), counts.all],
+            ['review', t('cases.filterReview'), counts.review],
+            ['action', t('cases.filterProgress'), counts.action],
+            ['waiting', t('cases.filterWaiting'), counts.waiting],
+            ['closed', t('cases.filterDone'), counts.closed],
           ] as const).map(([key, label, count]) => (
             <button key={key} type="button" className={view === key ? 'queue-filter active' : 'queue-filter'} aria-pressed={view === key} onClick={() => { setView(key); setPage(1) }}>
               {label} <span>{count}</span>
@@ -167,22 +169,22 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
           ))}
         </div>
         {cases.length === 0 ? (
-          <p className="queue-empty">No dispute cases for this merchant.</p>
+          <p className="queue-empty">{t('cases.empty')}</p>
         ) : visible.length === 0 ? (
-          <p className="queue-empty">No cases match this view or search.</p>
+          <p className="queue-empty">{t('cases.noMatch')}</p>
         ) : (
           <div className="table-wrap queue-table-wrap">
             <table className="cases queue-table">
-              <caption className="visually-hidden">Dispute queue</caption>
+              <caption className="visually-hidden">{t('cases.title')}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Merchant / dispute</th>
-                  <th scope="col">Reason</th>
-                  <th scope="col">Amount at risk</th>
-                  <th scope="col">Urgency</th>
-                  <th scope="col">Assigned to</th>
-                  <th scope="col"><button type="button" className="table-sort" onClick={() => setDescending((d) => !d)}>Deadline <span aria-hidden="true">{descending ? '↓' : '↑'}</span></button></th>
-                  <th scope="col">Status / next step</th>
+                  <th scope="col">{t('cases.colMerchant')}</th>
+                  <th scope="col">{t('cases.colReason')}</th>
+                  <th scope="col">{t('cases.colAmount')}</th>
+                  <th scope="col">{t('cases.colUrgency')}</th>
+                  <th scope="col">{t('cases.colAssigned')}</th>
+                  <th scope="col"><button type="button" className="table-sort" onClick={() => setDescending((d) => !d)}>{t('cases.colDeadline')} <span aria-hidden="true">{descending ? '↓' : '↑'}</span></button></th>
+                  <th scope="col">{t('cases.colStatus')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,25 +193,25 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
                   const priority = urgency(c, now)
                   return (
                     <tr key={c.id}>
-                      <td data-label="Merchant / dispute">
+                      <td data-label={t('cases.colMerchant')}>
                         <strong>{c.merchant_name}</strong>
                         <span className="queue-meta"><Link className="queue-case-link" to={`/cases/${c.id}`}>{c.external_dispute_id}</Link> · {c.order_id}</span>
                       </td>
-                      <td data-label="Reason">{c.reason.replaceAll('_', ' ')}</td>
-                      <td data-label="Amount at risk" className="num">{c.amount_display}</td>
-                      <td data-label="Urgency"><span className={`urgency urgency-${priority.toLowerCase().replaceAll(' ', '-')}`}>{priority}</span></td>
-                      <td data-label="Assigned to">{c.owner ?? 'Unassigned'}</td>
-                      <td data-label="Deadline">
+                      <td data-label={t('cases.colReason')}>{reasonLabel(c.reason)}</td>
+                      <td data-label={t('cases.colAmount')} className="num">{c.amount_display}</td>
+                      <td data-label={t('cases.colUrgency')}><span className={`urgency urgency-${priority.toLowerCase().replaceAll(' ', '-')}`}>{t(`cases.urgency.${priority}`)}</span></td>
+                      <td data-label={t('cases.colAssigned')}>{c.owner ?? t('cases.unassigned')}</td>
+                      <td data-label={t('cases.colDeadline')}>
                         <span className={deadlineClass(remaining)}>{formatCountdown(remaining)}</span>
                         <span className="queue-meta">{formatIst(c.deadline_utc)}</span>
                       </td>
-                      <td data-label="Status / next step">
+                      <td data-label={t('cases.colStatus')}>
                         <span className={`queue-state ${isClosed(c) ? 'queue-state-closed' : c.blocker ? 'queue-state-blocked' : 'queue-state-active'}`}>
-                          {STATE_LABELS[c.workflow_state] ?? c.workflow_state}
+                          {stateLabel(c.workflow_state)}
                         </span>
                         <span className="queue-action">{c.next_action}</span>
-                        {c.blocker && <span className="queue-blocker">Blocker: {c.blocker}</span>}
-                        <Link className="queue-open" to={`/cases/${c.id}`}>Open case <span aria-hidden="true">→</span></Link>
+                        {c.blocker && <span className="queue-blocker">{t('cases.blocker', { text: c.blocker })}</span>}
+                        <Link className="queue-open" to={`/cases/${c.id}`}>{t('cases.openCase')} <span aria-hidden="true">→</span></Link>
                       </td>
                     </tr>
                   )
@@ -220,10 +222,10 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
         )}
         {visible.length > 0 && (
           <div className="queue-pagination">
-            <span>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visible.length)} of {visible.length}</span>
-            <label>Rows per page <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label>
-            <button type="button" disabled={currentPage <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-            <button type="button" disabled={currentPage >= maxPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+            <span>{t('cases.showing', { from: (currentPage - 1) * pageSize + 1, to: Math.min(currentPage * pageSize, visible.length), total: visible.length })}</span>
+            <label>{t('cases.rowsPerPage')} <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label>
+            <button type="button" disabled={currentPage <= 1} onClick={() => setPage((p) => p - 1)}>{t('cases.previous')}</button>
+            <button type="button" disabled={currentPage >= maxPage} onClick={() => setPage((p) => p + 1)}>{t('cases.next')}</button>
           </div>
         )}
       </section>
@@ -233,6 +235,7 @@ export function CasesPage({ cases, showOverview = false }: { cases: CaseSummary[
 }
 
 export function CasesRoute({ showOverview = false }: { showOverview?: boolean }) {
+  const { t } = useTranslation()
   const { token, session } = useSession()
   const [cases, setCases] = useState<CaseSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -248,9 +251,9 @@ export function CasesRoute({ showOverview = false }: { showOverview?: boolean })
   return (
     <>
       {error && <p role="alert" className="error">{error}</p>}
-      {cases === null && !error ? <p aria-live="polite">Loading cases…</p> : null}
+      {cases === null && !error ? <p aria-live="polite">{t('cases.loading')}</p> : null}
       {cases && token && <CasesPage cases={cases} showOverview={showOverview} />}
-      {session && <p className="dashboard-merchant">Viewing {session.merchant.name}</p>}
+      {session && <p className="dashboard-merchant">{t('cases.viewingMerchant', { name: session.merchant.name })}</p>}
     </>
   )
 }

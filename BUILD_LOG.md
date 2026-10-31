@@ -968,8 +968,63 @@ cd ../frontend && npm test && npm run build && npm run lint && E2E_ALLOW_LIVE=1 
   - A staff reply before the round-2 due time made n8n's callback `skipped: task_responded`.
   - The demo server was then restarted with the live agent and reminders on (120 s delay).
 
+## Multi-language UI, Phase 1 (2026-10-31)
+
+- **Added** react-i18next with 10 languages (en, hi, mr, bn, gu, kn, ml, pa, ta, te). Pinned exact: `i18next@26.4.7`, `react-i18next@17.0.20`, `i18next-browser-languagedetector@8.2.1`. Setup is in `frontend/src/i18n/`.
+  - The choice is saved in localStorage (`proofsaathi.language`). The first visit follows the browser language, falling back to English. `<html lang>` follows the choice.
+  - A header language switcher lists native names (e.g. "मराठी · Marathi").
+  - An Indic font fallback stack was added (Nirmala UI plus Noto Sans for each script).
+  - No Google Translate widget.
+- **Translated:** header/nav/footer, landing page, dashboard and dispute list (filters, table, pagination, urgency, chart), case header, status banner, next-step card, the 7-step case journey and its branches, key steps, reminder status, environment badges, workflow state and reason labels.
+  - `statusBanner()`, `keySteps()`, `formatCountdown()` now read from the locale files; `statusBanner` also returns an `id`. English output is unchanged, so the existing tests pass as written.
+  - `STATE_LABELS` was replaced by `stateLabel()` / `reasonLabel()`.
+- **Translations are machine-drafted demo copy**, not reviewed by native speakers. The switcher tooltip says so (`app.translationNote`).
+- **Tests:** new `src/i18n/locales.test.ts` checks every locale has exactly the English keys, matching `{{placeholders}}` and array lengths (11 tests).
+  - Frontend: 38 passed (27 + 11).
+  - `npm run build` OK, with a chunk-size warning: the bundle is 658 kB / 173 kB gzip because all 10 locales are bundled.
+  - `npm run lint` clean; `tsc -b` clean.
+- **Real browser check** (dev server + running backend):
+  - Landing page in Hindi.
+  - Dashboard switched to Tamil from the dropdown; the choice persisted and `<html lang="ta">` was set.
+  - Case DSP-DEMO-001 in Marathi: header, countdown, next-step card with Sanjay's request, journey, key steps.
+  - Browser reset to English afterwards.
+
+## Clearer flow, Phase 2 (2026-10-31)
+
+- **First visit:** a language-then-role chooser opens on the home page. It shows the 10 languages, then Shop owner / Staff member (Sanjay or Meera) / Reviewer, each with a plain explanation of who that is and a note that Paytm is the payment company, not a person.
+  - The choice routes owner → dashboard, staff → `/staff`, reviewer → disputes.
+  - "Change role" in the header reopens it. The chosen identity is now saved in the browser (`proofsaathi.identity`), so it survives a reload; before, every reload reset to the owner.
+- **Case page:**
+  - A 3-stage progress bar (Collect proof → Check and send → Result).
+  - The honesty badges are restored (Synthetic data / Paytm simulator / Reasoning mode); the earlier rebrand had dropped them.
+  - The status banner is always shown; it had been hidden while waiting for staff.
+  - Four tabs: Next step, Proof, Response, History. In-page "#…" links switch to the right tab.
+  - An assistant card says whether the AI assistant is working, waiting, ready, paused or off. It offers "Let the assistant check" or "Do it myself" (which jumps to the manual actions, now shown openly instead of hidden in a collapsed "More case actions").
+- **Staff screen `/staff`:** a phone-sized page using the staff member's own session. It lists every open dispute with the requests addressed to them in their language, a reply box, document uploads and voice notes. The staff inbox UI is now one shared component (`StaffInbox.tsx`), also used by the demo drawer.
+- **Guided tour:** "? Guide me" in the header opens a step-by-step guide for the current page (home, dispute list, case, staff screen). It highlights each part, and "Read aloud" uses the browser's own voices.
+  - This machine only has English voices, so in other languages the guide says the device has no voice for that language instead of speaking.
+- **Translated:** evidence checklist/findings/evidence table, assistant and actions panel, pack and submission panel, voice notes, reviewer panel and concession dialog, staff inbox.
+  - English wording is unchanged, so existing tests and the E2E keep passing.
+- **Languages:** all new strings are in English plus hi, mr, bn, gu, kn, ml, pa. **Tamil and Telugu are paused at the user's request:** their Phase 2 strings show in English (i18next fallback). The locale test treats ta/te as partial: no unknown keys and matching placeholders, but missing keys are allowed.
+- **E2E updated:** opens the drawer (it starts closed since the earlier frontend polish), clicks the case tabs, asserts the progress bar.
+- **Checks:**
+  - Frontend 42 passed (38 + 4 new in `phase2.test.tsx`); build OK; lint clean.
+  - `E2E_ALLOW_LIVE=1 npm run e2e`: **E2E passed** (hero flow, contradiction, voice note, verified submission, reviewer concession, 390 px width). The first run caught a `<ul>` inside `<p>` page error, which was fixed.
+- **Real browser:**
+  - The welcome chooser picked the owner and landed on the dashboard.
+  - The case page showed the progress, badges and tabs.
+  - The guide highlighted the stages.
+  - `/staff` in Marathi as Sanjay showed the Marathi delivery-record request after a demo reset plus an owner request.
+- Also added `PROJECT_CONTEXT.md` (one-file project overview, at the user's request).
+
 ## Open issues / next
 
+- **i18n gaps:**
+  - Tamil and Telugu lack the Phase 2 strings (paused; English shown).
+  - English only: operator tools (fault injector, providers, reset/resume), the evaluation page, technical provenance details (hashes, code points), and server-generated text (audit summaries, `next_action`, blockers, checklist explanations, agent rationales).
+  - All translations are machine-drafted and need native-speaker review.
+  - Read-aloud depends on the device having a voice for the language.
+- **Reminder line on the staff screen** showed "could not be scheduled" during the Phase 2 check; n8n was probably not running. Not investigated.
 - **n8n:** the n8n container keeps running (`restart: unless-stopped`) until `docker compose -f n8n/docker-compose.yml down`. Reminders are enabled only for the processes started with the settings; `backend/.env` was **not** written in this session (the user can run `python n8n/setup.py --write-backend-env`).
 - **Backend 500 when an action races a demo reset:** `POST /cases/{id}/actions` can read the case just before a concurrent `/api/demo/reset` deletes it. The `agent_runs` insert then fails with an IntegrityError → 500 instead of 404/409. This only happens in demo mode, where reset deletes data; the E2E no longer triggers it. The commit-timing fix narrows the window (clients now see the reset before they act), but a truly concurrent action can still hit it. Not fixed.
 - **Speech:** `WHISPER_MODEL` stays `small` (decision 7). The robotic espeak smoke fixture still fails for every model, so live transcription needs `SPEECH_REQUIRE_PASSING_SMOKE=false` until a human reference clip or Sarvam replaces it. The Sarvam adapter is still unbuilt (no key or access).

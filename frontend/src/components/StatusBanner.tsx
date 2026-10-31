@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import { statusBanner } from '../status'
 import type { Assessment, CaseDetail } from '../types/api'
 
 export function StatusBanner({ detail, assessment }: { detail: CaseDetail; assessment: Assessment }) {
+  useTranslation()
   const debit =
     detail.debit_amount_paise !== null
       ? `₹${(detail.debit_amount_paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
