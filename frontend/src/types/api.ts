@@ -1,0 +1,382 @@
+export interface ReasoningMode {
+  mode: 'live' | 'manual' | 'fixture_replay'
+  label: string
+}
+
+export interface ProviderReadiness {
+  name: string
+  role: string
+  status: string
+  model: string | null
+  detail: string
+  notes: string[]
+}
+
+export interface ProviderReport {
+  reasoning_mode: ReasoningMode
+  reasoners: ProviderReadiness[]
+  integrations: ProviderReadiness[]
+  synthetic_data: boolean
+  paytm_mode: string
+  usage: { calls_24h: number | null; cap: number; min_interval_s: number }
+}
+
+export interface DemoUser {
+  mid: string
+  merchant_name: string
+  handle: string
+  display_name: string
+  role: string
+  locale: string
+}
+
+export interface DemoSession {
+  token: string
+  user: { handle: string; display_name: string; role: string; locale: string }
+  merchant: { name: string; mid: string }
+}
+
+export interface CaseSummary {
+  id: string
+  merchant_name: string
+  mid: string
+  external_dispute_id: string
+  order_id: string
+  transaction_id: string
+  reason: string
+  amount_paise: number
+  amount_display: string
+  currency: string
+  debit_amount_paise: number | null
+  dispute_utr: string | null
+  deadline_utc: string
+  deadline_local: string
+  deadline_raw: string
+  timezone_assumption: string
+  seconds_to_deadline: number
+  deadline_expired: boolean
+  workflow_state: string
+  provider_status: string
+  provider_status_raw: string | null
+  flags: string[]
+  version: number
+  owner: string | null
+  next_action: string
+  synthetic: boolean
+  evidence_ready: boolean
+  blocker: string | null
+}
+
+export interface TimelineEvent {
+  seq: number
+  event_type: string
+  summary: string
+  actor_type: string
+  created_at: string
+}
+
+export interface CaseDetail extends CaseSummary {
+  timeline: TimelineEvent[]
+}
+
+export interface SourceSnippet {
+  before: string
+  match: string
+  after: string
+  start: number
+  end: number
+  recheck_ok: boolean
+}
+
+export interface Fact {
+  id: string
+  document_id: string
+  page: number
+  field: string
+  raw_value: string
+  normalized_value: string | null
+  unit: string | null
+  method: string
+  verification: string
+  stale: boolean
+  source: SourceSnippet | null
+}
+
+export interface EvidenceDocumentSummary {
+  id: string
+  original_filename: string
+  mime_type: string
+  size_bytes: number
+  sha256: string
+  doc_type: string
+  extraction_status: string
+  extraction_method: string | null
+  extraction_error: string | null
+  page_count: number
+  uploaded_by: string | null
+  active: boolean
+  superseded_by_id: string | null
+  exclusion_reason: string | null
+  created_at: string
+  facts: Fact[]
+}
+
+export interface ChecklistEntry {
+  requirement_id: string
+  label: string
+  status: 'missing' | 'supported' | 'conflicting' | 'review_required'
+  source_ids: string[]
+  assignee: string | null
+  explanation: string
+}
+
+export interface Finding {
+  id: string
+  rule_id: string
+  severity: 'blocking' | 'review' | 'info'
+  status: 'open' | 'resolved'
+  source_ids: string[]
+  explanation: string
+  details: Record<string, unknown>
+  case_version: number
+  created_at: string
+  resolved_at: string | null
+}
+
+export interface Assessment {
+  evidence_ready: boolean
+  blocking_contradiction: boolean
+  blockers: string[]
+  case_version: number
+}
+
+export interface EvidenceOverview {
+  documents: EvidenceDocumentSummary[]
+  checklist: ChecklistEntry[]
+  findings: Finding[]
+  assessment: Assessment
+}
+
+export interface DocumentDetail extends Omit<EvidenceDocumentSummary, 'facts'> {
+  pages: { page: number; text: string; text_sha256: string }[]
+  facts: Fact[]
+}
+
+export interface FixtureInfo {
+  name: string
+  filename: string
+}
+
+export interface ToolCallView {
+  step: number
+  tool: string
+  arguments: Record<string, unknown>
+  rationale: string
+  status: 'ok' | 'denied' | 'error'
+  result: Record<string, unknown> | null
+}
+
+export interface RunView {
+  id: string
+  provider: string
+  model: string | null
+  mode: string
+  status: string
+  error: string | null
+  started_at: string
+  tool_calls: ToolCallView[]
+}
+
+export interface PackView {
+  id: string
+  version: number
+  case_version: number
+  pack_hash: string
+  order_status: string
+  comments: string
+  upload_files: { position: number; name: string; sha256: string; size: number; mime: string; role: string }[]
+  is_latest: boolean
+  stale: boolean
+  created_at: string
+}
+
+export interface SubmissionView {
+  id: string
+  action: string
+  pack_version: number | null
+  state: string
+  attempts: number
+  provider_reference: string | null
+  intent_digest: string
+  last_error: string | null
+  reconciliation: Record<string, unknown>[]
+  created_at: string
+}
+
+/** n8n reminder state for one staff task (PRD 12.1). The trigger is backend → n8n; reminders are n8n's callbacks. */
+export interface TaskReminderView {
+  trigger?: {
+    id: string
+    status: 'pending' | 'delivered' | 'skipped' | 'failed' | 'paused'
+    remind_at: string | null
+    attempts: number
+    error: string | null
+    label: string | null
+  }
+  reminders: {
+    reminder_id: string
+    status: 'queued' | 'sent' | 'skipped'
+    reason: string | null
+    message_id: string | null
+    reminder_number: number
+    created_at: string
+  }[]
+}
+
+export interface InboxView {
+  tasks: {
+    id: string
+    kind: string
+    requirement_id: string
+    round: number
+    assignee: string | null
+    locale: string
+    status: string
+    question: string | null
+    reminder: TaskReminderView | null
+  }[]
+  messages: { id: string; direction: string; from: string | null; to: string | null; locale: string; body: string; delivery_state: string; created_at: string }[]
+}
+
+export interface AuditEventView {
+  seq: number
+  event_type: string
+  summary: string
+  actor_type: string
+  data: Record<string, unknown>
+  created_at: string
+}
+
+export interface SimulatorState {
+  dispute_id: string
+  dispute_status: string
+  comment: string | null
+  due_at_utc: string
+  event_sequence: number
+  queued_faults: { api: string; kind: string; remaining: number }[]
+  receipts: { reference: string; action: string; orderStatus: string | null; intentDigest: string; createdAt: string }[]
+}
+
+export interface EvaluationCase {
+  corpus_case: string
+  category: string
+  split: string
+  outcome: string
+  correct: boolean
+  expected_behavior: string
+  acceptable_outcomes: string[]
+  expected_rules: string[]
+  missing_rules: string[]
+  contradictions_detected: string[]
+  unsafe: string[]
+  verified_submissions: number
+  receipts: number
+  model_calls: number
+  invalid_outputs: number
+  policy_denials: number
+  tools: string[]
+  stopped: string
+  seconds: number
+}
+
+export interface EvaluationMetrics {
+  executed: number
+  not_run: number
+  correct: number
+  by_split: Record<string, { executed: number; correct: number }>
+  outcomes: Record<string, number>
+  eligible_on_time_submissions: { count: number; eligible: number }
+  contradictions: { expected_cases: number; detected_in_expected_cases: number; false_positive_cases: number }
+  checklist_complete_in_submitted_cases: { count: number; submitted: number }
+  duplicate_writes: number
+  unsafe_actions: number
+  model_calls: number
+  invalid_model_outputs: number
+  policy_denials: number
+  seconds_per_case: number | null
+}
+
+export interface EvaluationResults {
+  status: string
+  planned: number
+  executed: number
+  not_run: number
+  label: string
+  categories: { category: string; planned: number; executed: number; correct?: number }[]
+  split: { development: number; held_out: number; first_pass: number; first_pass_selection: string }
+  /** Exported runs carry the reasoning mode object; the placeholder carries null. */
+  mode: { mode: string; label: string } | null
+  metrics: EvaluationMetrics | null
+  cases?: EvaluationCase[]
+  not_run_cases?: { corpus_case: string; category: string; reason: string }[]
+  superseded_attempts?: { corpus_case: string; run_tag: string; outcome: string; correct: boolean; reason: string }[]
+  run_tag?: string
+  split_run?: string
+  started_at?: string
+  note: string
+}
+
+export interface TranscriptSegment {
+  start: number // code points into text, end-exclusive
+  end: number
+  audio_start_ms: number
+  audio_end_ms: number
+  text: string
+  recheck_ok: boolean
+  timestamp_in_range: boolean
+}
+
+export interface TranscriptView {
+  id: string
+  version: number
+  text: string
+  text_sha256: string
+  text_recheck_ok: boolean
+  method: 'stt' | 'staff_correction' | 'human_transcription'
+  provider: string | null
+  model: string | null
+  language: string | null
+  language_probability: number | null
+  segments: TranscriptSegment[]
+  timestamps_available: boolean
+  author: string | null
+  confirmation_state: 'unconfirmed' | 'confirmed' | 'superseded'
+  confirmed_by: string | null
+  confirmed_at: string | null
+  created_at: string
+}
+
+export interface VoiceNoteView {
+  id: string
+  staff: string
+  staff_user_id: string
+  staff_task: { id: string; requirement_id: string; round: number } | null
+  original_filename: string
+  mime_type: string
+  size_bytes: number
+  sha256: string
+  locale: string
+  duration_ms: number | null
+  stt_status: 'awaiting_transcription' | 'transcribed' | 'stt_failed' | 'stt_unavailable'
+  stt_provider: string | null
+  stt_detail: string | null
+  created_at: string
+  note: string
+  current: TranscriptView | null
+  versions: TranscriptView[]
+}
+
+export interface VoiceNotesResponse {
+  speech: { available: boolean; provider: string; detail: string }
+  voice_notes: VoiceNoteView[]
+}

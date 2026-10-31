@@ -1,0 +1,80 @@
+{
+  "id": "PcStaffReminder1",
+  "name": "ProofCircuit staff reminder",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "proofcircuit-staff-reminder",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "6a4f3c0e-1d2b-4c5a-9e8f-0a1b2c3d4e01",
+      "name": "Staff evidence requested",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "0c6f2d9a-7b41-4f0e-a3d2-5e8b9c1f2a01",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PcN8nWebhookAuth",
+          "name": "ProofCircuit trigger token (backend to n8n)"
+        }
+      },
+      "notes": "Backend POSTs staff.evidence_requested with Authorization: Bearer N8N_WEBHOOK_TOKEN. The acknowledgement only means the trigger was received."
+    },
+    {
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ $json.body.remind_at }}"
+      },
+      "id": "6a4f3c0e-1d2b-4c5a-9e8f-0a1b2c3d4e02",
+      "name": "Wait until remind_at",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [260, 0],
+      "webhookId": "0c6f2d9a-7b41-4f0e-a3d2-5e8b9c1f2a02"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_BASE_URL }}/api/cases/{{ $('Staff evidence requested').item.json.body.case_id }}/reminders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ staff_task_id: $('Staff evidence requested').item.json.body.staff_task_id, request_round: $('Staff evidence requested').item.json.body.request_round, reminder_number: $('Staff evidence requested').item.json.body.reminder_number }) }}",
+        "options": {}
+      },
+      "id": "6a4f3c0e-1d2b-4c5a-9e8f-0a1b2c3d4e03",
+      "name": "Call ProofCircuit reminder command",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PcServiceTokenAu",
+          "name": "ProofCircuit service token (n8n to backend)"
+        }
+      },
+      "notes": "Sends only task/round/reminder number. The backend rechecks cancellation, picks the recipient and template, and is idempotent, so retries are safe."
+    }
+  ],
+  "connections": {
+    "Staff evidence requested": {
+      "main": [[{ "node": "Wait until remind_at", "type": "main", "index": 0 }]]
+    },
+    "Wait until remind_at": {
+      "main": [[{ "node": "Call ProofCircuit reminder command", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

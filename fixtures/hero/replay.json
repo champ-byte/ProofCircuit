@@ -1,0 +1,13 @@
+{
+  "_note": "Fixture replay of the hero script. This is NOT model inference: every run using it is labelled 'Fixture replay' and never counted as live AI. Rules are checked in order against the case context.",
+  "rules": [
+    {"when": {"checklist.delivery_record": ["missing", "conflicting"]},
+     "action": {"action": "request_evidence", "arguments": {"requirement_id": "delivery_record"}, "reason": "Replay: delivery proof is missing or contradicts the order; ask delivery staff.", "source_ids": []}},
+    {"when": {"evidence_ready": true, "latest_pack_current": false},
+     "action": {"action": "build_evidence_pack", "arguments": {}, "reason": "Replay: required evidence passes checks; build the pack.", "source_ids": []}},
+    {"when": {"evidence_ready": true, "latest_pack_current": true},
+     "action": {"action": "submit_defense", "arguments": {}, "reason": "Replay: submit the current pack to the simulator.", "source_ids": []}},
+    {"when": {},
+     "action": {"action": "request_human_review", "arguments": {"reason": "replay_no_rule", "question": "Replay script has no step for this state."}, "reason": "Replay: no scripted step; ask a person.", "source_ids": []}}
+  ]
+}

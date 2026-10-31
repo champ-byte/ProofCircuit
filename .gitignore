@@ -1,0 +1,23 @@
+# Secrets: never commit populated env files
+.env
+.env.*
+!.env.example
+
+# Runtime data (database, evidence, packs)
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Model weights / misc
+*.gguf
+*.safetensors
+.DS_Store

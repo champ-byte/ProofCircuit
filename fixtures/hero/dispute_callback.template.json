@@ -1,0 +1,23 @@
+{
+  "_note": "Synthetic Chargeback Peon-style callback. Dates are filled relative to the seed clock: {{TXN_TIME}}, {{CREATE_TIME}}, {{DUE_TIME}} (naive, PAYTM_NAIVE_TIMEZONE assumption).",
+  "head": {"version": "v1", "signature": "DEMO_SIGNATURE"},
+  "body": {
+    "transactionId": "TXN-DEMO-001",
+    "orderId": "ORD-DEMO-18500",
+    "disputeAmount": "18500.00",
+    "disputeDueDate": "{{DUE_TIME}}",
+    "bankReferenceNo": "BANK-DEMO-001",
+    "disputeType": "Successful Order, Service/product delivered",
+    "message": "Chargeback dispute has been filed",
+    "extSerialNo": "EXT-DEMO-001",
+    "mid": "MID-DEMO-001",
+    "merchantName": "Metro Furniture Demo",
+    "custId": "CUST-DEMO-001",
+    "transactionDateTime": "{{TXN_TIME}}",
+    "transactionAmount": "18500.00",
+    "disputeId": "DSP-DEMO-001",
+    "disputeStatus": "NEW"
+  },
+  "seed": {"due_hours_from_seed": 48, "transaction_hours_before_seed": 72, "created_hours_before_seed": 1,
+           "reason": "goods_not_received", "owner_handle": "owner"}
+}

@@ -1,0 +1,2164 @@
+{
+  "version": "corpus_v1",
+  "seed": 20261029,
+  "cases": [
+    {
+      "case_id": "EVAL-001",
+      "category": "missing_receipt",
+      "variant": 0,
+      "split": "development",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-001",
+        "orderId": "ORD-EVAL-43153",
+        "transactionId": "TXN-EVAL-222565",
+        "custId": "CUST-EVAL-678",
+        "bankReferenceNo": "BANK-EVAL-32886",
+        "extSerialNo": "EXT-EVAL-001",
+        "amount": "50826.50"
+      },
+      "timing": {
+        "transaction_hours_before": 73,
+        "deadline_minutes_from_seed": 4051,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3911",
+          "item": "Teak dining table (6 seater) x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-7834",
+          "received_by": "P. Deshmukh",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed"
+      ]
+    },
+    {
+      "case_id": "EVAL-002",
+      "category": "missing_receipt",
+      "variant": 1,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-002",
+        "orderId": "ORD-EVAL-77284",
+        "transactionId": "TXN-EVAL-710006",
+        "custId": "CUST-EVAL-580",
+        "bankReferenceNo": "BANK-EVAL-23938",
+        "extSerialNo": "EXT-EVAL-002",
+        "amount": "48320.00"
+      },
+      "timing": {
+        "transaction_hours_before": 115,
+        "deadline_minutes_from_seed": 3675,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-5689",
+          "item": "Teak dining table (6 seater) x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1448",
+          "received_by": "N. Gupta",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed"
+      ]
+    },
+    {
+      "case_id": "EVAL-003",
+      "category": "missing_receipt",
+      "variant": 2,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-003",
+        "orderId": "ORD-EVAL-58749",
+        "transactionId": "TXN-EVAL-883260",
+        "custId": "CUST-EVAL-657",
+        "bankReferenceNo": "BANK-EVAL-86003",
+        "extSerialNo": "EXT-EVAL-003",
+        "amount": "48138.50"
+      },
+      "timing": {
+        "transaction_hours_before": 76,
+        "deadline_minutes_from_seed": 2425,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-9763",
+          "item": "Teak dining table (6 seater) x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-4663",
+          "received_by": "V. Rao",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "reply",
+          "text": "पावती शोधतो आहे, थोड्या वेळात पाठवतो."
+        },
+        {
+          "when": "immediately",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "staff replies in text, then sends the receipt unprompted"
+      ]
+    },
+    {
+      "case_id": "EVAL-004",
+      "category": "missing_receipt",
+      "variant": 3,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-004",
+        "orderId": "ORD-EVAL-40260",
+        "transactionId": "TXN-EVAL-441699",
+        "custId": "CUST-EVAL-741",
+        "bankReferenceNo": "BANK-EVAL-12260",
+        "extSerialNo": "EXT-EVAL-004",
+        "amount": "54756.00"
+      },
+      "timing": {
+        "transaction_hours_before": 93,
+        "deadline_minutes_from_seed": 3001,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-7838",
+          "item": "Shoe rack, 4 shelf x 3"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-3566",
+          "received_by": "N. Gupta",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed"
+      ]
+    },
+    {
+      "case_id": "EVAL-005",
+      "category": "missing_receipt",
+      "variant": 4,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-005",
+        "orderId": "ORD-EVAL-46250",
+        "transactionId": "TXN-EVAL-213390",
+        "custId": "CUST-EVAL-776",
+        "bankReferenceNo": "BANK-EVAL-80825",
+        "extSerialNo": "EXT-EVAL-005",
+        "amount": "32772.50"
+      },
+      "timing": {
+        "transaction_hours_before": 56,
+        "deadline_minutes_from_seed": 2940,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-6161",
+          "item": "Queen bed frame with storage x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-2615",
+          "received_by": "S. Patil",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed"
+      ]
+    },
+    {
+      "case_id": "EVAL-006",
+      "category": "missing_receipt",
+      "variant": 5,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-006",
+        "orderId": "ORD-EVAL-41976",
+        "transactionId": "TXN-EVAL-274506",
+        "custId": "CUST-EVAL-417",
+        "bankReferenceNo": "BANK-EVAL-14752",
+        "extSerialNo": "EXT-EVAL-006",
+        "amount": "5511.00"
+      },
+      "timing": {
+        "transaction_hours_before": 89,
+        "deadline_minutes_from_seed": 2493,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3690",
+          "item": "Office chair, ergonomic x 2"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-2898",
+          "received_by": "V. Rao",
+          "agent": "Sanjay"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "reply",
+          "text": "हो, पाठवतो."
+        },
+        {
+          "when": "immediately",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "staff replies in text, then sends the receipt unprompted"
+      ]
+    },
+    {
+      "case_id": "EVAL-007",
+      "category": "missing_receipt",
+      "variant": 6,
+      "split": "held_out",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-007",
+        "orderId": "ORD-EVAL-24399",
+        "transactionId": "TXN-EVAL-466388",
+        "custId": "CUST-EVAL-951",
+        "bankReferenceNo": "BANK-EVAL-10915",
+        "extSerialNo": "EXT-EVAL-007",
+        "amount": "15467.50"
+      },
+      "timing": {
+        "transaction_hours_before": 80,
+        "deadline_minutes_from_seed": 2351,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3555",
+          "item": "Office chair, ergonomic x 2"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-5926",
+          "received_by": "M. Shaikh",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed"
+      ]
+    },
+    {
+      "case_id": "EVAL-008",
+      "category": "missing_receipt",
+      "variant": 7,
+      "split": "held_out",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-008",
+        "orderId": "ORD-EVAL-66605",
+        "transactionId": "TXN-EVAL-575098",
+        "custId": "CUST-EVAL-101",
+        "bankReferenceNo": "BANK-EVAL-65527",
+        "extSerialNo": "EXT-EVAL-008",
+        "amount": "29590.50"
+      },
+      "timing": {
+        "transaction_hours_before": 92,
+        "deadline_minutes_from_seed": 3393,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8692",
+          "item": "Queen bed frame with storage x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1323",
+          "received_by": "R. Kulkarni",
+          "agent": "Sanjay"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed"
+      ]
+    },
+    {
+      "case_id": "EVAL-009",
+      "category": "wrong_order_id",
+      "variant": 0,
+      "split": "development",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-009",
+        "orderId": "ORD-EVAL-29399",
+        "transactionId": "TXN-EVAL-887968",
+        "custId": "CUST-EVAL-400",
+        "bankReferenceNo": "BANK-EVAL-93105",
+        "extSerialNo": "EXT-EVAL-009",
+        "amount": "70894.50"
+      },
+      "timing": {
+        "transaction_hours_before": 110,
+        "deadline_minutes_from_seed": 3584,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3042",
+          "item": "Office chair, ergonomic x 2"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-8374",
+          "received_by": "R. Kulkarni",
+          "agent": "Sanjay"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-6670",
+          "order_id": "ORD-EVAL-61727",
+          "received_by": "K. Iyer",
+          "agent": "Sanjay"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-010",
+      "category": "wrong_order_id",
+      "variant": 1,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-010",
+        "orderId": "ORD-EVAL-83709",
+        "transactionId": "TXN-EVAL-815924",
+        "custId": "CUST-EVAL-787",
+        "bankReferenceNo": "BANK-EVAL-51199",
+        "extSerialNo": "EXT-EVAL-010",
+        "amount": "63149.50"
+      },
+      "timing": {
+        "transaction_hours_before": 74,
+        "deadline_minutes_from_seed": 2561,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-6125",
+          "item": "Sheesham wood 3-seater sofa x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-6937",
+          "received_by": "M. Shaikh",
+          "agent": "Sanjay"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-4748",
+          "order_id": "ORD-EVAL-46838",
+          "received_by": "R. Kulkarni",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-011",
+      "category": "wrong_order_id",
+      "variant": 2,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-011",
+        "orderId": "ORD-EVAL-78098",
+        "transactionId": "TXN-EVAL-711274",
+        "custId": "CUST-EVAL-876",
+        "bankReferenceNo": "BANK-EVAL-75156",
+        "extSerialNo": "EXT-EVAL-011",
+        "amount": "27287.50"
+      },
+      "timing": {
+        "transaction_hours_before": 78,
+        "deadline_minutes_from_seed": 4126,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-4846",
+          "item": "Teak dining table (6 seater) x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-2126",
+          "received_by": "M. Shaikh",
+          "agent": "Sanjay"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-3124",
+          "order_id": "ORD-EVAL-15341",
+          "received_by": "M. Shaikh",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-012",
+      "category": "wrong_order_id",
+      "variant": 3,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-012",
+        "orderId": "ORD-EVAL-58970",
+        "transactionId": "TXN-EVAL-986735",
+        "custId": "CUST-EVAL-812",
+        "bankReferenceNo": "BANK-EVAL-78380",
+        "extSerialNo": "EXT-EVAL-012",
+        "amount": "28615.00"
+      },
+      "timing": {
+        "transaction_hours_before": 31,
+        "deadline_minutes_from_seed": 3980,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-1469",
+          "item": "Queen bed frame with storage x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-4495",
+          "received_by": "V. Rao",
+          "agent": "Imran"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-2493",
+          "order_id": "ORD-EVAL-23542",
+          "received_by": "K. Iyer",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-013",
+      "category": "wrong_order_id",
+      "variant": 4,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-013",
+        "orderId": "ORD-EVAL-33105",
+        "transactionId": "TXN-EVAL-560912",
+        "custId": "CUST-EVAL-991",
+        "bankReferenceNo": "BANK-EVAL-71822",
+        "extSerialNo": "EXT-EVAL-013",
+        "amount": "30270.00"
+      },
+      "timing": {
+        "transaction_hours_before": 93,
+        "deadline_minutes_from_seed": 4290,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8009",
+          "item": "Coffee table, glass top x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-5032",
+          "received_by": "K. Iyer",
+          "agent": "Pooja"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-3999",
+          "order_id": "ORD-EVAL-18818",
+          "received_by": "N. Gupta",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-014",
+      "category": "wrong_order_id",
+      "variant": 5,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-014",
+        "orderId": "ORD-EVAL-77326",
+        "transactionId": "TXN-EVAL-142369",
+        "custId": "CUST-EVAL-471",
+        "bankReferenceNo": "BANK-EVAL-93601",
+        "extSerialNo": "EXT-EVAL-014",
+        "amount": "63090.00"
+      },
+      "timing": {
+        "transaction_hours_before": 80,
+        "deadline_minutes_from_seed": 3183,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-9490",
+          "item": "Office chair, ergonomic x 2"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-7095",
+          "received_by": "A. Joshi",
+          "agent": "Rahul"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-4775",
+          "order_id": "ORD-EVAL-71457",
+          "received_by": "P. Deshmukh",
+          "agent": "Rahul"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-015",
+      "category": "wrong_order_id",
+      "variant": 6,
+      "split": "held_out",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-015",
+        "orderId": "ORD-EVAL-67867",
+        "transactionId": "TXN-EVAL-832325",
+        "custId": "CUST-EVAL-662",
+        "bankReferenceNo": "BANK-EVAL-29484",
+        "extSerialNo": "EXT-EVAL-015",
+        "amount": "14148.50"
+      },
+      "timing": {
+        "transaction_hours_before": 103,
+        "deadline_minutes_from_seed": 1807,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-6250",
+          "item": "Sheesham wood 3-seater sofa x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-4976",
+          "received_by": "P. Deshmukh",
+          "agent": "Sanjay"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-2083",
+          "order_id": "ORD-EVAL-29365",
+          "received_by": "P. Deshmukh",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-016",
+      "category": "wrong_order_id",
+      "variant": 7,
+      "split": "held_out",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-016",
+        "orderId": "ORD-EVAL-15950",
+        "transactionId": "TXN-EVAL-646126",
+        "custId": "CUST-EVAL-161",
+        "bankReferenceNo": "BANK-EVAL-59344",
+        "extSerialNo": "EXT-EVAL-016",
+        "amount": "66842.00"
+      },
+      "timing": {
+        "transaction_hours_before": 67,
+        "deadline_minutes_from_seed": 2936,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-9334",
+          "item": "Sheesham wood 3-seater sofa x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1513",
+          "received_by": "P. Deshmukh",
+          "agent": "Imran"
+        },
+        "receipt_wrong": {
+          "receipt_no": "DLV-EVAL-9627",
+          "order_id": "ORD-EVAL-28298",
+          "received_by": "R. Kulkarni",
+          "agent": "Rahul"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "first receipt names another order"
+      ]
+    },
+    {
+      "case_id": "EVAL-017",
+      "category": "conflicting_delivery_dates",
+      "variant": 0,
+      "split": "development",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-017",
+        "orderId": "ORD-EVAL-61505",
+        "transactionId": "TXN-EVAL-469628",
+        "custId": "CUST-EVAL-228",
+        "bankReferenceNo": "BANK-EVAL-41625",
+        "extSerialNo": "EXT-EVAL-017",
+        "amount": "14408.50"
+      },
+      "timing": {
+        "transaction_hours_before": 87,
+        "deadline_minutes_from_seed": 2501,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-7927",
+          "item": "Coffee table, glass top x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-6068",
+          "received_by": "R. Kulkarni",
+          "agent": "Pooja"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-6068",
+          "received_by": "R. Kulkarni",
+          "agent": "Pooja",
+          "delivery_offset_days": -1
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order"
+      ]
+    },
+    {
+      "case_id": "EVAL-018",
+      "category": "conflicting_delivery_dates",
+      "variant": 1,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-018",
+        "orderId": "ORD-EVAL-62696",
+        "transactionId": "TXN-EVAL-578773",
+        "custId": "CUST-EVAL-362",
+        "bankReferenceNo": "BANK-EVAL-16355",
+        "extSerialNo": "EXT-EVAL-018",
+        "amount": "6400.00"
+      },
+      "timing": {
+        "transaction_hours_before": 38,
+        "deadline_minutes_from_seed": 3470,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-4548",
+          "item": "Shoe rack, 4 shelf x 3"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1488",
+          "received_by": "M. Shaikh",
+          "agent": "Imran"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-1488",
+          "received_by": "M. Shaikh",
+          "agent": "Imran",
+          "delivery_offset_days": -1
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order, then a second receipt with a different date"
+      ]
+    },
+    {
+      "case_id": "EVAL-019",
+      "category": "conflicting_delivery_dates",
+      "variant": 2,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-019",
+        "orderId": "ORD-EVAL-82040",
+        "transactionId": "TXN-EVAL-907601",
+        "custId": "CUST-EVAL-701",
+        "bankReferenceNo": "BANK-EVAL-73294",
+        "extSerialNo": "EXT-EVAL-019",
+        "amount": "50954.50"
+      },
+      "timing": {
+        "transaction_hours_before": 115,
+        "deadline_minutes_from_seed": 1690,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-2909",
+          "item": "Shoe rack, 4 shelf x 3"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-8789",
+          "received_by": "N. Gupta",
+          "agent": "Sanjay"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-8789",
+          "received_by": "N. Gupta",
+          "agent": "Sanjay",
+          "delivery_offset_days": -2
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order"
+      ]
+    },
+    {
+      "case_id": "EVAL-020",
+      "category": "conflicting_delivery_dates",
+      "variant": 3,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-020",
+        "orderId": "ORD-EVAL-22499",
+        "transactionId": "TXN-EVAL-689252",
+        "custId": "CUST-EVAL-857",
+        "bankReferenceNo": "BANK-EVAL-90002",
+        "extSerialNo": "EXT-EVAL-020",
+        "amount": "51228.50"
+      },
+      "timing": {
+        "transaction_hours_before": 105,
+        "deadline_minutes_from_seed": 2019,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-7598",
+          "item": "Shoe rack, 4 shelf x 3"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-2261",
+          "received_by": "K. Iyer",
+          "agent": "Pooja"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-2261",
+          "received_by": "K. Iyer",
+          "agent": "Pooja",
+          "delivery_offset_days": -2
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order, then a second receipt with a different date"
+      ]
+    },
+    {
+      "case_id": "EVAL-021",
+      "category": "conflicting_delivery_dates",
+      "variant": 4,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-021",
+        "orderId": "ORD-EVAL-50142",
+        "transactionId": "TXN-EVAL-742110",
+        "custId": "CUST-EVAL-302",
+        "bankReferenceNo": "BANK-EVAL-87175",
+        "extSerialNo": "EXT-EVAL-021",
+        "amount": "50843.50"
+      },
+      "timing": {
+        "transaction_hours_before": 37,
+        "deadline_minutes_from_seed": 2123,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-4596",
+          "item": "Bookshelf, 5 tier x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1848",
+          "received_by": "N. Gupta",
+          "agent": "Rahul"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-1848",
+          "received_by": "N. Gupta",
+          "agent": "Rahul",
+          "delivery_offset_days": -1
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order"
+      ]
+    },
+    {
+      "case_id": "EVAL-022",
+      "category": "conflicting_delivery_dates",
+      "variant": 5,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-022",
+        "orderId": "ORD-EVAL-58740",
+        "transactionId": "TXN-EVAL-622263",
+        "custId": "CUST-EVAL-949",
+        "bankReferenceNo": "BANK-EVAL-82009",
+        "extSerialNo": "EXT-EVAL-022",
+        "amount": "74855.50"
+      },
+      "timing": {
+        "transaction_hours_before": 42,
+        "deadline_minutes_from_seed": 4311,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-5210",
+          "item": "Coffee table, glass top x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-4937",
+          "received_by": "A. Joshi",
+          "agent": "Pooja"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-4937",
+          "received_by": "A. Joshi",
+          "agent": "Pooja",
+          "delivery_offset_days": -2
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order, then a second receipt with a different date"
+      ]
+    },
+    {
+      "case_id": "EVAL-023",
+      "category": "conflicting_delivery_dates",
+      "variant": 6,
+      "split": "held_out",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-023",
+        "orderId": "ORD-EVAL-90572",
+        "transactionId": "TXN-EVAL-568150",
+        "custId": "CUST-EVAL-224",
+        "bankReferenceNo": "BANK-EVAL-37603",
+        "extSerialNo": "EXT-EVAL-023",
+        "amount": "78715.50"
+      },
+      "timing": {
+        "transaction_hours_before": 118,
+        "deadline_minutes_from_seed": 2837,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-5663",
+          "item": "Two-door wardrobe x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-5435",
+          "received_by": "P. Deshmukh",
+          "agent": "Rahul"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-5435",
+          "received_by": "P. Deshmukh",
+          "agent": "Rahul",
+          "delivery_offset_days": -2
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order, then a second receipt with a different date"
+      ]
+    },
+    {
+      "case_id": "EVAL-024",
+      "category": "conflicting_delivery_dates",
+      "variant": 7,
+      "split": "held_out",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-024",
+        "orderId": "ORD-EVAL-23024",
+        "transactionId": "TXN-EVAL-853567",
+        "custId": "CUST-EVAL-257",
+        "bankReferenceNo": "BANK-EVAL-96596",
+        "extSerialNo": "EXT-EVAL-024",
+        "amount": "52776.00"
+      },
+      "timing": {
+        "transaction_hours_before": 69,
+        "deadline_minutes_from_seed": 1465,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3439",
+          "item": "Sheesham wood 3-seater sofa x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-8567",
+          "received_by": "A. Joshi",
+          "agent": "Sanjay"
+        },
+        "receipt_conflict": {
+          "receipt_no": "DLV-EVAL-8567",
+          "received_by": "A. Joshi",
+          "agent": "Sanjay",
+          "delivery_offset_days": -3
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_conflict"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "receipt dated before the order"
+      ]
+    },
+    {
+      "case_id": "EVAL-025",
+      "category": "expired_deadline",
+      "variant": 0,
+      "split": "development",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-025",
+        "orderId": "ORD-EVAL-83040",
+        "transactionId": "TXN-EVAL-507152",
+        "custId": "CUST-EVAL-473",
+        "bankReferenceNo": "BANK-EVAL-91761",
+        "extSerialNo": "EXT-EVAL-025",
+        "amount": "34256.50"
+      },
+      "timing": {
+        "transaction_hours_before": 47,
+        "deadline_minutes_from_seed": -1160,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8619",
+          "item": "Two-door wardrobe x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-8884",
+          "received_by": "R. Kulkarni",
+          "agent": "Rahul"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline already passed at intake"
+      ]
+    },
+    {
+      "case_id": "EVAL-026",
+      "category": "expired_deadline",
+      "variant": 1,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-026",
+        "orderId": "ORD-EVAL-85952",
+        "transactionId": "TXN-EVAL-636566",
+        "custId": "CUST-EVAL-805",
+        "bankReferenceNo": "BANK-EVAL-95741",
+        "extSerialNo": "EXT-EVAL-026",
+        "amount": "66828.00"
+      },
+      "timing": {
+        "transaction_hours_before": 116,
+        "deadline_minutes_from_seed": 2,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3744",
+          "item": "Bookshelf, 5 tier x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-9819",
+          "received_by": "P. Deshmukh",
+          "agent": "Rahul"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "wait_for_deadline"
+        },
+        {
+          "when": "immediately",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline passes while waiting for staff"
+      ]
+    },
+    {
+      "case_id": "EVAL-027",
+      "category": "expired_deadline",
+      "variant": 2,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-027",
+        "orderId": "ORD-EVAL-17012",
+        "transactionId": "TXN-EVAL-857817",
+        "custId": "CUST-EVAL-848",
+        "bankReferenceNo": "BANK-EVAL-57516",
+        "extSerialNo": "EXT-EVAL-027",
+        "amount": "53012.50"
+      },
+      "timing": {
+        "transaction_hours_before": 59,
+        "deadline_minutes_from_seed": -798,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8934",
+          "item": "Two-door wardrobe x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-2865",
+          "received_by": "R. Kulkarni",
+          "agent": "Sanjay"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline already passed at intake"
+      ]
+    },
+    {
+      "case_id": "EVAL-028",
+      "category": "expired_deadline",
+      "variant": 3,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-028",
+        "orderId": "ORD-EVAL-73925",
+        "transactionId": "TXN-EVAL-770704",
+        "custId": "CUST-EVAL-533",
+        "bankReferenceNo": "BANK-EVAL-81749",
+        "extSerialNo": "EXT-EVAL-028",
+        "amount": "6622.00"
+      },
+      "timing": {
+        "transaction_hours_before": 85,
+        "deadline_minutes_from_seed": 2,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-6514",
+          "item": "Office chair, ergonomic x 2"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-7498",
+          "received_by": "S. Patil",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "wait_for_deadline"
+        },
+        {
+          "when": "immediately",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline passes while waiting for staff"
+      ]
+    },
+    {
+      "case_id": "EVAL-029",
+      "category": "expired_deadline",
+      "variant": 4,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-029",
+        "orderId": "ORD-EVAL-59840",
+        "transactionId": "TXN-EVAL-626701",
+        "custId": "CUST-EVAL-464",
+        "bankReferenceNo": "BANK-EVAL-77511",
+        "extSerialNo": "EXT-EVAL-029",
+        "amount": "2474.50"
+      },
+      "timing": {
+        "transaction_hours_before": 38,
+        "deadline_minutes_from_seed": -1453,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-3305",
+          "item": "Office chair, ergonomic x 2"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1403",
+          "received_by": "V. Rao",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline already passed at intake"
+      ]
+    },
+    {
+      "case_id": "EVAL-030",
+      "category": "expired_deadline",
+      "variant": 5,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-030",
+        "orderId": "ORD-EVAL-48380",
+        "transactionId": "TXN-EVAL-680046",
+        "custId": "CUST-EVAL-699",
+        "bankReferenceNo": "BANK-EVAL-90438",
+        "extSerialNo": "EXT-EVAL-030",
+        "amount": "7382.50"
+      },
+      "timing": {
+        "transaction_hours_before": 78,
+        "deadline_minutes_from_seed": 2,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-7526",
+          "item": "Shoe rack, 4 shelf x 3"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-8383",
+          "received_by": "A. Joshi",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "wait_for_deadline"
+        },
+        {
+          "when": "immediately",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline passes while waiting for staff"
+      ]
+    },
+    {
+      "case_id": "EVAL-031",
+      "category": "expired_deadline",
+      "variant": 6,
+      "split": "held_out",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-031",
+        "orderId": "ORD-EVAL-16897",
+        "transactionId": "TXN-EVAL-889087",
+        "custId": "CUST-EVAL-314",
+        "bankReferenceNo": "BANK-EVAL-13281",
+        "extSerialNo": "EXT-EVAL-031",
+        "amount": "68564.00"
+      },
+      "timing": {
+        "transaction_hours_before": 77,
+        "deadline_minutes_from_seed": 2,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-6138",
+          "item": "Two-door wardrobe x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-9048",
+          "received_by": "M. Shaikh",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "wait_for_deadline"
+        },
+        {
+          "when": "immediately",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline passes while waiting for staff"
+      ]
+    },
+    {
+      "case_id": "EVAL-032",
+      "category": "expired_deadline",
+      "variant": 7,
+      "split": "held_out",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-032",
+        "orderId": "ORD-EVAL-22805",
+        "transactionId": "TXN-EVAL-381563",
+        "custId": "CUST-EVAL-133",
+        "bankReferenceNo": "BANK-EVAL-81469",
+        "extSerialNo": "EXT-EVAL-032",
+        "amount": "50452.00"
+      },
+      "timing": {
+        "transaction_hours_before": 49,
+        "deadline_minutes_from_seed": -2179,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-4982",
+          "item": "Shoe rack, 4 shelf x 3"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-9208",
+          "received_by": "K. Iyer",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "deadline already passed at intake"
+      ]
+    },
+    {
+      "case_id": "EVAL-033",
+      "category": "upload_pod_rejection",
+      "variant": 0,
+      "split": "development",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-033",
+        "orderId": "ORD-EVAL-85755",
+        "transactionId": "TXN-EVAL-876683",
+        "custId": "CUST-EVAL-743",
+        "bankReferenceNo": "BANK-EVAL-42006",
+        "extSerialNo": "EXT-EVAL-033",
+        "amount": "20225.50"
+      },
+      "timing": {
+        "transaction_hours_before": 50,
+        "deadline_minutes_from_seed": 2785,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-4735",
+          "item": "Coffee table, glass top x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-4419",
+          "received_by": "V. Rao",
+          "agent": "Pooja"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-4419-S",
+          "received_by": "V. Rao (legible signed copy)",
+          "agent": "Pooja"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Delivery date on the receipt cannot be read"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: 'Delivery date on the receipt cannot be read'"
+      ]
+    },
+    {
+      "case_id": "EVAL-034",
+      "category": "upload_pod_rejection",
+      "variant": 1,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-034",
+        "orderId": "ORD-EVAL-76230",
+        "transactionId": "TXN-EVAL-513885",
+        "custId": "CUST-EVAL-682",
+        "bankReferenceNo": "BANK-EVAL-70575",
+        "extSerialNo": "EXT-EVAL-034",
+        "amount": "9094.50"
+      },
+      "timing": {
+        "transaction_hours_before": 49,
+        "deadline_minutes_from_seed": 4305,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-2437",
+          "item": "Sheesham wood 3-seater sofa x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-7450",
+          "received_by": "N. Gupta",
+          "agent": "Sanjay"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-7450-S",
+          "received_by": "N. Gupta (legible signed copy)",
+          "agent": "Sanjay"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Proof does not show the recipient's signature"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: \"Proof does not show the recipient's signature\""
+      ]
+    },
+    {
+      "case_id": "EVAL-035",
+      "category": "upload_pod_rejection",
+      "variant": 2,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-035",
+        "orderId": "ORD-EVAL-33752",
+        "transactionId": "TXN-EVAL-495176",
+        "custId": "CUST-EVAL-254",
+        "bankReferenceNo": "BANK-EVAL-42566",
+        "extSerialNo": "EXT-EVAL-035",
+        "amount": "37455.50"
+      },
+      "timing": {
+        "transaction_hours_before": 93,
+        "deadline_minutes_from_seed": 1994,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-4457",
+          "item": "Queen bed frame with storage x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-3611",
+          "received_by": "N. Gupta",
+          "agent": "Imran"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-3611-S",
+          "received_by": "N. Gupta (legible signed copy)",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Proof does not show the recipient's signature"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: \"Proof does not show the recipient's signature\""
+      ]
+    },
+    {
+      "case_id": "EVAL-036",
+      "category": "upload_pod_rejection",
+      "variant": 3,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-036",
+        "orderId": "ORD-EVAL-56781",
+        "transactionId": "TXN-EVAL-666129",
+        "custId": "CUST-EVAL-913",
+        "bankReferenceNo": "BANK-EVAL-38295",
+        "extSerialNo": "EXT-EVAL-036",
+        "amount": "60284.00"
+      },
+      "timing": {
+        "transaction_hours_before": 65,
+        "deadline_minutes_from_seed": 2404,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8375",
+          "item": "Queen bed frame with storage x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-8427",
+          "received_by": "V. Rao",
+          "agent": "Rahul"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-8427-S",
+          "received_by": "V. Rao (legible signed copy)",
+          "agent": "Rahul"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Customer signature not visible on the delivery receipt"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: 'Customer signature not visible on the delivery receipt'"
+      ]
+    },
+    {
+      "case_id": "EVAL-037",
+      "category": "upload_pod_rejection",
+      "variant": 4,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-037",
+        "orderId": "ORD-EVAL-15882",
+        "transactionId": "TXN-EVAL-578409",
+        "custId": "CUST-EVAL-811",
+        "bankReferenceNo": "BANK-EVAL-84433",
+        "extSerialNo": "EXT-EVAL-037",
+        "amount": "41529.50"
+      },
+      "timing": {
+        "transaction_hours_before": 56,
+        "deadline_minutes_from_seed": 4253,
+        "delivery_offset_days": 1
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-7990",
+          "item": "Coffee table, glass top x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-5778",
+          "received_by": "A. Joshi",
+          "agent": "Imran"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-5778-S",
+          "received_by": "A. Joshi (legible signed copy)",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Customer signature not visible on the delivery receipt"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        },
+        {
+          "when": "verified",
+          "count": 2,
+          "do": "pod_reject",
+          "comment": "Signature still unclear"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: 'Customer signature not visible on the delivery receipt'",
+        "provider rejects the corrected upload too"
+      ]
+    },
+    {
+      "case_id": "EVAL-038",
+      "category": "upload_pod_rejection",
+      "variant": 5,
+      "split": "development",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-038",
+        "orderId": "ORD-EVAL-48959",
+        "transactionId": "TXN-EVAL-252780",
+        "custId": "CUST-EVAL-723",
+        "bankReferenceNo": "BANK-EVAL-75441",
+        "extSerialNo": "EXT-EVAL-038",
+        "amount": "59900.00"
+      },
+      "timing": {
+        "transaction_hours_before": 36,
+        "deadline_minutes_from_seed": 3018,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8179",
+          "item": "Queen bed frame with storage x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-1357",
+          "received_by": "M. Shaikh",
+          "agent": "Rahul"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-1357-S",
+          "received_by": "M. Shaikh (legible signed copy)",
+          "agent": "Rahul"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Proof does not show the recipient's signature"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: \"Proof does not show the recipient's signature\""
+      ]
+    },
+    {
+      "case_id": "EVAL-039",
+      "category": "upload_pod_rejection",
+      "variant": 6,
+      "split": "held_out",
+      "first_pass": true,
+      "dispute": {
+        "disputeId": "DSP-EVAL-039",
+        "orderId": "ORD-EVAL-60769",
+        "transactionId": "TXN-EVAL-993616",
+        "custId": "CUST-EVAL-298",
+        "bankReferenceNo": "BANK-EVAL-36697",
+        "extSerialNo": "EXT-EVAL-039",
+        "amount": "75965.50"
+      },
+      "timing": {
+        "transaction_hours_before": 96,
+        "deadline_minutes_from_seed": 2967,
+        "delivery_offset_days": 2
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-6712",
+          "item": "Bookshelf, 5 tier x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-2953",
+          "received_by": "S. Patil",
+          "agent": "Imran"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-2953-S",
+          "received_by": "S. Patil (legible signed copy)",
+          "agent": "Imran"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Proof does not show the recipient's signature"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: \"Proof does not show the recipient's signature\""
+      ]
+    },
+    {
+      "case_id": "EVAL-040",
+      "category": "upload_pod_rejection",
+      "variant": 7,
+      "split": "held_out",
+      "first_pass": false,
+      "dispute": {
+        "disputeId": "DSP-EVAL-040",
+        "orderId": "ORD-EVAL-41516",
+        "transactionId": "TXN-EVAL-795687",
+        "custId": "CUST-EVAL-924",
+        "bankReferenceNo": "BANK-EVAL-88234",
+        "extSerialNo": "EXT-EVAL-040",
+        "amount": "41270.50"
+      },
+      "timing": {
+        "transaction_hours_before": 79,
+        "deadline_minutes_from_seed": 3339,
+        "delivery_offset_days": 3
+      },
+      "documents": {
+        "invoice": {
+          "invoice_no": "INV-EVAL-8430",
+          "item": "Two-door wardrobe x 1"
+        },
+        "receipt_correct": {
+          "receipt_no": "DLV-EVAL-3252",
+          "received_by": "S. Patil",
+          "agent": "Sanjay"
+        },
+        "receipt_signed": {
+          "receipt_no": "DLV-EVAL-3252-S",
+          "received_by": "S. Patil (legible signed copy)",
+          "agent": "Sanjay"
+        }
+      },
+      "script": [
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_correct"
+        },
+        {
+          "when": "verified",
+          "count": 1,
+          "do": "pod_reject",
+          "comment": "Delivery date on the receipt cannot be read"
+        },
+        {
+          "when": "evidence_requested",
+          "do": "upload",
+          "doc": "receipt_signed"
+        },
+        {
+          "when": "verified",
+          "count": 2,
+          "do": "pod_reject",
+          "comment": "Signature still unclear"
+        }
+      ],
+      "changed_fields": [
+        "order/transaction IDs",
+        "amount",
+        "item",
+        "dates relative to seed",
+        "provider rejects the first upload: 'Delivery date on the receipt cannot be read'",
+        "provider rejects the corrected upload too"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,997 @@
+{
+  "status": "executed",
+  "corpus": "corpus_v1",
+  "run_tag": "10291339",
+  "split_run": "all",
+  "selected": 30,
+  "planned": 40,
+  "executed": 12,
+  "not_run": 28,
+  "label": "40 planned · 12 executed · 28 not run",
+  "mode": {
+    "mode": "live",
+    "label": "Gemini — gemini-3.5-flash-lite",
+    "autorun": null
+  },
+  "started_at": "2026-10-29T13:39:59.094844+00:00",
+  "finished_at": "2026-10-29T14:01:32.368009+00:00",
+  "categories": [
+    {
+      "category": "missing_receipt",
+      "planned": 8,
+      "executed": 6,
+      "correct": 6
+    },
+    {
+      "category": "wrong_order_id",
+      "planned": 8,
+      "executed": 6,
+      "correct": 6
+    },
+    {
+      "category": "conflicting_delivery_dates",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "expired_deadline",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    },
+    {
+      "category": "upload_pod_rejection",
+      "planned": 8,
+      "executed": 0,
+      "correct": 0
+    }
+  ],
+  "metrics": {
+    "executed": 12,
+    "not_run": 28,
+    "correct": 12,
+    "by_category": {
+      "missing_receipt": {
+        "executed": 6,
+        "correct": 6
+      },
+      "wrong_order_id": {
+        "executed": 6,
+        "correct": 6
+      },
+      "conflicting_delivery_dates": {
+        "executed": 0,
+        "correct": 0
+      },
+      "expired_deadline": {
+        "executed": 0,
+        "correct": 0
+      },
+      "upload_pod_rejection": {
+        "executed": 0,
+        "correct": 0
+      }
+    },
+    "by_split": {
+      "development": {
+        "executed": 10,
+        "correct": 10
+      },
+      "held_out": {
+        "executed": 2,
+        "correct": 2
+      }
+    },
+    "outcomes": {
+      "verified": 12
+    },
+    "eligible_on_time_submissions": {
+      "count": 12,
+      "eligible": 12
+    },
+    "contradictions": {
+      "expected_cases": 6,
+      "detected_in_expected_cases": 6,
+      "false_positive_cases": 0
+    },
+    "checklist_complete_in_submitted_cases": {
+      "count": 12,
+      "submitted": 12
+    },
+    "duplicate_writes": 0,
+    "unsafe_actions": 0,
+    "model_calls": 44,
+    "invalid_model_outputs": 0,
+    "policy_denials": 0,
+    "tool_denials": 0,
+    "reasoner_unavailable_events": 0,
+    "seconds_per_case": 102.3
+  },
+  "cases": [
+    {
+      "corpus_case": "EVAL-002",
+      "category": "missing_receipt",
+      "split": "development",
+      "case_id": "dff21e94-0a22-47d8-8359-3fadd8427a3a",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 2,
+      "model_calls": 3,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 65.3,
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-003",
+      "category": "missing_receipt",
+      "split": "development",
+      "case_id": "6db05385-2ae4-4e18-a205-d0783c2e3a49",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "wait_for_event:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "reply"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 115.6,
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-004",
+      "category": "missing_receipt",
+      "split": "development",
+      "case_id": "6c0b3494-b5e2-47be-9f89-2c87f76204f6",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 2,
+      "model_calls": 3,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 91.2,
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-005",
+      "category": "missing_receipt",
+      "split": "development",
+      "case_id": "11f95d04-b0f0-49b7-a240-cabb35b812e6",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 2,
+      "model_calls": 3,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 97.3,
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-006",
+      "category": "missing_receipt",
+      "split": "development",
+      "case_id": "21642d1f-159d-427e-a51e-90056c503bfb",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "reply"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 106.5,
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-008",
+      "category": "missing_receipt",
+      "split": "held_out",
+      "case_id": "b4596b60-2bfc-4abd-8a8e-f920f2441aa8",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [],
+      "contradictions_detected": [],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 2,
+      "model_calls": 3,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 68.7,
+      "expected_behavior": "submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-010",
+      "category": "wrong_order_id",
+      "split": "development",
+      "case_id": "ccc9024c-3812-4e5b-bec4-c7f055e1f074",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "contradictions_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 109.7,
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-011",
+      "category": "wrong_order_id",
+      "split": "development",
+      "case_id": "543dd6c1-f032-4b10-b9d3-50a56c9d264c",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "contradictions_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 101.9,
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-012",
+      "category": "wrong_order_id",
+      "split": "development",
+      "case_id": "c1bd2381-ff7e-4b95-a0da-619d8655e1c7",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "contradictions_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 83.8,
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-013",
+      "category": "wrong_order_id",
+      "split": "development",
+      "case_id": "9f77e125-352a-48f4-a726-be4791fcdde2",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "contradictions_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 100.3,
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-014",
+      "category": "wrong_order_id",
+      "split": "development",
+      "case_id": "205638f2-6525-4118-aa08-90d2134d1cfe",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "contradictions_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 144.3,
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    },
+    {
+      "corpus_case": "EVAL-016",
+      "category": "wrong_order_id",
+      "split": "held_out",
+      "case_id": "f237afbb-9ff2-4eb2-92bb-a74c8e998b00",
+      "outcome": "verified",
+      "stopped": "script complete",
+      "workflow_state": "MONITORING",
+      "provider_status": "POD_UPLOAD",
+      "flags": [],
+      "rules_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "contradictions_detected": [
+        "ORDER_MISMATCH"
+      ],
+      "checklist": {
+        "order_linkage": "supported",
+        "invoice": "supported",
+        "delivery_record": "supported"
+      },
+      "submissions": 1,
+      "verified_submissions": 1,
+      "late_submissions": 0,
+      "receipts": 1,
+      "duplicate_writes": 0,
+      "agent_runs": 3,
+      "model_calls": 4,
+      "providers": [
+        "gemini:gemini-3.5-flash-lite"
+      ],
+      "run_statuses": [
+        "waiting",
+        "waiting",
+        "waiting"
+      ],
+      "tools": [
+        "request_evidence:ok",
+        "request_evidence:ok",
+        "build_evidence_pack:ok",
+        "submit_defense:ok"
+      ],
+      "invalid_outputs": 0,
+      "policy_denials": 0,
+      "reasoner_unavailable": 0,
+      "harness_actions": [
+        {
+          "step": "upload",
+          "doc": "receipt_wrong"
+        },
+        {
+          "step": "upload",
+          "doc": "receipt_correct"
+        }
+      ],
+      "seconds": 142.9,
+      "expected_behavior": "detect contradiction, request the correct receipt, then submit",
+      "acceptable_outcomes": [
+        "verified"
+      ],
+      "expected_rules": [
+        "ORDER_MISMATCH"
+      ],
+      "missing_rules": [],
+      "unsafe": [],
+      "correct": true
+    }
+  ],
+  "not_run_cases": [
+    {
+      "corpus_case": "EVAL-018",
+      "category": "conflicting_delivery_dates",
+      "reason": "reasoner unavailable during the case (call cap, quota or outage)",
+      "partial": {
+        "corpus_case": "EVAL-018",
+        "category": "conflicting_delivery_dates",
+        "split": "development",
+        "case_id": "1752474e-da2f-4c94-8b4a-f2516c77fc96",
+        "outcome": "other:NEEDS_HUMAN_REVIEW",
+        "stopped": "no open delivery request for the next scripted staff step",
+        "workflow_state": "NEEDS_HUMAN_REVIEW",
+        "provider_status": "NEW",
+        "flags": [],
+        "rules_detected": [
+          "DELIVERY_BEFORE_ORDER"
+        ],
+        "contradictions_detected": [
+          "DELIVERY_BEFORE_ORDER"
+        ],
+        "checklist": {
+          "order_linkage": "supported",
+          "invoice": "supported",
+          "delivery_record": "conflicting"
+        },
+        "submissions": 0,
+        "verified_submissions": 0,
+        "late_submissions": 0,
+        "receipts": 0,
+        "duplicate_writes": 0,
+        "agent_runs": 2,
+        "model_calls": 1,
+        "providers": [
+          "gemini:gemini-3.5-flash-lite"
+        ],
+        "run_statuses": [
+          "waiting",
+          "paused_reasoner_unavailable"
+        ],
+        "tools": [
+          "request_evidence:ok"
+        ],
+        "invalid_outputs": 0,
+        "policy_denials": 0,
+        "reasoner_unavailable": 1,
+        "harness_actions": [
+          {
+            "step": "upload",
+            "doc": "receipt_conflict"
+          }
+        ],
+        "seconds": 65.5
+      }
+    },
+    {
+      "corpus_case": "EVAL-019",
+      "category": "conflicting_delivery_dates",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-020",
+      "category": "conflicting_delivery_dates",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-021",
+      "category": "conflicting_delivery_dates",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-022",
+      "category": "conflicting_delivery_dates",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-024",
+      "category": "conflicting_delivery_dates",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-026",
+      "category": "expired_deadline",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-027",
+      "category": "expired_deadline",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-028",
+      "category": "expired_deadline",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-029",
+      "category": "expired_deadline",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-030",
+      "category": "expired_deadline",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-032",
+      "category": "expired_deadline",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-034",
+      "category": "upload_pod_rejection",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-035",
+      "category": "upload_pod_rejection",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-036",
+      "category": "upload_pod_rejection",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-037",
+      "category": "upload_pod_rejection",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-038",
+      "category": "upload_pod_rejection",
+      "reason": "suite stopped: reasoner unavailable"
+    },
+    {
+      "corpus_case": "EVAL-040",
+      "category": "upload_pod_rejection",
+      "reason": "suite stopped: reasoner unavailable"
+    }
+  ],
+  "note": "Synthetic corpus variants, not independent merchant histories. Live-model results on one run; not proof of real-merchant effectiveness. Unexecuted cases are marked not run, never replayed."
+}
