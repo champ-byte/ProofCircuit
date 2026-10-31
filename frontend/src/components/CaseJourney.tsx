@@ -56,12 +56,12 @@ export function CaseJourney({
     demo?: { label: string; tab: DemoTab }
   }[] = [
     {
-      number: '01', title: 'Start the agent',
+      number: '01', title: 'Check the case',
       description: 'Ask the case assistant to check the record and suggest the next safe action. You can also use the controls below yourself.',
       types: ['agent.run_started'],
-      actions: [{ label: 'Run agent / resume', run: () => api.startRun(token, caseId), disabled: !canAct || closed }],
+      actions: [{ label: 'Check case with assistant', run: () => api.startRun(token, caseId), disabled: !canAct || closed }],
       links: [{ label: 'See agent runs', href: '#actions-h' }],
-      demo: { label: 'Check reasoner', tab: 'providers' },
+      demo: { label: 'View assistant setup', tab: 'providers' },
     },
     {
       number: '02', title: 'Collect missing evidence',

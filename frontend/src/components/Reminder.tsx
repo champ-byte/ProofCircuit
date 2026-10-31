@@ -18,27 +18,27 @@ export function ReminderStatus({ reminder, onRetry }: { reminder: TaskReminderVi
   const t = reminder.trigger
   return (
     <ul className="reminder-status" aria-label="Staff reminder">
-      {t?.status === 'pending' && <li>Reminder: scheduling with n8n…</li>}
+      {t?.status === 'pending' && <li>Scheduling a staff reminder…</li>}
       {t?.status === 'delivered' && (
-        <li>Reminder scheduled by n8n for {t.remind_at ? formatIst(t.remind_at) : 'the configured delay'}</li>
+        <li>Staff reminder scheduled for {t.remind_at ? formatIst(t.remind_at) : 'the next reminder time'}</li>
       )}
       {t?.status === 'skipped' && <li>Reminder not scheduled: {reason(t.error)}</li>}
       {(t?.status === 'failed' || t?.status === 'paused') && (
         <li className="warn">
-          {t.label ?? 'Reminder scheduling unavailable'}: {t.error ?? 'unknown error'} ({t.attempts} attempt
-          {t.attempts === 1 ? '' : 's'}){' '}
+          Reminder could not be scheduled. Staff can still reply in the inbox.{' '}
           {onRetry && (
             <button type="button" onClick={onRetry}>
-              Retry reminder scheduling
+              Try reminder again
             </button>
           )}
+          <details><summary>Technical details</summary>{t.label ?? 'Reminder scheduling unavailable'}: {t.error ?? 'unknown error'} ({t.attempts} attempts)</details>
         </li>
       )}
       {reminder.reminders.map((r) => (
         <li key={r.reminder_id}>
-          {r.status === 'sent' && 'Reminder sent to the staff inbox (n8n callback; no WhatsApp)'}
-          {r.status === 'queued' && 'n8n callback received; rechecking before sending'}
-          {r.status === 'skipped' && `n8n callback skipped: ${reason(r.reason)}`}
+          {r.status === 'sent' && 'Reminder sent to the staff inbox'}
+          {r.status === 'queued' && 'Checking the reminder before sending'}
+          {r.status === 'skipped' && `Reminder skipped: ${reason(r.reason)}`}
         </li>
       ))}
     </ul>

@@ -12,9 +12,8 @@ export function CaseHeader({ detail }: { detail: CaseDetail }) {
   return (
     <section className="case-header sticky" aria-label="Case summary">
       <div>
-        <h1>
-          {detail.external_dispute_id} <span className="sub">· {detail.merchant_name}</span>
-        </h1>
+        <h1>{detail.merchant_name}</h1>
+        <div className="case-id">Dispute {detail.external_dispute_id}</div>
         <div className="sub">
           Order <code>{detail.order_id}</code> · Transaction <code>{detail.transaction_id}</code> ·{' '}
           {detail.reason === 'requires_review' ? 'reason not confirmed (review)' : detail.reason.replaceAll('_', ' ')}
@@ -39,9 +38,10 @@ export function CaseHeader({ detail }: { detail: CaseDetail }) {
           <dd>{STATE_LABELS[detail.workflow_state] ?? detail.workflow_state}</dd>
         </div>
         <div>
-          <dt>Provider status (simulator)</dt>
+          <dt>Provider update</dt>
           <dd>
-            <code>{detail.provider_status_raw ?? detail.provider_status}</code>
+            {detail.provider_status === 'NEW' ? 'No response sent yet' : detail.provider_status.replaceAll('_', ' ').toLowerCase()}{' '}
+            <span className="sub">({detail.provider_status_raw ?? detail.provider_status})</span>
           </dd>
         </div>
         {detail.debit_amount_paise !== null && (

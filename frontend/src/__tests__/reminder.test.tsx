@@ -23,7 +23,7 @@ describe('ReminderStatus', () => {
 
   it('shows the scheduled time in IST once n8n acknowledged the trigger', () => {
     render(<ReminderStatus reminder={{ trigger: trigger(), reminders: [] }} />)
-    expect(screen.getByText(/Reminder scheduled by n8n for/).textContent).toContain('10:02')
+    expect(screen.getByText(/Staff reminder scheduled for/).textContent).toContain('10:02')
     expect(screen.queryByRole('button')).toBeNull()
   })
 
@@ -38,8 +38,9 @@ describe('ReminderStatus', () => {
         onRetry={onRetry}
       />,
     )
+    expect(screen.getByText(/Reminder could not be scheduled/)).toBeTruthy()
     expect(screen.getByText(/Reminder scheduling unavailable: HTTP 503 \(3 attempts\)/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry reminder scheduling' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try reminder again' }))
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
@@ -62,7 +63,7 @@ describe('ReminderStatus', () => {
         }}
       />,
     )
-    expect(screen.getByText('Reminder sent to the staff inbox (n8n callback; no WhatsApp)')).toBeTruthy()
-    expect(screen.getByText('n8n callback skipped: staff already responded')).toBeTruthy()
+    expect(screen.getByText('Reminder sent to the staff inbox')).toBeTruthy()
+    expect(screen.getByText('Reminder skipped: staff already responded')).toBeTruthy()
   })
 })

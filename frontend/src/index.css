@@ -2822,3 +2822,24 @@ table, input, select, textarea, button { font-family: var(--font-body); }
 .journey-step-actions button:not(.journey-secondary) { background: var(--accent); border-color: var(--accent); color: white; }
 .journey-step-actions button.journey-secondary { color: var(--accent); border-color: var(--border); }
 @media (max-width: 640px) { .workflow-chart { padding: 16px; } .workflow-bars { gap: 8px; padding: 0; } .workflow-bar-group { font-size: .67rem; } .workflow-chart-total { padding-left: 12px; } }
+
+.case-guide { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 0 0 24px; padding: 24px; border: 1px solid #bfd9e3; border-left: 4px solid #177b91; border-radius: 8px; background: #f5fafb; }
+.case-guide-main { max-width: 70ch; }
+.case-guide h2 { margin: 0 0 8px; color: var(--text); font-size: clamp(1.2rem, 2vw, 1.5rem); }
+.case-guide p:last-child { margin: 0; color: #435e6c; line-height: 1.6; }
+.case-guide-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; flex: 0 0 auto; }
+.case-guide-actions button, .case-guide-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 9px 14px; border-radius: 7px; font-size: .83rem; font-weight: 700; text-decoration: none; }
+.case-guide-actions button { border: 1px solid var(--accent); background: var(--accent); color: white; }
+.case-guide-actions a { border: 1px solid #aecbd9; background: white; color: var(--accent); }
+.case-guide-actions button:hover, .case-guide-actions a:hover { box-shadow: 0 3px 10px rgb(20 91 145 / 12%); }
+@media (max-width: 768px) { .case-guide { align-items: stretch; flex-direction: column; padding: 16px; } .case-guide-actions { justify-content: flex-start; flex: initial; } }
+@media (max-width: 640px) { .case-header .facts-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; } .case-header .facts-row > div { min-width: 0; } }
+.case-header h1 .sub { color: var(--muted); font-family: var(--font-body); font-size: .82rem; font-weight: 550; letter-spacing: 0; }
+.case-id { margin: 4px 0; color: var(--muted); font-size: .79rem; font-weight: 600; }
+.case-header code, .case-header .sub { overflow-wrap: anywhere; }
+.assistant-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; margin: 16px 0; }
+.assistant-actions > button { min-height: 42px; padding: 9px 16px; border-color: var(--accent); background: var(--accent); color: white; }
+.advanced-actions { flex: 1 1 240px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 7px; }
+.advanced-actions summary, .tool-result summary { color: var(--accent); cursor: pointer; font-weight: 650; }
+.advanced-actions .fixture-buttons { margin-top: 16px; }
+.tool-result details { margin-top: 12px; }

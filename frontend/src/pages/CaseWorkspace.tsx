@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { CaseHeader } from '../components/CaseHeader'
+import { CaseGuide } from '../components/CaseGuide'
 import { CaseJourney } from '../components/CaseJourney'
 import { DemoDrawer } from '../components/DemoDrawer'
 import type { TabId } from '../components/DemoDrawer'
@@ -92,20 +93,12 @@ export function CaseWorkspace() {
           <Link to="/cases">← All cases</Link>
         </p>
         <CaseHeader detail={detail} />
-        <StatusBanner detail={detail} assessment={evidence.assessment} />
-        <CaseJourney
-          caseId={id}
-          token={token}
-          session={session}
-          detail={detail}
-          evidence={evidence}
-          events={events}
-          onChanged={refresh}
-          openDemo={openDemo}
-        />
+        {detail.workflow_state !== 'WAITING_FOR_EVIDENCE' && <StatusBanner detail={detail} assessment={evidence.assessment} />}
+        <CaseGuide detail={detail} evidence={evidence} onOpenStaff={() => openDemo('inbox')} />
         <nav className="workspace-nav" aria-label="Case sections">
-          <a href="#journey-title">Case journey</a>
+          <a href="#case-guide-title">Next step</a>
           <a href="#checklist-h">Checklist</a>
+          <a href="#journey-title">All steps</a>
           <a href="#findings-h">Findings</a>
           <a href="#actions-h">Actions</a>
           <a href="#pack-h">Submission</a>
@@ -126,6 +119,16 @@ export function CaseWorkspace() {
           <ChecklistPanel evidence={evidence} onOpen={openSource} />
           <FindingsPanel evidence={evidence} onOpen={openSource} />
         </div>
+        <CaseJourney
+          caseId={id}
+          token={token}
+          session={session}
+          detail={detail}
+          evidence={evidence}
+          events={events}
+          onChanged={refresh}
+          openDemo={openDemo}
+        />
         <ActionsPanel
           caseId={id}
           token={token}

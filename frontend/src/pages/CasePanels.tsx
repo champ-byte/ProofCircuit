@@ -65,10 +65,9 @@ export function ActionsPanel({
 
   return (
     <section aria-labelledby="actions-h" className="panel">
-      <h2 id="actions-h">Agent and actions</h2>
+      <h2 id="actions-h">Case assistant and actions</h2>
       <p className="sub">
-        The agent runs automatically after each event once a reasoner passes its smoke test. Manual buttons call the same
-        backend tools; the policy gate decides either way.
+        See what the assistant tried and why. You can also choose an action yourself; the case checks whether it is safe to proceed.
       </p>
       {paused && agentRuns[0]?.id === paused.id && (
         <div className="banner banner-warn" role="status">
@@ -76,15 +75,11 @@ export function ActionsPanel({
         </div>
       )}
       {canAct ? (
-        <div className="fixture-buttons">
-          <button type="button" disabled={busy} onClick={() => run(() => api.startRun(token, caseId))}>
-            Run agent / resume
-          </button>
-          {ACTIONS.map((a) => (
-            <button key={a.tool} type="button" disabled={busy} onClick={() => run(() => api.action(token, caseId, a.tool, a.args))}>
-              {a.label}
-            </button>
-          ))}
+        <div className="assistant-actions">
+          <button type="button" disabled={busy} onClick={() => run(() => api.startRun(token, caseId))}>Check case with assistant</button>
+          <details className="advanced-actions"><summary>More case actions</summary><div className="fixture-buttons">
+            {ACTIONS.map((a) => <button key={a.tool} type="button" disabled={busy} onClick={() => run(() => api.action(token, caseId, a.tool, a.args))}>{a.label}</button>)}
+          </div></details>
         </div>
       ) : (
         <p className="sub">Switch to the owner or operator identity to run actions.</p>
@@ -122,7 +117,7 @@ export function ActionsPanel({
           <strong>
             {last.tool} → {last.status}
           </strong>
-          <pre>{JSON.stringify(last.result, null, 2)}</pre>
+          <details><summary>Technical response details</summary><pre>{JSON.stringify(last.result, null, 2)}</pre></details>
         </div>
       )}
     </section>
