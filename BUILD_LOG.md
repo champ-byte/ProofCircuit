@@ -953,6 +953,21 @@ uv run pytest -q && uv run ruff check . && uv run ruff format --check .      # 2
 cd ../frontend && npm test && npm run build && npm run lint && E2E_ALLOW_LIVE=1 npm run e2e   # 24 passed, E2E passed
 ```
 
+## Docs and demo verification (2026-10-31)
+
+- **Added** `Features.md`, `ARCHITECTURE.md` and the agent specification in `CLAUDE.md` (the four build rules kept at the top). Every claim was checked against the code; the drafts were corrected where they overstated (the agent has exactly 9 tools; superseding, contradiction flags, verification and the POD round are backend actions; refunds and injected text never reach the agent as actions). Linked from README and HANDOFF. **No application code changed.**
+- **Checks:** backend 280 passed, ruff clean; frontend 24 passed, build and lint clean.
+- **Live hero run in the browser** (real Gemini, real uvicorn, fresh reset): Run agent → Marathi request → wrong-order receipt → "Submission blocked: contradiction found" with ORD-DEMO-18500 vs ORD-DEMO-OTHER and a second Marathi request → correct receipt → "Submission verified — dispute outcome pending", receipt `SIMRCPT-1FC455528ACC`, pack hash `ba32ac3d314375d1…`.
+- **Fixture-replay backup** (throwaway backend on :8001, no model key, autorun off): the full hero flow reached MONITORING/POD_UPLOAD with a verified receipt (`SIMRCPT-7A6864283E41`); every run labelled `fixture_replay`. The first attempt of my check script failed only because it uploaded the next receipt while a replay run was still pacing (4 s); waiting for the run to finish fixed it. Stage instruction recorded in the Features.md runbook.
+- **Live C04 check:** `LIVE C04 CHECK PASSED` (2 model calls).
+- **n8n, after the user started Docker Desktop:** `python n8n/setup.py` re-published the workflow. The webhook returned 403 without a token (404 for ~2 s while n8n re-registered it after the restart). `n8n/live_check.py` (backend with a 30 s delay, autorun off): `M6 LIVE CHECK PASSED`.
+  - The trigger was acknowledged on the first attempt.
+  - One Marathi reminder reached the staff inbox at about 31 s.
+  - A duplicate callback returned `already_processed`; a wrong token got 401.
+  - Re-sending the same trigger still left 1 reminder.
+  - A staff reply before the round-2 due time made n8n's callback `skipped: task_responded`.
+  - The demo server was then restarted with the live agent and reminders on (120 s delay).
+
 ## Open issues / next
 
 - **n8n:** the n8n container keeps running (`restart: unless-stopped`) until `docker compose -f n8n/docker-compose.yml down`. Reminders are enabled only for the processes started with the settings; `backend/.env` was **not** written in this session (the user can run `python n8n/setup.py --write-backend-env`).

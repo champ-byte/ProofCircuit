@@ -1,6 +1,6 @@
 # Handoff: start here in a new session
 
-This page is short on purpose. [BUILD_LOG.md](BUILD_LOG.md) holds the detailed history and [PRD.md](PRD.md) holds the specification; read both before coding, as [CLAUDE.md](CLAUDE.md) requires.
+This page is short on purpose. [Features.md](Features.md) (features and demo runbook), [ARCHITECTURE.md](ARCHITECTURE.md) and the agent spec in [CLAUDE.md](CLAUDE.md) summarise the system; the code is the source of truth. [BUILD_LOG.md](BUILD_LOG.md) holds the detailed history and [PRD.md](PRD.md) holds the specification; read both before coding, as [CLAUDE.md](CLAUDE.md) requires.
 
 ## Where things are
 

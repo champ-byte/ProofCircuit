@@ -6,7 +6,7 @@ import { formatIst } from '../format'
 import { useSession } from '../session'
 import type { DemoSession, FixtureInfo, InboxView, ProviderReport, SimulatorState } from '../types/api'
 
-type TabId = 'inbox' | 'faults' | 'identity' | 'data' | 'providers' | 'resume'
+export type TabId = 'inbox' | 'faults' | 'identity' | 'data' | 'providers' | 'resume'
 const TABS: { id: TabId; label: string }[] = [
   { id: 'inbox', label: 'Staff inbox' },
   { id: 'faults', label: 'Fault injector' },
@@ -76,6 +76,7 @@ export function DemoDrawer({
   disputeId,
   mid,
   version,
+  requestedTab,
   onChanged,
   onReset,
 }: {
@@ -83,12 +84,13 @@ export function DemoDrawer({
   disputeId: string
   mid: string
   version: number
+  requestedTab?: { tab: TabId; nonce: number } | null
   onChanged: () => Promise<void>
   onReset: (newCaseId: string) => void
 }) {
   const { users, identity, setIdentity } = useSession()
-  const [open, setOpen] = useState(() => window.matchMedia?.('(min-width: 1100px)').matches ?? true)
-  const [tab, setTab] = useState<TabId>('inbox')
+  const [open, setOpen] = useState(Boolean(requestedTab))
+  const [tab, setTab] = useState<TabId>(requestedTab?.tab ?? 'inbox')
   const [loginKey, setLoginKey] = useState(0)
   const [staffHandle, setStaffHandle] = useState('staff-delivery')
   const staff = useDemoSession(mid, staffHandle, loginKey)
@@ -110,7 +112,7 @@ export function DemoDrawer({
   )
 
   return (
-    <aside className={`drawer ${open ? 'drawer-open' : 'drawer-closed'}`} aria-label="Demo drawer">
+    <aside id="demo-drawer" className={`drawer ${open ? 'drawer-open' : 'drawer-closed'}`} aria-label="Demo drawer">
       <button type="button" className="drawer-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {open ? 'Hide demo drawer' : 'Show demo drawer'}
       </button>
@@ -262,7 +264,7 @@ function StaffInbox({
         {mine.map((m) => (
           <li key={m.id} className={`msg msg-${m.direction}`} lang={m.locale.split('-')[0]}>
             <div className="sub">
-              {m.direction === 'outbound' ? 'From ProofCircuit' : `From ${m.from}`} · {formatIst(m.created_at)} ·{' '}
+              {m.direction === 'outbound' ? 'From ProofSaathi' : `From ${m.from}`} · {formatIst(m.created_at)} ·{' '}
               {m.delivery_state.replaceAll('_', ' ')}
             </div>
             {m.body}

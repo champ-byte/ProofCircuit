@@ -1,6 +1,6 @@
 # ProofCircuit
 
-An AI teammate that prepares a merchant's payment-dispute response: it finds missing proof, requests it from staff, checks consistency, builds a source-linked evidence pack, submits it to a **Paytm-shaped simulator**, and verifies the submission independently. See [PRD.md](PRD.md) for the full specification and [BUILD_LOG.md](BUILD_LOG.md) for progress and test results. Continuing development in a new session? Start with [HANDOFF.md](HANDOFF.md).
+An AI teammate that prepares a merchant's payment-dispute response: it finds missing proof, requests it from staff, checks consistency, builds a source-linked evidence pack, submits it to a **Paytm-shaped simulator**, and verifies the submission independently. See [PRD.md](PRD.md) for the full specification and [BUILD_LOG.md](BUILD_LOG.md) for progress and test results. Continuing development in a new session? Start with [HANDOFF.md](HANDOFF.md). Feature overview and demo runbook: [Features.md](Features.md). System design: [ARCHITECTURE.md](ARCHITECTURE.md). Agent behaviour: [CLAUDE.md](CLAUDE.md).
 
 > **Synthetic-data hackathon prototype.** No real merchants, no real money movement, no real messages, and no Paytm production or staging hosts.
 

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BrowserRouter, Link, NavLink, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { api } from './api/client'
-import { StatusBadges } from './components/StatusBadges'
+import { BrandMark } from './components/BrandMark'
 import { CasesRoute } from './pages/CasesPage'
 import { CaseWorkspace } from './pages/CaseWorkspace'
 import { EvaluationPage } from './pages/EvaluationPage'
+import { LandingPage } from './pages/LandingPage'
 import { SessionContext } from './session'
-import type { DemoSession, DemoUser, ReasoningMode } from './types/api'
+import type { DemoSession, DemoUser } from './types/api'
 
 const DEFAULT_IDENTITY = 'MID-DEMO-001/owner'
 
@@ -16,20 +17,46 @@ function CaseRoute() {
   return <CaseWorkspace key={id} />
 }
 
+function SessionError({ message }: { message: string | null }) {
+  const location = useLocation()
+  if (!message || location.pathname === '/') return null
+  return <p role="alert" className="error">{message}</p>
+}
+
+function HeaderIdentity({ identity, users, setIdentity }: { identity: string; users: DemoUser[]; setIdentity: (next: string) => void }) {
+  const location = useLocation()
+  if (location.pathname === '/') return null
+  return (
+    <label id="demo-identity" className="identity">
+      <span>Viewing as</span>
+      <select value={identity} onChange={(event) => setIdentity(event.target.value)}>
+        {users.map((user) => (
+          <option key={`${user.mid}/${user.handle}`} value={`${user.mid}/${user.handle}`}>
+            {user.display_name} — {user.merchant_name}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function SiteFooter() {
+  const location = useLocation()
+  return (
+    <footer className="site-footer">
+      <span>ProofSaathi · A clearer way to handle disputes</span>
+      <span>Demo workspace · No real payments or customer messages</span>
+      {location.pathname !== '/evaluation' && <Link to="/evaluation">Evaluation tools</Link>}
+    </footer>
+  )
+}
+
 export default function App() {
-  const [mode, setMode] = useState<ReasoningMode | null>(null)
   const [users, setUsers] = useState<DemoUser[]>([])
   const [identity, setIdentityState] = useState(DEFAULT_IDENTITY)
   const [loginKey, setLoginKey] = useState(0)
   const [session, setSession] = useState<DemoSession | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const load = () => api.providers().then((p) => setMode(p.reasoning_mode)).catch(() => undefined)
-    load()
-    const id = window.setInterval(load, 20000)
-    return () => window.clearInterval(id)
-  }, [])
 
   useEffect(() => {
     api.demoUsers().then(setUsers).catch((e: Error) => setError(e.message))
@@ -63,41 +90,31 @@ export default function App() {
         </a>
         <div className="app">
           <header className="topbar">
-            <Link to="/cases" className="brand">
-              <span className="brand-name">ProofCircuit</span>
-              <span className="brand-tag">Dispute evidence teammate</span>
+            <Link to="/" className="brand">
+              <BrandMark className="brand-mark" />
+              <span className="brand-copy"><span className="brand-name">ProofSaathi</span><span className="brand-tag">Dispute support for your shop</span></span>
             </Link>
             <nav aria-label="Main" className="mainnav">
-              <NavLink to="/cases">Cases</NavLink>
-              <NavLink to="/evaluation">Evaluation</NavLink>
+              <NavLink to="/" end>Home</NavLink>
+              <NavLink to="/dashboard">Dashboard</NavLink>
+              <NavLink to="/cases">Disputes</NavLink>
             </nav>
-            <StatusBadges mode={mode} />
-            <label className="identity">
-              <span>Demo identity</span>
-              <select value={identity} onChange={(e) => setIdentity(e.target.value)}>
-                {users.map((u) => (
-                  <option key={`${u.mid}/${u.handle}`} value={`${u.mid}/${u.handle}`}>
-                    {u.display_name} — {u.merchant_name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="header-actions">
+              <HeaderIdentity identity={identity} users={users} setIdentity={setIdentity} />
+              <Link to="/cases" className="nav-cta">View disputes <span aria-hidden="true">→</span></Link>
+            </div>
           </header>
           <main id="main" tabIndex={-1}>
-            {error && (
-              <p role="alert" className="error">
-                {error}
-              </p>
-            )}
+            <SessionError message={error} />
             <Routes>
-              <Route path="/" element={<Navigate to="/cases" replace />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/dashboard" element={<CasesRoute showOverview />} />
               <Route path="/cases" element={<CasesRoute />} />
               <Route path="/cases/:id" element={<CaseRoute />} />
               <Route path="/evaluation" element={<EvaluationPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-            <p className="footnote">
-              Synthetic hackathon prototype. Simulated Paytm provider; no real money movement or messages.
-            </p>
+            <SiteFooter />
           </main>
         </div>
       </SessionContext.Provider>

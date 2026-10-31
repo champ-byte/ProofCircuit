@@ -44,7 +44,7 @@ export function EvaluationPage() {
   if (error) return <p role="alert" className="error">{error}</p>
   if (!res) return <p aria-live="polite">Loading evaluation…</p>
   return (
-    <section aria-labelledby="eval-h">
+    <section className="evaluation-page" aria-labelledby="eval-h">
       <h1 id="eval-h">Evaluation</h1>
       <div className={`banner ${res.executed === 0 ? 'banner-warn' : 'banner-info'}`} role="status">
         <strong>{res.label}</strong>

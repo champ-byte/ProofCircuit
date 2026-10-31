@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { CaseHeader } from '../components/CaseHeader'
+import { CaseJourney } from '../components/CaseJourney'
 import { DemoDrawer } from '../components/DemoDrawer'
+import type { TabId } from '../components/DemoDrawer'
 import { ChecklistPanel, EvidencePanel, FindingsPanel, type SourceRef } from '../components/Evidence'
 import { KeySteps } from '../components/KeySteps'
 import { ReviewerPanel } from '../components/Reviewer'
@@ -23,7 +25,12 @@ export function CaseWorkspace() {
   const [source, setSource] = useState<SourceRef | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [requestedTab, setRequestedTab] = useState<{ tab: TabId; nonce: number } | null>(null)
   const refresh = useCallback(async () => setReloadKey((k) => k + 1), [])
+  const openDemo = useCallback((tab: TabId) => {
+    setRequestedTab((current) => ({ tab, nonce: (current?.nonce ?? 0) + 1 }))
+    window.requestAnimationFrame(() => document.getElementById('demo-drawer')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+  }, [])
 
   useEffect(() => {
     if (!token) return
@@ -86,6 +93,25 @@ export function CaseWorkspace() {
         </p>
         <CaseHeader detail={detail} />
         <StatusBanner detail={detail} assessment={evidence.assessment} />
+        <CaseJourney
+          caseId={id}
+          token={token}
+          session={session}
+          detail={detail}
+          evidence={evidence}
+          events={events}
+          onChanged={refresh}
+          openDemo={openDemo}
+        />
+        <nav className="workspace-nav" aria-label="Case sections">
+          <a href="#journey-title">Case journey</a>
+          <a href="#checklist-h">Checklist</a>
+          <a href="#findings-h">Findings</a>
+          <a href="#actions-h">Actions</a>
+          <a href="#pack-h">Submission</a>
+          <a href="#evidence-h">Evidence</a>
+          <a href="#steps-h">Timeline</a>
+        </nav>
         {session.user.role === 'reviewer' && (
           <ReviewerPanel
             caseId={id}
@@ -120,10 +146,12 @@ export function CaseWorkspace() {
         <KeySteps events={events} />
       </div>
       <DemoDrawer
+        key={requestedTab?.nonce ?? 0}
         caseId={id}
         disputeId={detail.external_dispute_id}
         mid={detail.mid}
         version={reloadKey}
+        requestedTab={requestedTab}
         onChanged={refresh}
         onReset={(newCaseId) => {
           relogin()
